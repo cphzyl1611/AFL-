@@ -1,0 +1,26 @@
+{
+  "mode": "rule_fallback",
+  "run_id": 2,
+  "task_id": "71b43a8cb64d",
+  "BODY_DECISION_DBG": 145,
+  "stage_counts": {
+    "ae_high": 47,
+    "ae_low": 76,
+    "second_pass": 22
+  },
+  "second_stage_source_counts": {
+    "-": 123,
+    "rule_fallback": 22
+  },
+  "fallback_reason_counts": {
+    "-": 123,
+    "gan_rpc_unavailable": 22
+  },
+  "ae_low": 76,
+  "ae_high": 47,
+  "second_pass": 22,
+  "second_reject": 0,
+  "gan_rpc_count": 0,
+  "rule_fallback_count": 22,
+  "gan_rpc_unavailable_count": 22
+}

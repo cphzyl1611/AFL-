@@ -1,0 +1,26 @@
+{
+  "mode": "gan_online",
+  "run_id": 2,
+  "task_id": "6a509b1c78dc",
+  "BODY_DECISION_DBG": 137,
+  "stage_counts": {
+    "ae_high": 40,
+    "ae_low": 73,
+    "second_reject": 10,
+    "second_pass": 14
+  },
+  "second_stage_source_counts": {
+    "-": 113,
+    "gan_rpc": 24
+  },
+  "fallback_reason_counts": {
+    "-": 137
+  },
+  "ae_low": 73,
+  "ae_high": 40,
+  "second_pass": 14,
+  "second_reject": 10,
+  "gan_rpc_count": 24,
+  "rule_fallback_count": 0,
+  "gan_rpc_unavailable_count": 0
+}

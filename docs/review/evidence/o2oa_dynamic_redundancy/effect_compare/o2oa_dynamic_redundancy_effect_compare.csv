@@ -1,0 +1,10 @@
+mode,run_id,task_id,http_200,pass,reject,rpc_fail_total,body_score_rpc_ok,body_score_rpc_fail,ae_low,ae_high,second_pass,second_reject,gan_rpc_count,rule_fallback_count,gan_rpc_unavailable_count,BODY_DECISION_DBG,last_http_code,status,saved_crashes,saved_hangs,nv_total_valid_exec,valid_exec,nv_err_exec,nv_err_rate,last_latency_ms,last_ncov_total,total_execs,edges_found,bitmap_cvg,crashes,hangs
+ae_only,1,2a3865e1f9b5,yes,76,66,0,142,0,76,66,0,0,0,0,0,142,200,exited,0,0,352,352,0,0.000000,22,17,,,,0,0
+ae_only,2,04b1a65a6113,yes,83,60,0,143,0,83,60,0,0,0,0,0,143,200,exited,0,0,346,346,0,0.000000,22,17,,,,0,0
+ae_only,3,ee8ea5fb6f78,yes,83,62,0,145,0,83,62,0,0,0,0,0,145,200,exited,0,0,345,345,0,0.000000,22,17,,,,0,0
+rule_fallback,1,c425bbeea3fd,yes,94,42,0,136,0,70,42,24,0,0,24,24,136,200,exited,0,0,336,336,0,0.000000,19,17,,,,0,0
+rule_fallback,2,71b43a8cb64d,yes,98,47,0,145,0,76,47,22,0,0,22,22,145,200,exited,0,0,334,334,0,0.000000,24,17,,,,0,0
+rule_fallback,3,53b86776a687,yes,103,44,0,147,0,80,44,23,0,0,23,23,147,200,exited,0,0,336,336,0,0.000000,21,17,,,,0,0
+gan_online,1,8bc51adeb48b,yes,88,54,0,142,0,74,45,14,9,23,0,0,142,200,exited,0,0,338,338,0,0.000000,20,17,,,,0,0
+gan_online,2,6a509b1c78dc,yes,87,50,0,137,0,73,40,14,10,24,0,0,137,200,exited,0,0,350,350,0,0.000000,19,17,,,,0,0
+gan_online,3,8c79a70f580e,yes,94,52,0,146,0,79,44,15,8,23,0,0,146,200,exited,0,0,344,344,0,0.000000,20,17,,,,0,0

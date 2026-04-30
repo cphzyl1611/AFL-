@@ -1,0 +1,23 @@
+{
+  "mode": "ae_only",
+  "run_id": 1,
+  "task_id": "2a3865e1f9b5",
+  "BODY_DECISION_DBG": 142,
+  "stage_counts": {
+    "ae_high": 66,
+    "ae_low": 76
+  },
+  "second_stage_source_counts": {
+    "-": 142
+  },
+  "fallback_reason_counts": {
+    "-": 142
+  },
+  "ae_low": 76,
+  "ae_high": 66,
+  "second_pass": 0,
+  "second_reject": 0,
+  "gan_rpc_count": 0,
+  "rule_fallback_count": 0,
+  "gan_rpc_unavailable_count": 0
+}
