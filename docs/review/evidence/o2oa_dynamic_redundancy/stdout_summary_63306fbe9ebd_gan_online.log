@@ -1,0 +1,6 @@
+1:[*] Running mode=rule_score -> /home/dministrator/AFLplusplus/out/cms_body_valid_compare_real/rule_score
+2:[DBG] rule_score endpoint=unix:///tmp/nv_valid_real.sock threshold=1.0
+7:[DBG] rule_score endpoint=unix:///tmp/nv_valid_real.sock threshold=1.0
+118:[OK] Wrote /home/dministrator/AFLplusplus/out/cms_body_valid_compare_real/summary.csv
+119:mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail
+120:rule_score,339,0,0.000000,0,0,200,21,17,138,326,92,46,138,0

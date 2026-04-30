@@ -124,7 +124,7 @@ class DecisionEngine:
             if gan_score is not None:
                 self._last_second_stage_meta.update({
                     "second_stage_model": "gan",
-                    "second_stage_source": "rpc",
+                    "second_stage_source": "gan_rpc",
                     "second_stage_endpoint": self.second_stage_endpoint,
                 })
                 return gan_score

@@ -1,0 +1,41 @@
+{
+  "task_id": "63306fbe9ebd",
+  "status": "exited",
+  "task_json": "/home/dministrator/AFLplusplus/runner/tasks/63306fbe9ebd/task.json",
+  "report_json": "/home/dministrator/AFLplusplus/runner/tasks/63306fbe9ebd/report.json",
+  "experiment_dir": "",
+  "model_name": "ae",
+  "threshold": "1.0",
+  "manifest": "model_stage/manifests/dataset_manifest_156.txt",
+  "duration_plan": [
+    20
+  ],
+  "notes": "O2OA default profile: AE@1.0 is the primary gate. Samples in the gray zone trigger the GAN second stage when available, otherwise DecisionEngine falls back to the local rule stage.",
+  "pid": 37202,
+  "run_dir": "/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd",
+  "afl_out_dir": "/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd/afl_out",
+  "command": [
+    "bash",
+    "-lc",
+    "NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/o2oa_default.json NV_DECISION_PROFILE_NAME=o2oa_default NV_TOKEN=\"$NV_TOKEN\" NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.0\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"/home/dministrator/AFLplusplus/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd\" RUNNER_DURATION_PLAN=\"20\" ./scripts/run_runner_real_fuzz_plan.sh"
+  ],
+  "artifacts": {
+    "nv_body_valid_stats.json": "/tmp/nv_body_valid_stats.json",
+    "stdout.log": "/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd/stdout.log",
+    "stderr.log": "/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd/stderr.log"
+  },
+  "summary_dur20": {},
+  "summary_dur60": {},
+  "fuzzer_stats": {},
+  "generated_at": "2026-04-30 20:36:37",
+  "decision_summary": {
+    "model": "ae",
+    "threshold": "1.0",
+    "status": "exited",
+    "dur20_pass_reject": "",
+    "dur60_pass_reject": "",
+    "rpc_fail_total": 0,
+    "has_dur20": false,
+    "has_dur60": false
+  }
+}

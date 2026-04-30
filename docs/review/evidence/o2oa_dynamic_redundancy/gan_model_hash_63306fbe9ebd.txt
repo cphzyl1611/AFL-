@@ -1,0 +1,2 @@
+205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624  model_stage/models/sefanogan_gan_model.pt
+87d189dde54ac578d170850d090032d3268887517d259ad5fc96855a15b9c495  model_stage/models/sefanogan_gan_meta.json
