@@ -1,0 +1,4 @@
+PUT /x_calendar_assemble_control/jaxrs/event/list/filter
+Content-Type: application/json
+
+{}

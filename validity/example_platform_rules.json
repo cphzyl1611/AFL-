@@ -1,0 +1,27 @@
+{
+  "common": {
+    "max_bytes": 8192,
+    "max_depth": 6,
+    "max_keys": 64,
+    "max_string": 1024
+  },
+  "endpoints": {
+    "query_items": {
+      "type": "object",
+      "required": ["page", "size", "keyword"],
+      "allow_unknown": true,
+      "properties": {
+        "page": {
+          "type": "integer"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "keyword": {
+          "type": "string",
+          "maxLength": 128
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": "Boundary.Space User"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 10
+    }
+  ]
+}

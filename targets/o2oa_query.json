@@ -1,0 +1,62 @@
+{
+  "base": "http://127.0.0.1:20020",
+  "health": "/x_desktop/index.html",
+
+  "auth": {
+    "type": "raw_token",
+    "header": "Authorization",
+    "token_env": "NV_TOKEN",
+    "also_cookie": "x-token"
+  },
+
+  "body_only_mode": 1,
+  "default_endpoint": "cms_doc_list",
+
+  "endpoints": [
+    {
+      "name": "person_detail",
+      "method": "POST",
+      "path": "/x_organization_assemble_express/jaxrs/person/detail/xadmin@o2oa@P"
+    },
+    {
+      "name": "review_count",
+      "method": "POST",
+      "path": "/x_processplatform_assemble_surface/jaxrs/review/v2/count"
+    },
+    {
+      "name": "hotpic_list",
+      "method": "PUT",
+      "path": "/x_hotpic_assemble_control/jaxrs/user/hotpic/filter/list/page/1/count/6"
+    },
+    {
+      "name": "cms_doc_list",
+      "method": "PUT",
+      "path": "/x_cms_assemble_control/jaxrs/document/filter/list/1/size/5"
+    },
+    {
+      "name": "calendar_filter",
+      "method": "PUT",
+      "path": "/x_calendar_assemble_control/jaxrs/event/list/filter"
+    }
+  ],
+
+  "biz_fields": ["type", "message", "msg", "code"],
+
+  "body_templates": {
+    "person_detail": {},
+    "review_count": {
+      "credentialList": []
+    },
+    "hotpic_list": {},
+    "cms_doc_list": {
+      "docStatusList": [],
+      "categoryIdList": [],
+      "key": ""
+    },
+    "calendar_filter": {
+      "startTime": "2026-03-01 00:00:00",
+      "endTime": "2026-03-31 23:59:59",
+      "calendarIds": []
+    }
+  }
+}

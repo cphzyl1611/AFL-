@@ -1,0 +1,79 @@
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_11.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["general"], "key": "history"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_107.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "notice"], "key": "public-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_68.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow", "general"], "key": "workflow-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_41.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow"], "key": "process-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_47.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "notice"], "key": "workflow-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_80.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["general"], "key": "history-center"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_21.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["notice"], "key": "archive-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_35.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["notice"], "key": "archive-list"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_0.json", "tag": "normal", "body": {"docStatusList": [], "categoryIdList": [], "key": ""}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_85.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["notice"], "key": "notice-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_5.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["office"], "key": "meeting-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_22.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["office", "general"], "key": "internal-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_18.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["general"], "key": "policy-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_27.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["office"], "key": "legacy-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_65.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["notice"], "key": "notice-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_36.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["workflow"], "key": "workflow-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_105.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["workflow"], "key": "workflow-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_23.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow"], "key": "process-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_49.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["notice"], "key": "policy-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_8.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow"], "key": "approval"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_64.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["general"], "key": "general-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_100.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["office"], "key": "archive-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_1.json", "tag": "normal", "body": {"docStatusList": [], "categoryIdList": [], "key": "notice"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_4.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": [], "key": "report"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_58.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["general", "notice"], "key": "memo-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_46.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["office"], "key": "document-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_71.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "notice"], "key": "approval-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_98.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow", "general"], "key": "draft-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_109.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["general"], "key": "history-note-2"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_9.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["notice"], "key": "weekly-report"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_30.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow"], "key": "approval-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_12.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "notice"], "key": "policy-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_95.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["workflow"], "key": "workflow-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_82.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["notice", "general"], "key": "review-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_61.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "general"], "key": "search-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_3.json", "tag": "normal", "body": {"docStatusList": [], "categoryIdList": ["notice"], "key": "policy"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_55.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["workflow"], "key": "workflow-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_37.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "notice"], "key": "public-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_84.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["general"], "key": "general-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_112.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["notice", "general"], "key": "review-note-2"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_87.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "notice"], "key": "public-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_16.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["notice"], "key": "meeting-minutes"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_96.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["notice"], "key": "notice-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_13.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["general", "workflow"], "key": "task-summary"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_33.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office"], "key": "notice-center"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_42.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["office", "workflow"], "key": "internal-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_54.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["notice"], "key": "notice-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_59.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["office"], "key": "document-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_10.json", "tag": "normal", "body": {"docStatusList": ["draft", "published"], "categoryIdList": ["office", "workflow"], "key": "document-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_83.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office"], "key": "office-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_45.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["general"], "key": "archive-center"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_75.json", "tag": "normal", "body": {"docStatusList": ["archived"], "categoryIdList": ["workflow"], "key": "workflow-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_51.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "general"], "key": "public-notice"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_44.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["office"], "key": "office-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_31.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["general"], "key": "history-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_34.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["general"], "key": "draft-search"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_19.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "workflow"], "key": "task-list"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_111.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "office"], "key": "approval-note-2"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_25.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["general"], "key": "bulletin"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_101.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "office"], "key": "approval-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_43.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["notice"], "key": "notice-board"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_81.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "office"], "key": "approval-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_69.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["general"], "key": "history-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_93.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office"], "key": "office-file"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_90.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["office"], "key": "archive-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_78.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow", "notice"], "key": "draft-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_32.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["workflow", "office"], "key": "internal-summary"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_6.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["workflow", "notice"], "key": "weekly-plan"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_38.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow", "general"], "key": "todo-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_57.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office", "workflow"], "key": "office-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_14.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["notice"], "key": "monthly-plan"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_103.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office"], "key": "office-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_50.json", "tag": "normal", "body": {"docStatusList": ["draft", "archived"], "categoryIdList": ["workflow"], "key": "task-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_92.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["notice", "general"], "key": "review-center"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_39.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["office"], "key": "record-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_72.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["office", "general"], "key": "internal-record"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_26.json", "tag": "normal", "body": {"docStatusList": ["draft"], "categoryIdList": ["workflow", "notice"], "key": "review-note"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_73.json", "tag": "normal", "body": {"docStatusList": ["published"], "categoryIdList": ["office"], "key": "office-query"}}
+{"endpoint": "cms_doc_list", "source_file": "seed_ok_99.json", "tag": "normal", "body": {"docStatusList": ["published", "archived"], "categoryIdList": ["general"], "key": "history-file"}}

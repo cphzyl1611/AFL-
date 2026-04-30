@@ -1,0 +1,4 @@
+PUT /x_hotpic_assemble_control/jaxrs/user/hotpic/filter/list/page/1/count/6
+Content-Type: application/json
+
+{}

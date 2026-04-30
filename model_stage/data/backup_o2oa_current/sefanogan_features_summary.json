@@ -1,0 +1,587 @@
+{
+  "normal": {
+    "count": 113,
+    "features": {
+      "body_bytes": {
+        "mean": 85.11504424778761,
+        "min": 49.0,
+        "max": 102.0
+      },
+      "json_depth": {
+        "mean": 2.982300884955752,
+        "min": 2.0,
+        "max": 3.0
+      },
+      "total_keys": {
+        "mean": 3.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "total_nodes": {
+        "mean": 6.601769911504425,
+        "min": 4.0,
+        "max": 8.0
+      },
+      "dict_count": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "list_count": {
+        "mean": 2.0,
+        "min": 2.0,
+        "max": 2.0
+      },
+      "string_count": {
+        "mean": 3.601769911504425,
+        "min": 1.0,
+        "max": 5.0
+      },
+      "number_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "bool_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "null_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_string_len": {
+        "mean": 12.168141592920353,
+        "min": 0.0,
+        "max": 16.0
+      },
+      "avg_string_len": {
+        "mean": 8.33362831858407,
+        "min": 0.0,
+        "max": 10.333333333333334
+      },
+      "max_list_len": {
+        "mean": 1.6106194690265487,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "avg_list_len": {
+        "mean": 1.3008849557522124,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "max_run_length_any_string": {
+        "mean": 1.4690265486725664,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "avg_run_length_strings": {
+        "mean": 1.1623893805309735,
+        "min": 0.0,
+        "max": 1.6666666666666667
+      },
+      "max_special_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "avg_special_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_space_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "avg_space_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_case_flip_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "avg_case_flip_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "min_unique_char_ratio": {
+        "mean": 0.770826223923569,
+        "min": 0.6,
+        "max": 1.0
+      },
+      "avg_unique_char_ratio": {
+        "mean": 0.8898335047450092,
+        "min": 0.7996794871794872,
+        "max": 1.0
+      },
+      "max_list_repeat_ratio": {
+        "mean": 0.9646017699115044,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "avg_list_repeat_ratio": {
+        "mean": 0.8030973451327433,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "repeated_list_count": {
+        "mean": 1.2743362831858407,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "large_list_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "long_item_list_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "has_key_field": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "key_len": {
+        "mean": 12.150442477876107,
+        "min": 0.0,
+        "max": 16.0
+      },
+      "key_run_length": {
+        "mean": 1.2300884955752212,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "key_special_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "key_unique_char_ratio": {
+        "mean": 0.7924578125905559,
+        "min": 0.6,
+        "max": 1.0
+      },
+      "docStatusList_len": {
+        "mean": 1.2566371681415929,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "docStatusList_repeat_ratio": {
+        "mean": 0.8185840707964602,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "categoryIdList_len": {
+        "mean": 1.345132743362832,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "categoryIdList_repeat_ratio": {
+        "mean": 0.7876106194690266,
+        "min": 0.0,
+        "max": 1.0
+      }
+    }
+  },
+  "border": {
+    "count": 20,
+    "features": {
+      "body_bytes": {
+        "mean": 122.75,
+        "min": 62.0,
+        "max": 269.0
+      },
+      "json_depth": {
+        "mean": 3.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "total_keys": {
+        "mean": 3.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "total_nodes": {
+        "mean": 10.6,
+        "min": 5.0,
+        "max": 24.0
+      },
+      "dict_count": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "list_count": {
+        "mean": 2.0,
+        "min": 2.0,
+        "max": 2.0
+      },
+      "string_count": {
+        "mean": 7.6,
+        "min": 2.0,
+        "max": 21.0
+      },
+      "number_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "bool_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "null_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_string_len": {
+        "mean": 14.9,
+        "min": 4.0,
+        "max": 25.0
+      },
+      "avg_string_len": {
+        "mean": 7.299285714285714,
+        "min": 2.6666666666666665,
+        "max": 9.0
+      },
+      "max_list_len": {
+        "mean": 3.7,
+        "min": 1.0,
+        "max": 10.0
+      },
+      "avg_list_len": {
+        "mean": 3.3,
+        "min": 0.5,
+        "max": 10.0
+      },
+      "max_run_length_any_string": {
+        "mean": 2.1,
+        "min": 1.0,
+        "max": 4.0
+      },
+      "avg_run_length_strings": {
+        "mean": 1.2852579365079366,
+        "min": 1.0,
+        "max": 1.75
+      },
+      "max_special_ratio": {
+        "mean": 0.05,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "avg_special_ratio": {
+        "mean": 0.016666666666666666,
+        "min": 0.0,
+        "max": 0.3333333333333333
+      },
+      "max_space_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "avg_space_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_case_flip_ratio": {
+        "mean": 0.03409090909090909,
+        "min": 0.0,
+        "max": 0.5
+      },
+      "avg_case_flip_ratio": {
+        "mean": 0.009886363636363636,
+        "min": 0.0,
+        "max": 0.175
+      },
+      "min_unique_char_ratio": {
+        "mean": 0.6709645210310845,
+        "min": 0.2857142857142857,
+        "max": 0.8333333333333334
+      },
+      "avg_unique_char_ratio": {
+        "mean": 0.9044529284498325,
+        "min": 0.7361111111111112,
+        "max": 0.9743589743589745
+      },
+      "max_list_repeat_ratio": {
+        "mean": 0.605,
+        "min": 0.3333333333333333,
+        "max": 1.0
+      },
+      "avg_list_repeat_ratio": {
+        "mean": 0.5233333333333333,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "repeated_list_count": {
+        "mean": 0.4,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "large_list_count": {
+        "mean": 0.2,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "long_item_list_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "has_key_field": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "key_len": {
+        "mean": 14.85,
+        "min": 4.0,
+        "max": 25.0
+      },
+      "key_run_length": {
+        "mean": 1.8,
+        "min": 1.0,
+        "max": 4.0
+      },
+      "key_special_ratio": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "key_unique_char_ratio": {
+        "mean": 0.7051311876977512,
+        "min": 0.2857142857142857,
+        "max": 0.9333333333333333
+      },
+      "docStatusList_len": {
+        "mean": 3.65,
+        "min": 1.0,
+        "max": 10.0
+      },
+      "docStatusList_repeat_ratio": {
+        "mean": 0.49833333333333335,
+        "min": 0.2,
+        "max": 1.0
+      },
+      "categoryIdList_len": {
+        "mean": 2.95,
+        "min": 0.0,
+        "max": 10.0
+      },
+      "categoryIdList_repeat_ratio": {
+        "mean": 0.5483333333333333,
+        "min": 0.0,
+        "max": 1.0
+      }
+    }
+  },
+  "abnormal": {
+    "count": 23,
+    "features": {
+      "body_bytes": {
+        "mean": 178.65217391304347,
+        "min": 100.0,
+        "max": 369.0
+      },
+      "json_depth": {
+        "mean": 2.782608695652174,
+        "min": 2.0,
+        "max": 3.0
+      },
+      "total_keys": {
+        "mean": 3.3043478260869565,
+        "min": 3.0,
+        "max": 6.0
+      },
+      "total_nodes": {
+        "mean": 11.304347826086957,
+        "min": 4.0,
+        "max": 44.0
+      },
+      "dict_count": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "list_count": {
+        "mean": 2.0,
+        "min": 2.0,
+        "max": 2.0
+      },
+      "string_count": {
+        "mean": 8.304347826086957,
+        "min": 1.0,
+        "max": 41.0
+      },
+      "number_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "bool_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "null_count": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "max_string_len": {
+        "mean": 55.21739130434783,
+        "min": 9.0,
+        "max": 200.0
+      },
+      "avg_string_len": {
+        "mean": 26.2857933640324,
+        "min": 3.2222222222222223,
+        "max": 105.33333333333333
+      },
+      "max_list_len": {
+        "mean": 4.0,
+        "min": 0.0,
+        "max": 20.0
+      },
+      "avg_list_len": {
+        "mean": 3.5,
+        "min": 0.0,
+        "max": 20.0
+      },
+      "max_run_length_any_string": {
+        "mean": 47.91304347826087,
+        "min": 2.0,
+        "max": 200.0
+      },
+      "avg_run_length_strings": {
+        "mean": 23.05300970212704,
+        "min": 1.1111111111111112,
+        "max": 105.33333333333333
+      },
+      "max_special_ratio": {
+        "mean": 0.29891304347826086,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "avg_special_ratio": {
+        "mean": 0.19074569857928178,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "max_space_ratio": {
+        "mean": 0.006562756357670221,
+        "min": 0.0,
+        "max": 0.1509433962264151
+      },
+      "avg_space_ratio": {
+        "mean": 0.0013125512715340443,
+        "min": 0.0,
+        "max": 0.03018867924528302
+      },
+      "max_case_flip_ratio": {
+        "mean": 0.06521739130434782,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "avg_case_flip_ratio": {
+        "mean": 0.011262077294685991,
+        "min": 0.0,
+        "max": 0.2
+      },
+      "min_unique_char_ratio": {
+        "mean": 0.12880822731026584,
+        "min": 0.005,
+        "max": 0.6923076923076923
+      },
+      "avg_unique_char_ratio": {
+        "mean": 0.5420084282103302,
+        "min": 0.012345679012345678,
+        "max": 0.9759146341463415
+      },
+      "max_list_repeat_ratio": {
+        "mean": 0.5615942028985508,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "avg_list_repeat_ratio": {
+        "mean": 0.5219461697722567,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "repeated_list_count": {
+        "mean": 0.6956521739130435,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "large_list_count": {
+        "mean": 0.13043478260869565,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "long_item_list_count": {
+        "mean": 0.21739130434782608,
+        "min": 0.0,
+        "max": 2.0
+      },
+      "has_key_field": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "key_len": {
+        "mean": 52.47826086956522,
+        "min": 4.0,
+        "max": 200.0
+      },
+      "key_run_length": {
+        "mean": 45.608695652173914,
+        "min": 1.0,
+        "max": 200.0
+      },
+      "key_special_ratio": {
+        "mean": 0.08695652173913043,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "key_unique_char_ratio": {
+        "mean": 0.2800542954526652,
+        "min": 0.005,
+        "max": 1.0
+      },
+      "docStatusList_len": {
+        "mean": 3.9130434782608696,
+        "min": 0.0,
+        "max": 20.0
+      },
+      "docStatusList_repeat_ratio": {
+        "mean": 0.520703933747412,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "categoryIdList_len": {
+        "mean": 3.0869565217391304,
+        "min": 0.0,
+        "max": 20.0
+      },
+      "categoryIdList_repeat_ratio": {
+        "mean": 0.5231884057971015,
+        "min": 0.0,
+        "max": 1.0
+      }
+    }
+  }
+}

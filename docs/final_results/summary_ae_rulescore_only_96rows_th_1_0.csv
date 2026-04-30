@@ -1,0 +1,2 @@
+mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail
+rule_score,343,0,0.000000,0,0,200,22,16,124,324,80,44,124,0

@@ -1,0 +1,13 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": "Zhou Ba"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 6
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+run,train_normal_mean,val_normal_mean,val_border_mean,val_abnormal_mean,short_pass,short_reject,short_rpc_fail,long_pass,long_reject,long_rpc_fail
+baseline_156_run1,0.038486,0.068180,5.052298,428.544718,82,36,0,98,52,0
+baseline_156_run2,0.034895,0.061556,5.713791,420.983629,78,42,0,87,67,0
+baseline_156_run3,0.029441,0.056581,5.025844,518.741382,77,49,0,94,65,0
+enhanced_182_run1,0.028043,0.053223,3.573777,157.634525,75,39,0,93,50,0
+enhanced_182_run2,0.031960,0.049424,3.107552,209.127842,83,39,0,91,70,0
+enhanced_182_run3,0.036663,0.062832,4.456294,138.689833,77,39,0,90,55,0

@@ -1,0 +1,4 @@
+POST /x_organization_assemble_express/jaxrs/person/detail/xadmin@o2oa@P
+Content-Type: application/json
+
+{}

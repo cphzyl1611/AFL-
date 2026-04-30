@@ -1,0 +1,41 @@
+Source: runner/runs/c8b0d1c25e45/stderr.log
+Task: c8b0d1c25e45
+Profile: o2oa_default
+Sanitization: excerpt contains only BODY_DECISION_DBG metadata. No token, cookie, account, password, or request body is included.
+
+Stage summary from c8b0d1c25e45:
+BODY_DECISION_DBG=140
+stage_ae_low=79
+stage_ae_high=36
+stage_fallback=0
+stage_second_pass=25
+stage_second_reject=0
+second_stage_source_rule_fallback=25
+fallback_reason_gan_rpc_unavailable=25
+
+Representative second-stage lines:
+94:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+98:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+102:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+106:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+110:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+114:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+118:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+122:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+126:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+130:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+134:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+138:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+142:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+146:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050980 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+150:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+154:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+158:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+162:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+166:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+170:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+174:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+525:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.035954 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+580:[BODY_DECISION_DBG] profile=o2oa_default ae_score=0.815722 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+769:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.410657 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable
+799:[BODY_DECISION_DBG] profile=o2oa_default ae_score=1.050576 decision=pass stage=second_pass second_stage_source=rule_fallback fallback_reason=gan_rpc_unavailable

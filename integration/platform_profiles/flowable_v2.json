@@ -1,0 +1,43 @@
+{
+  "profile": "flowable_v2",
+  "platform": "Flowable",
+  "scene": "process_start",
+  "target_type": "http_api",
+  "target_endpoint": "POST /flowable-rest/service/runtime/process-instances",
+  "seed_dir": "in/flowable_process_start_dataset_v2",
+  "model_route": "Flowable-AE v2 primary route with reserved decision profile",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "template": "runner/templates/task_ae_flowable_eval_v2.json",
+  "duration_plan": [20, 60],
+  "is_mainline": false,
+  "validation_scope": "Second-platform minimum calibration validation on a static mixed Flowable dataset; this is not a full AFL++ mutation fuzzing chain.",
+  "description": "Flowable second-platform profile. It preserves the accepted Flowable-AE v2@6.3 final route and reserves the dynamic decision structure without enabling the second stage.",
+  "result_description": "Runner reports summary_dur20.csv, summary_dur60.csv, body_valid_stats_dur20.json and body_valid_stats_dur60.json when Flowable REST and score service are available.",
+  "notes": "Current Flowable final profile: Flowable-AE v2@6.3. v3 is retained only as a reference because it did not outperform v2. Do not describe this profile as a complete second-platform AFL++ fuzzing main chain.",
+  "decision": {
+    "t_low": 5.8,
+    "t_high": 6.3,
+    "enable_second_stage": false,
+    "second_stage_type": "rule",
+    "second_stage_threshold": 1.0
+  },
+  "model_files": [
+    {
+      "name": "flowable_ae_v2_model",
+      "path": "model_stage/models/flowable_ae_v2_model.pt",
+      "required": true
+    },
+    {
+      "name": "flowable_ae_v2_meta",
+      "path": "model_stage/models/flowable_ae_v2_meta.json",
+      "required": true
+    }
+  ],
+  "runtime_requirements": [
+    "Flowable REST should be available at FLOWABLE_BASE, defaulting to http://127.0.0.1:8080 in the runner template.",
+    "The AE score service should be started with the Flowable-AE v2 model and meta.",
+    "The local scripts/run_runner_flowable_plan.sh path must be available."
+  ]
+}

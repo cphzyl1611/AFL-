@@ -1,0 +1,16 @@
+{
+  "target_type": "http_api",
+  "seed_dir": "in/flowable_process_start",
+  "model_name": "gan_v2",
+  "threshold": "1.7",
+  "manifest": "flowable_process_start_seed_only",
+  "duration_plan": [20, 60],
+  "notes": "Experimental Flowable GAN placeholder task; current stage does not enter Flowable-GAN. Use Flowable-AE v2@6.3 for final Flowable口径.",
+  "result_summary_csv": "out/flowable_process_start_compare/summary.csv",
+  "result_stats_json": "/tmp/nv_body_valid_stats.json",
+  "launch_cmd": [
+    "bash",
+    "-lc",
+    "FLOWABLE_BASE=\"http://127.0.0.1:8080\" FLOWABLE_USER=\"rest-admin\" FLOWABLE_PASS=\"test\" NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.7\" IN_DIR=\"{ROOT}/in/flowable_process_start\" RUNNER_RUN_DIR=\"{RUN_DIR}\" RUNNER_DURATION_PLAN=\"20 60\" ./scripts/run_runner_flowable_plan.sh"
+  ]
+}

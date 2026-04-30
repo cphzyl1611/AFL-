@@ -1,0 +1,7 @@
+endpoint,mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject
+cms_doc_list,baseline,716,0,0.000000,0,0,200,18,16,7,743
+cms_doc_list,rule_only,714,0,0.000000,0,0,200,18,16,7,742
+review_count,baseline,712,0,0.000000,0,0,200,17,16,7,739
+review_count,rule_only,712,0,0.000000,0,0,200,17,16,7,739
+hotpic_list,baseline,662,0,0.000000,0,0,200,17,16,101,595
+hotpic_list,rule_only,668,0,0.000000,0,0,200,16,16,84,618

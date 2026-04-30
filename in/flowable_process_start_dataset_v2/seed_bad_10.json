@@ -1,0 +1,13 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": "VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_VeryLongEmployeeName_"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 7
+    }
+  ]
+}

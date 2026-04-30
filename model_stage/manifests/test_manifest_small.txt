@@ -1,0 +1,4 @@
+seed_ok_0.json,normal
+seed_ok_1.json,normal
+seed_border_2.json,border
+seed_badscore_3.json,abnormal

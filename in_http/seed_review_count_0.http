@@ -1,0 +1,4 @@
+POST /x_processplatform_assemble_surface/jaxrs/review/v2/count
+Content-Type: application/json
+
+{"credentialList": []}

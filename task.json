@@ -1,0 +1,13 @@
+{
+  "target_type": 1,
+  "target_endpoint": "http://127.0.0.1:8080/api/submit",
+  "seed_source": "local",
+  "seed_location": "./seeds",
+  "mutation_scope": 7,
+  "max_test_cases": 10000,
+  "time_budget": 3600,
+
+  "enable_validity": 1,
+  "validity_threshold": 0.0,
+  "validity_endpoint": "unix:///tmp/nv_valid.sock"
+}

@@ -1,0 +1,7 @@
+{
+  "target_type": "binary",
+  "max_test_cases": 0,
+  "time_budget": 120,
+  "mutation_scope": ["field_value","boundary","structure"],
+  "enable_mab": 1
+}

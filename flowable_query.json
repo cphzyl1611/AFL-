@@ -1,0 +1,27 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "health": "/flowable-rest/service/management/engine",
+  "auth": {
+    "type": "basic",
+    "username": "rest-admin",
+    "password": "test"
+  },
+  "body_only_mode": 1,
+  "default_endpoint": "process_start",
+  "endpoints": [
+    {
+      "name": "process_start",
+      "method": "POST",
+      "path": "/flowable-rest/service/runtime/process-instances"
+    }
+  ],
+  "body_templates": {
+    "process_start": {
+      "processDefinitionKey": "holidayRequest",
+      "variables": [
+        { "name": "employee", "value": "John Doe" },
+        { "name": "nrOfHolidays", "value": 7 }
+      ]
+    }
+  }
+}

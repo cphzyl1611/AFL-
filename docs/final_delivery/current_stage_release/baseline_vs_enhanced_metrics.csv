@@ -1,0 +1,3 @@
+config,train_normal_mean,val_normal_mean,val_border_mean,val_abnormal_mean,short_pass,short_reject,long_pass,long_reject,rpc_fail
+156rows_ae_th1.0,0.030331,0.058080,6.070522,477.441602,77,39,105,58,0
+182rows_ae_th1.0,0.041162,0.072949,3.514370,314.254991,82,42,93,60,0

@@ -1,0 +1,50 @@
+{
+  "profile": "o2oa_default",
+  "platform": "O2OA",
+  "scene": "cms_doc_list",
+  "target_type": "http_api",
+  "target_endpoint": "cms_doc_list",
+  "seed_dir": "in/o2oa_body_model_compare",
+  "model_route": "AE primary + GAN/rule dynamic redundancy",
+  "model_name": "ae",
+  "threshold": "1.0",
+  "manifest": "model_stage/manifests/dataset_manifest_156.txt",
+  "template": "runner/templates/task_ae_default.json",
+  "duration_plan": [20, 60],
+  "is_mainline": true,
+  "validation_scope": "O2OA HTTP/REST JSON data interface stage acceptance scope; evidence is centered on cms_doc_list and related data interfaces.",
+  "description": "O2OA first-platform default fuzzing profile. It keeps AE@1.0 as the first-stage gate and enables dynamic second-stage redundancy for uncertain samples.",
+  "result_description": "Runner reports summary_dur20.csv, summary_dur60.csv, body_valid_stats_dur20.json and body_valid_stats_dur60.json when the runtime environment is available.",
+  "notes": "O2OA default profile: AE@1.0 is the primary gate. Samples in the gray zone trigger the GAN second stage when available, otherwise DecisionEngine falls back to the local rule stage.",
+  "decision": {
+    "t_low": 0.8,
+    "t_high": 1.5,
+    "enable_second_stage": true,
+    "second_stage_type": "gan",
+    "second_stage_endpoint": "unix:///tmp/nv_valid_gan.sock",
+    "second_stage_threshold": 1.0
+  },
+  "model_files": [
+    {
+      "name": "o2oa_default_ae_model",
+      "path": "model_stage/models/sefanogan_ae_model.pt",
+      "required": true
+    },
+    {
+      "name": "o2oa_default_ae_meta",
+      "path": "model_stage/models/sefanogan_ae_meta.json",
+      "required": true
+    },
+    {
+      "name": "o2oa_gan_model",
+      "path": "docs/final_results/batch_compare_runs_gan_v2_t17_ab9010/baseline_156_gan_v2_t17_ab9010_run1_20260323_160349/sefanogan_gan_model.pt",
+      "required": false
+    }
+  ],
+  "runtime_requirements": [
+    "NV_TOKEN must be available for real O2OA HTTP execution.",
+    "The AE score service should be started with model_stage/models/sefanogan_ae_model.pt and model_stage/models/sefanogan_ae_meta.json.",
+    "Optional GAN second-stage service can listen on unix:///tmp/nv_valid_gan.sock; if it is unavailable, DecisionEngine falls back to the built-in rule stage.",
+    "The local O2OA target and existing scripts/run_runner_real_fuzz_plan.sh path must be available."
+  ]
+}

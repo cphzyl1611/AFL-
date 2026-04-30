@@ -1,0 +1,26 @@
+{
+  "base": "http://example-api.local",
+  "health": "/health",
+  "auth": {
+    "type": "bearer",
+    "header": "Authorization",
+    "token_env": "NV_TOKEN",
+    "prefix": "Bearer "
+  },
+  "body_only_mode": 1,
+  "default_endpoint": "query_items",
+  "endpoints": [
+    {
+      "name": "query_items",
+      "method": "POST",
+      "path": "/api/items/query"
+    }
+  ],
+  "body_templates": {
+    "query_items": {
+      "page": 1,
+      "size": 10,
+      "keyword": ""
+    }
+  }
+}

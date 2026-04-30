@@ -1,0 +1,8 @@
+Name: unicorn
+Description: Unicorn emulator engine
+Version: 2.1.4
+libdir=/home/cphzy/AFLplusplus/unicorn_mode/unicornafl/target/release/build/unicorn-engine-sys-938a2d624605cfc3/out/lib
+includedir=/home/cphzy/AFLplusplus/unicorn_mode/unicornafl/target/release/build/unicorn-engine-sys-938a2d624605cfc3/out/include
+Libs: -L${libdir} -lunicorn
+Libs.private: -lpthread -lm
+Cflags: -I${includedir}

@@ -1,0 +1,8 @@
+{
+  "rows": 50,
+  "tags": {
+    "normal": 30,
+    "border": 10,
+    "abnormal": 10
+  }
+}

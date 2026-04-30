@@ -1,0 +1,4 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": "totally_wrong_type"
+}

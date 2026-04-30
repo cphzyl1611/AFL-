@@ -1,0 +1,1379 @@
+.
+├── .clang-format
+├── .custom-format.py
+├── .dockerignore
+├── .github
+│   ├── FUNDING.yml
+│   ├── ISSUE_TEMPLATE
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   ├── pull_request_template.md
+│   └── workflows
+│       ├── _container-arm._yml
+│       ├── ci.yml
+│       ├── cleanup.yml
+│       ├── code-format.yml
+│       ├── codeql-analysis.yml
+│       ├── container.yml
+│       └── rust_custom_mutator.yml
+├── .gitignore
+├── .gitmodules
+├── 4-1.课题1-广义功能安全测评工具总体设计方案v2.3@20260105.docx
+├── Android.bp
+├── CITATION.cff
+├── CONTRIBUTING.md
+├── Changelog.md -> docs/Changelog.md
+├── Dockerfile
+├── GNUmakefile
+├── GNUmakefile.gcc_plugin
+├── GNUmakefile.llvm
+├── LICENSE
+├── Makefile
+├── README.md
+├── SanitizerCoverageLTO.so
+├── SanitizerCoveragePCGUARD.so
+├── TODO.md
+├── afl-addseeds
+├── afl-addseeds.8
+├── afl-analyze
+├── afl-analyze.8
+├── afl-c++ -> afl-cc
+├── afl-c++.8 -> afl-cc.8
+├── afl-cc
+├── afl-cc.8
+├── afl-clang -> afl-cc
+├── afl-clang++ -> afl-cc
+├── afl-clang-fast -> afl-cc
+├── afl-clang-fast++ -> afl-cc
+├── afl-clang-fast++.8 -> afl-cc.8
+├── afl-clang-fast.8 -> afl-cc.8
+├── afl-clang-lto -> afl-cc
+├── afl-clang-lto++ -> afl-cc
+├── afl-clang-lto++.8 -> afl-cc.8
+├── afl-clang-lto.8 -> afl-cc.8
+├── afl-cmin
+├── afl-cmin.8
+├── afl-cmin.awk
+├── afl-cmin.awk.8
+├── afl-cmin.bash
+├── afl-cmin.bash.8
+├── afl-cmin.py
+├── afl-cmin.py.8
+├── afl-compiler-rt-64.o
+├── afl-compiler-rt.o
+├── afl-fuzz
+├── afl-fuzz.8
+├── afl-g++ -> afl-cc
+├── afl-gcc -> afl-cc
+├── afl-gotcpu
+├── afl-gotcpu.8
+├── afl-ld-lto
+├── afl-llvm-dict2file.so
+├── afl-llvm-ijon-pass.so
+├── afl-llvm-lto-instrumentlist.so
+├── afl-llvm-pass.so
+├── afl-llvm-rt-lto-64.o
+├── afl-llvm-rt-lto.o
+├── afl-lto -> afl-cc
+├── afl-lto++ -> afl-cc
+├── afl-lto++.8 -> afl-cc.8
+├── afl-lto.8 -> afl-cc.8
+├── afl-persistent-config
+├── afl-persistent-config.8
+├── afl-plot
+├── afl-plot.8
+├── afl-showmap
+├── afl-showmap.8
+├── afl-system-config
+├── afl-system-config.8
+├── afl-tmin
+├── afl-tmin.8
+├── afl-whatsup
+├── afl-whatsup.8
+├── afl-wine-trace
+├── benchmark
+│   ├── COMPARISON.md
+│   ├── README.md
+│   ├── benchmark-results.jsonl
+│   ├── benchmark.ipynb
+│   └── benchmark.py
+├── cmplog-instructions-pass.so
+├── cmplog-routines-pass.so
+├── cmplog-switches-pass.so
+├── compare-transform-pass.so
+├── config.h -> include/config.h
+├── coresight_mode
+│   ├── .gitignore
+│   ├── GNUmakefile
+│   ├── Makefile
+│   ├── README.md
+│   └── coresight-trace
+├── custom_mutators
+│   ├── Android.bp
+│   ├── README.md
+│   ├── aflpp
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── aflpp.c
+│   │   └── standalone
+│   │       ├── Makefile
+│   │       ├── README.md
+│   │       └── aflpp-standalone.c
+│   ├── aflpp_tritondse
+│   │   ├── README.md
+│   │   └── aflpp_tritondse.py
+│   ├── atnwalk
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── atnwalk.c
+│   ├── autotokens
+│   │   ├── Makefile
+│   │   ├── README
+│   │   ├── autotokens.cpp
+│   │   └── standalone
+│   │       ├── Makefile
+│   │       ├── README.md
+│   │       └── autotokens-standalone.c
+│   ├── custom_send_tcp
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── custom_send_tcp.c
+│   ├── examples
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── XmlMutatorMin.py
+│   │   ├── common.py
+│   │   ├── custom_post_run.c
+│   │   ├── custom_send.c
+│   │   ├── elf_header_mutator.c
+│   │   ├── example.c
+│   │   ├── example.py
+│   │   ├── post_library_gif.so.c
+│   │   ├── post_library_png.so.c
+│   │   ├── simple-chunk-replace.py
+│   │   ├── simple_example.c
+│   │   └── wrapper_afl_min.py
+│   ├── gramatron
+│   │   ├── README.md
+│   │   ├── build_gramatron_mutator.sh
+│   │   ├── gramfuzz-helpers.c
+│   │   ├── gramfuzz-mutators.c
+│   │   ├── gramfuzz-rng.c
+│   │   ├── gramfuzz-rng.h
+│   │   ├── gramfuzz-util.c
+│   │   ├── gramfuzz.c
+│   │   ├── gramfuzz.h
+│   │   ├── grammars
+│   │   │   ├── js
+│   │   │   ├── php
+│   │   │   └── ruby
+│   │   ├── hashmap.c
+│   │   ├── hashmap.h
+│   │   ├── json-parser.c
+│   │   ├── json-parser.h
+│   │   ├── preprocess
+│   │   │   ├── construct_automata.py
+│   │   │   ├── gnf_converter.py
+│   │   │   └── prep_automaton.sh
+│   │   ├── run-test.sh
+│   │   ├── test.c
+│   │   ├── test.h
+│   │   ├── utarray.h
+│   │   └── uthash.h
+│   ├── grammar_mutator
+│   │   ├── GRAMMAR_VERSION
+│   │   ├── README.md
+│   │   ├── build_grammar_mutator.sh
+│   │   ├── grammar_mutator
+│   │   └── update_grammar_ref.sh
+│   ├── guifuzz
+│   │   ├── README.md
+│   │   ├── guifuzz_clicks.py
+│   │   ├── guifuzz_mutator.py
+│   │   └── guifuzz_run.sh
+│   ├── honggfuzz
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── honggfuzz.c
+│   │   ├── honggfuzz.h
+│   │   ├── input.h
+│   │   ├── libhfcommon
+│   │   │   ├── common.h
+│   │   │   ├── log.h -> common.h
+│   │   │   └── util.h -> common.h
+│   │   ├── mangle.c
+│   │   └── mangle.h
+│   ├── libafl_base
+│   │   ├── .gitignore
+│   │   ├── Cargo.toml
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── rustfmt.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── libafl_nautilus
+│   │   ├── .gitignore
+│   │   ├── Cargo.lock
+│   │   ├── Cargo.toml
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── rustfmt.toml
+│   │   └── src
+│   │       ├── bin
+│   │       └── lib.rs
+│   ├── libfuzzer
+│   │   ├── FuzzerBuiltins.h
+│   │   ├── FuzzerBuiltinsMsvc.h
+│   │   ├── FuzzerCommand.h
+│   │   ├── FuzzerCorpus.h
+│   │   ├── FuzzerCrossOver.cpp
+│   │   ├── FuzzerDataFlowTrace.cpp
+│   │   ├── FuzzerDataFlowTrace.h
+│   │   ├── FuzzerDefs.h
+│   │   ├── FuzzerDictionary.h
+│   │   ├── FuzzerDriver.cpp
+│   │   ├── FuzzerExtFunctions.def
+│   │   ├── FuzzerExtFunctions.h
+│   │   ├── FuzzerExtFunctionsDlsym.cpp
+│   │   ├── FuzzerExtFunctionsWeak.cpp
+│   │   ├── FuzzerExtFunctionsWindows.cpp
+│   │   ├── FuzzerExtraCounters.cpp
+│   │   ├── FuzzerFlags.def
+│   │   ├── FuzzerFork.cpp
+│   │   ├── FuzzerFork.h
+│   │   ├── FuzzerIO.cpp
+│   │   ├── FuzzerIO.h
+│   │   ├── FuzzerIOPosix.cpp
+│   │   ├── FuzzerIOWindows.cpp
+│   │   ├── FuzzerInterceptors.cpp
+│   │   ├── FuzzerInterface.h
+│   │   ├── FuzzerInternal.h
+│   │   ├── FuzzerLoop.cpp
+│   │   ├── FuzzerMain.cpp
+│   │   ├── FuzzerMerge.cpp
+│   │   ├── FuzzerMerge.h
+│   │   ├── FuzzerMutate.cpp
+│   │   ├── FuzzerMutate.h
+│   │   ├── FuzzerOptions.h
+│   │   ├── FuzzerPlatform.h
+│   │   ├── FuzzerRandom.h
+│   │   ├── FuzzerSHA1.cpp
+│   │   ├── FuzzerSHA1.h
+│   │   ├── FuzzerTracePC.cpp
+│   │   ├── FuzzerTracePC.h
+│   │   ├── FuzzerUtil.cpp
+│   │   ├── FuzzerUtil.h
+│   │   ├── FuzzerUtilDarwin.cpp
+│   │   ├── FuzzerUtilFuchsia.cpp
+│   │   ├── FuzzerUtilLinux.cpp
+│   │   ├── FuzzerUtilPosix.cpp
+│   │   ├── FuzzerUtilWindows.cpp
+│   │   ├── FuzzerValueBitMap.h
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── libfuzzer.cpp
+│   │   └── libfuzzer.inc
+│   ├── libprotobuf-mutator-example
+│   │   ├── Android.bp
+│   │   ├── README.md
+│   │   ├── lpm_aflpp_custom_mutator_input.cc
+│   │   ├── lpm_aflpp_custom_mutator_input.h
+│   │   ├── test.proto
+│   │   └── vuln.c
+│   ├── radamsa
+│   │   ├── GNUmakefile
+│   │   ├── LICENSE
+│   │   ├── README.md
+│   │   ├── libradamsa-test.c
+│   │   ├── libradamsa.c
+│   │   ├── radamsa-mutator.c
+│   │   └── radamsa.h
+│   ├── rust
+│   │   ├── .gitignore
+│   │   ├── Cargo.toml
+│   │   ├── README.md
+│   │   ├── custom_mutator
+│   │   │   ├── Cargo.toml
+│   │   │   └── src
+│   │   ├── custom_mutator-sys
+│   │   │   ├── Cargo.toml
+│   │   │   ├── build.rs
+│   │   │   ├── src
+│   │   │   └── wrapper.h
+│   │   ├── example
+│   │   │   ├── Cargo.toml
+│   │   │   └── src
+│   │   ├── example_lain
+│   │   │   ├── Cargo.toml
+│   │   │   ├── rust-toolchain
+│   │   │   └── src
+│   │   ├── example_lain_post_process
+│   │   │   ├── Cargo.toml
+│   │   │   ├── rust-toolchain
+│   │   │   └── src
+│   │   └── rustfmt.toml
+│   ├── symcc
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── symcc.c
+│   │   └── test_examples
+│   │       ├── file_test.c
+│   │       └── stdin_test.c
+│   ├── symqemu
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── symqemu.c
+│   └── zmq
+│       ├── Makefile
+│       ├── README.md
+│       ├── consumer.c
+│       └── test_router.c
+├── dictionaries
+│   ├── README.md
+│   ├── aff.dict
+│   ├── ass.dict
+│   ├── atom.dict
+│   ├── av1_dc.dict
+│   ├── bash.dict
+│   ├── bdf.dict
+│   ├── bmp.dict
+│   ├── bz2.dict
+│   ├── creole.dict
+│   ├── css.dict
+│   ├── csv.dict
+│   ├── dds.dict
+│   ├── djvu.dict
+│   ├── docommand.dict
+│   ├── exif.dict
+│   ├── fbs.dict
+│   ├── ftp.dict
+│   ├── gif.dict
+│   ├── graphviz.dict
+│   ├── heif.dict
+│   ├── hoextdown.dict
+│   ├── html_tags.dict
+│   ├── http.dict
+│   ├── icc.dict
+│   ├── iccprofile.dict
+│   ├── icns.dict
+│   ├── initfile.dict
+│   ├── jbig2.dict
+│   ├── jpeg.dict
+│   ├── jpeg2000.dict
+│   ├── js.dict
+│   ├── json.dict
+│   ├── jsonnet.dict
+│   ├── jsonschema.dict
+│   ├── markdown.dict
+│   ├── math.dict
+│   ├── mathml.dict
+│   ├── mp4.dict
+│   ├── mysqld.dict
+│   ├── ogg.dict
+│   ├── openexr.dict
+│   ├── otf.dict
+│   ├── pbm.dict
+│   ├── pcap.dict
+│   ├── pdf.dict
+│   ├── perl.dict
+│   ├── png.dict
+│   ├── proj4.dict
+│   ├── protobuf.dict
+│   ├── ps.dict
+│   ├── psd.dict
+│   ├── regexp.dict
+│   ├── riff.dict
+│   ├── rss.dict
+│   ├── rst.dict
+│   ├── rtf.dict
+│   ├── ruby.dict
+│   ├── sas.dict
+│   ├── spss.dict
+│   ├── sql.dict
+│   ├── stata.dict
+│   ├── stl.dict
+│   ├── svg.dict
+│   ├── tex.dict
+│   ├── theme-load-fuzz.dict
+│   ├── tiff.dict
+│   ├── tokener_parse_ex.dict
+│   ├── toml.dict
+│   ├── type42.dict
+│   ├── url.dict
+│   ├── utf8.dict
+│   ├── vcf.dict
+│   ├── vhd.dict
+│   ├── vpx_dec.dict
+│   ├── wav.dict
+│   ├── webm.dict
+│   ├── webp.dict
+│   ├── wkt.dict
+│   ├── x86.dict
+│   ├── xml.dict
+│   ├── xml_UTF_16.dict
+│   ├── xml_UTF_16BE.dict
+│   ├── xml_UTF_16LE.dict
+│   ├── xpath.dict
+│   ├── xslt.dict
+│   ├── yaml.dict
+│   ├── yara.dict
+│   └── zip.dict
+├── docs
+│   ├── COPYING
+│   ├── Changelog.md
+│   ├── FAQ.md
+│   ├── IJON.md
+│   ├── INSTALL.md
+│   ├── README.md
+│   ├── SAND.md
+│   ├── afl-fuzz_approach.md
+│   ├── best_practices.md
+│   ├── custom_mutators.md
+│   ├── env_variables.md
+│   ├── features.md
+│   ├── fuzzing_binary-only_targets.md
+│   ├── fuzzing_in_depth.md
+│   ├── ideas.md
+│   ├── important_changes.md
+│   ├── resources
+│   │   ├── 0_fuzzing_process_overview.drawio.svg
+│   │   ├── 1_instrument_target.drawio.svg
+│   │   ├── 2_prepare_campaign.drawio.svg
+│   │   ├── 3_fuzz_target.drawio.svg
+│   │   ├── 4_manage_campaign.drawio.svg
+│   │   ├── afl_gzip.png
+│   │   ├── grafana-afl++.json
+│   │   ├── screenshot.png
+│   │   └── statsd-grafana.png
+│   ├── rpc_statsd.md
+│   ├── third_party_tools.md
+│   └── tutorials.md
+├── dynamic_list.txt
+├── entitlements.plist
+├── frida_mode
+│   ├── .gitignore
+│   ├── DEBUGGING.md
+│   ├── GNUmakefile
+│   ├── Makefile
+│   ├── MapDensity.md
+│   ├── README.md
+│   ├── Scripting.md
+│   ├── addr
+│   │   └── addr.c
+│   ├── frida.map
+│   ├── hook
+│   │   ├── frida_hook.c
+│   │   └── qemu_hook.c
+│   ├── include
+│   │   ├── asan.h
+│   │   ├── ctx.h
+│   │   ├── entry.h
+│   │   ├── frida_cmplog.h
+│   │   ├── instrument.h
+│   │   ├── intercept.h
+│   │   ├── js.h
+│   │   ├── lib.h
+│   │   ├── module.h
+│   │   ├── output.h
+│   │   ├── persistent.h
+│   │   ├── prefetch.h
+│   │   ├── ranges.h
+│   │   ├── seccomp.h
+│   │   ├── shm.h
+│   │   ├── stalker.h
+│   │   ├── stats.h
+│   │   └── util.h
+│   ├── many-linux
+│   │   ├── Dockerfile
+│   │   ├── GNUmakefile
+│   │   ├── Makefile
+│   │   └── README.md
+│   ├── src
+│   │   ├── asan
+│   │   │   ├── asan.c
+│   │   │   ├── asan_arm32.c
+│   │   │   ├── asan_arm64.c
+│   │   │   ├── asan_x64.c
+│   │   │   └── asan_x86.c
+│   │   ├── cmplog
+│   │   │   ├── cmplog.c
+│   │   │   ├── cmplog_arm32.c
+│   │   │   ├── cmplog_arm64.c
+│   │   │   ├── cmplog_x64.c
+│   │   │   └── cmplog_x86.c
+│   │   ├── ctx
+│   │   │   ├── ctx_arm32.c
+│   │   │   ├── ctx_arm64.c
+│   │   │   ├── ctx_x64.c
+│   │   │   └── ctx_x86.c
+│   │   ├── entry.c
+│   │   ├── instrument
+│   │   │   ├── instrument.c
+│   │   │   ├── instrument_arm32.c
+│   │   │   ├── instrument_arm64.c
+│   │   │   ├── instrument_coverage.c
+│   │   │   ├── instrument_debug.c
+│   │   │   ├── instrument_x64.c
+│   │   │   ├── instrument_x64_cache.c
+│   │   │   └── instrument_x86.c
+│   │   ├── intercept.c
+│   │   ├── js
+│   │   │   ├── api.js
+│   │   │   ├── js.c
+│   │   │   └── js_api.c
+│   │   ├── lib
+│   │   │   ├── lib.c
+│   │   │   └── lib_apple.c
+│   │   ├── main.c
+│   │   ├── module.c
+│   │   ├── output.c
+│   │   ├── persistent
+│   │   │   ├── persistent.c
+│   │   │   ├── persistent_arm32.c
+│   │   │   ├── persistent_arm64.c
+│   │   │   ├── persistent_x64.c
+│   │   │   └── persistent_x86.c
+│   │   ├── prefetch.c
+│   │   ├── ranges.c
+│   │   ├── seccomp
+│   │   │   ├── seccomp.c
+│   │   │   ├── seccomp_atomic.c
+│   │   │   ├── seccomp_callback.c
+│   │   │   ├── seccomp_child.c
+│   │   │   ├── seccomp_event.c
+│   │   │   ├── seccomp_filter.c
+│   │   │   ├── seccomp_print.c
+│   │   │   ├── seccomp_socket.c
+│   │   │   └── seccomp_syscall.c
+│   │   ├── shm.c
+│   │   ├── stalker.c
+│   │   ├── stats
+│   │   │   ├── stats.c
+│   │   │   ├── stats_arm32.c
+│   │   │   ├── stats_arm64.c
+│   │   │   └── stats_x86_64.c
+│   │   └── util.c
+│   ├── test
+│   │   ├── bloaty
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── cache
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── cache.c
+│   │   ├── cmov
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── cmov.c
+│   │   ├── cmplog
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── cmplog.c
+│   │   │   └── get_section_addrs.py
+│   │   ├── deferred
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── testinstr.c
+│   │   ├── dynamic
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── testinstr.c
+│   │   │   └── testinstrlib.c
+│   │   ├── entry_point
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── testinstr.c
+│   │   ├── exe
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── testinstr.c
+│   │   ├── fasan
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── test.c
+│   │   ├── freetype2
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── jpeg
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── js
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── entry.js
+│   │   │   ├── fuzz.js
+│   │   │   ├── main.js
+│   │   │   ├── patch.js
+│   │   │   ├── replace.js
+│   │   │   ├── stalker.js
+│   │   │   ├── test.c
+│   │   │   └── test2.c
+│   │   ├── libpcap
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── libxml
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── libxslt
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── osx-lib
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── harness.c
+│   │   │   ├── harness2.c
+│   │   │   ├── harness3.c
+│   │   │   ├── lib.c
+│   │   │   └── lib2.c
+│   │   ├── output
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── frida_stderr.txt
+│   │   │   ├── frida_stdout.txt
+│   │   │   └── testinstr.c
+│   │   ├── perf
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── perf.c
+│   │   ├── persistent_ret
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   ├── test.js
+│   │   │   └── testinstr.c
+│   │   ├── png
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── persistent
+│   │   ├── proj4
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── python
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── re2
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── sqlite
+│   │   │   ├── GNUmakefile
+│   │   │   └── Makefile
+│   │   ├── testinstr
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── testinstr.c
+│   │   ├── unstable
+│   │   │   ├── GNUmakefile
+│   │   │   ├── Makefile
+│   │   │   └── unstable.c
+│   │   └── vorbis
+│   │       ├── GNUmakefile
+│   │       └── Makefile
+│   ├── ts
+│   │   ├── lib
+│   │   │   └── afl.ts
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── tslint.json
+│   ├── ub1804
+│   │   ├── Dockerfile
+│   │   ├── GNUmakefile
+│   │   └── Makefile
+│   ├── update_frida_version.sh
+│   └── util
+│       ├── bin2c.c
+│       └── frida_get_symbol_addr.sh
+├── fuzz_gui.py
+├── http_harness.py
+├── in
+│   ├── seed
+│   ├── seed_crash
+│   └── seed_ok
+├── in_gui
+│   ├── 02e354db
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 0b943d9d
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 144c3cf0
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 1fc9aa0f
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 2079b26a
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 3868fe4e
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 40db1295
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 57610ab4
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 57da8d96
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 7166216d
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 72a7b376
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 813836be
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── 898da876
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── a7ec6b1f
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── cb46633b
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── dd3d72ce
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── e1bae34b
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── f58c57ee
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   ├── f8a87c6b
+│   │   ├── seed
+│   │   ├── seed_crash
+│   │   └── seed_ok
+│   └── fc026082
+│       ├── seed
+│       ├── seed_crash
+│       └── seed_ok
+├── include
+│   ├── afl-fuzz.h
+│   ├── afl-ijon-min.h
+│   ├── afl-mutations.h
+│   ├── afl-persistent-replay.h
+│   ├── afl-prealloc.h
+│   ├── afl-record-compat.h
+│   ├── alloc-inl.h
+│   ├── android-ashmem.h
+│   ├── asanfuzz.h
+│   ├── cmplog.h
+│   ├── common.h
+│   ├── config.h
+│   ├── coverage-32.h
+│   ├── coverage-64.h
+│   ├── debug.h
+│   ├── envs.h
+│   ├── forkserver.h
+│   ├── hash.h
+│   ├── list.h
+│   ├── sharedmem.h
+│   ├── snapshot-inl.h
+│   ├── t1ha.h
+│   ├── t1ha0_ia32aes_b.h
+│   ├── t1ha_bits.h
+│   ├── t1ha_selfcheck.h
+│   ├── types.h
+│   └── xxhash.h
+├── injection-pass.so
+├── injections.dic
+├── instrumentation
+│   ├── Makefile
+│   ├── README.cmplog.md
+│   ├── README.gcc_plugin.md
+│   ├── README.injections.md
+│   ├── README.instrument_list.md
+│   ├── README.laf-intel.md
+│   ├── README.llvm.md
+│   ├── README.lto.md
+│   ├── README.persistent_mode.md
+│   ├── SanitizerCoverageLTO.so.cc
+│   ├── SanitizerCoveragePCGUARD.so.cc
+│   ├── afl-common.o
+│   ├── afl-compiler-rt.o.c
+│   ├── afl-gcc-cmplog-pass.so.cc
+│   ├── afl-gcc-cmptrs-pass.so.cc
+│   ├── afl-gcc-common.h
+│   ├── afl-gcc-pass.so.cc
+│   ├── afl-llvm-common.cc
+│   ├── afl-llvm-common.h
+│   ├── afl-llvm-common.o
+│   ├── afl-llvm-dict2file.so.cc
+│   ├── afl-llvm-ijon-pass.so.cc
+│   ├── afl-llvm-lto-instrumentlist.so.cc
+│   ├── afl-llvm-pass.so.cc
+│   ├── afl-llvm-rt-lto.o.c
+│   ├── cmplog-instructions-pass.cc
+│   ├── cmplog-routines-pass.cc
+│   ├── cmplog-switches-pass.cc
+│   ├── compare-transform-pass.so.cc
+│   ├── gcc_plugin.COPYING3
+│   ├── injection-pass.cc
+│   ├── llvm-alternative-coverage.h
+│   ├── split-compares-pass.so.cc
+│   └── split-switches-pass.so.cc
+├── libAFLDriver.a
+├── libAFLQemuDriver.a
+├── nyx_mode
+│   ├── LIBNYX_VERSION
+│   ├── PACKER_VERSION
+│   ├── QEMU-Nyx
+│   ├── QEMU_NYX_VERSION
+│   ├── README.md
+│   ├── build_nyx_support.sh
+│   ├── custom_harness
+│   │   ├── example.c
+│   │   ├── fuzz.sh
+│   │   └── fuzz_no_pt.sh
+│   ├── libnyx
+│   ├── packer
+│   └── update_ref.sh
+├── out_gui
+│   ├── 57610ab4
+│   │   ├── .synced
+│   │   │   ├── 813836be.max
+│   │   │   ├── a7ec6b1f.max
+│   │   │   ├── e1bae34b
+│   │   │   └── e1bae34b.last
+│   │   ├── cmdline
+│   │   ├── crashes
+│   │   │   ├── README.txt
+│   │   │   └── id:000000,sig:11,sync:e1bae34b,src:000000
+│   │   ├── fastresume.bin
+│   │   ├── fuzz_bitmap
+│   │   ├── fuzzer_setup
+│   │   ├── fuzzer_stats
+│   │   ├── hangs
+│   │   ├── plot_data
+│   │   ├── queue
+│   │   │   ├── .state
+│   │   │   ├── id:000000,time:0,execs:0,orig:seed
+│   │   │   ├── id:000001,time:0,execs:0,orig:seed_crash
+│   │   │   ├── id:000002,time:0,execs:0,orig:seed_ok
+│   │   │   ├── id:000003,src:000002,time:3,execs:19,op:havoc,rep:2,+cov
+│   │   │   ├── id:000004,src:000002,time:46,execs:162,op:havoc,rep:1,+cov
+│   │   │   └── id:000005,sync:e1bae34b,src:000005,+cov
+│   │   └── target_hash
+│   ├── 813836be
+│   │   ├── .synced
+│   │   │   ├── a7ec6b1f.max
+│   │   │   ├── e1bae34b
+│   │   │   └── e1bae34b.last
+│   │   ├── cmdline
+│   │   ├── crashes
+│   │   │   ├── README.txt
+│   │   │   └── id:000000,sig:11,sync:e1bae34b,src:000000
+│   │   ├── fastresume.bin
+│   │   ├── fuzz_bitmap
+│   │   ├── fuzzer_setup
+│   │   ├── fuzzer_stats
+│   │   ├── hangs
+│   │   ├── plot_data
+│   │   ├── queue
+│   │   │   ├── .state
+│   │   │   ├── id:000000,time:0,execs:0,orig:seed
+│   │   │   ├── id:000001,time:0,execs:0,orig:seed_crash
+│   │   │   ├── id:000002,time:0,execs:0,orig:seed_ok
+│   │   │   ├── id:000003,src:000002,time:3,execs:19,op:havoc,rep:2,+cov
+│   │   │   ├── id:000004,src:000002,time:10,execs:41,op:havoc,rep:3,+cov
+│   │   │   └── id:000005,sync:e1bae34b,src:000005,+cov
+│   │   └── target_hash
+│   ├── a7ec6b1f
+│   │   ├── .synced
+│   │   │   ├── e1bae34b
+│   │   │   └── e1bae34b.last
+│   │   ├── cmdline
+│   │   ├── crashes
+│   │   │   ├── README.txt
+│   │   │   └── id:000000,sig:11,sync:e1bae34b,src:000000
+│   │   ├── fastresume.bin
+│   │   ├── fuzz_bitmap
+│   │   ├── fuzzer_setup
+│   │   ├── fuzzer_stats
+│   │   ├── hangs
+│   │   ├── plot_data
+│   │   ├── queue
+│   │   │   ├── .state
+│   │   │   ├── id:000000,time:0,execs:0,orig:seed
+│   │   │   ├── id:000001,time:0,execs:0,orig:seed_crash
+│   │   │   ├── id:000002,time:0,execs:0,orig:seed_ok
+│   │   │   ├── id:000003,src:000002,time:2,execs:15,op:havoc,rep:5,+cov
+│   │   │   ├── id:000004,src:000002,time:7,execs:36,op:havoc,rep:9,+cov
+│   │   │   └── id:000005,sync:e1bae34b,src:000005,+cov
+│   │   └── target_hash
+│   ├── e1bae34b
+│   │   ├── .synced
+│   │   ├── cmdline
+│   │   ├── crashes
+│   │   │   ├── README.txt
+│   │   │   └── id:000000,sig:11,src:000005,time:2549,execs:8735,op:havoc,rep:1
+│   │   ├── fastresume.bin
+│   │   ├── fuzz_bitmap
+│   │   ├── fuzzer_setup
+│   │   ├── fuzzer_stats
+│   │   ├── hangs
+│   │   ├── is_main_node
+│   │   ├── plot_data
+│   │   ├── queue
+│   │   │   ├── .state
+│   │   │   ├── id:000000,time:0,execs:0,orig:seed
+│   │   │   ├── id:000001,time:0,execs:0,orig:seed_crash
+│   │   │   ├── id:000002,time:0,execs:0,orig:seed_ok
+│   │   │   ├── id:000003,src:000002,time:4,execs:15,op:havoc,rep:2,+cov
+│   │   │   ├── id:000004,src:000002,time:47,execs:117,op:havoc,rep:1,+cov
+│   │   │   └── id:000005,src:000002,time:2360,execs:8097,op:havoc,rep:18,+cov
+│   │   └── target_hash
+│   └── fc026082
+│       ├── .synced
+│       │   ├── 57610ab4.max
+│       │   ├── 813836be.max
+│       │   ├── a7ec6b1f.max
+│       │   ├── e1bae34b
+│       │   └── e1bae34b.last
+│       ├── cmdline
+│       ├── crashes
+│       │   ├── README.txt
+│       │   └── id:000000,sig:11,sync:e1bae34b,src:000000
+│       ├── fastresume.bin
+│       ├── fuzz_bitmap
+│       ├── fuzzer_setup
+│       ├── fuzzer_stats
+│       ├── hangs
+│       ├── plot_data
+│       ├── queue
+│       │   ├── .state
+│       │   ├── id:000000,time:0,execs:0,orig:seed
+│       │   ├── id:000001,time:0,execs:0,orig:seed_crash
+│       │   ├── id:000002,time:0,execs:0,orig:seed_ok
+│       │   ├── id:000003,src:000002,time:4,execs:17,op:havoc,rep:2,+cov
+│       │   ├── id:000004,src:000002,time:12,execs:50,op:havoc,rep:1,+cov
+│       │   └── id:000005,sync:e1bae34b,src:000005,+cov
+│       └── target_hash
+├── proto_harness.py
+├── qemu_mode
+│   ├── QEMUAFL_VERSION
+│   ├── README.deferred_initialization_example.md
+│   ├── README.md
+│   ├── README.persistent.md
+│   ├── README.wine.md
+│   ├── build_qemu_support.sh
+│   ├── fastexit
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── fastexit.c
+│   ├── hooking_bridge
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── inc
+│   │   │   ├── common.h
+│   │   │   └── exports.h
+│   │   └── src
+│   │       ├── main.c
+│   │       └── patching.c
+│   ├── libcompcov
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── compcovtest.cc
+│   │   ├── libcompcov.so.c
+│   │   └── pmparser.h
+│   ├── libqasan
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── dlmalloc.c
+│   │   ├── hooks.c
+│   │   ├── libqasan.c
+│   │   ├── libqasan.h
+│   │   ├── malloc.c
+│   │   ├── map_macro.h
+│   │   ├── patch.c
+│   │   ├── string.c
+│   │   └── uninstrument.c
+│   ├── qemuafl
+│   ├── unsigaction
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── unsigaction.c
+│   ├── update_ref.sh
+│   └── util
+│       └── qemu_get_symbol_addr.sh
+├── repo_tree.txt
+├── run_fuzz.py
+├── split-compares-pass.so
+├── split-switches-pass.so
+├── src
+│   ├── Makefile
+│   ├── README.md
+│   ├── afl-analyze.c
+│   ├── afl-cc.c
+│   ├── afl-cmin.c
+│   ├── afl-common.c
+│   ├── afl-common.o
+│   ├── afl-forkserver.c
+│   ├── afl-forkserver.o
+│   ├── afl-fuzz-bitmap.c
+│   ├── afl-fuzz-cmplog.c
+│   ├── afl-fuzz-coverage.c
+│   ├── afl-fuzz-extras.c
+│   ├── afl-fuzz-ijon.c
+│   ├── afl-fuzz-init.c
+│   ├── afl-fuzz-mutators.c
+│   ├── afl-fuzz-mutators.o
+│   ├── afl-fuzz-one.c
+│   ├── afl-fuzz-python.c
+│   ├── afl-fuzz-python.o
+│   ├── afl-fuzz-queue.c
+│   ├── afl-fuzz-redqueen.c
+│   ├── afl-fuzz-run.c
+│   ├── afl-fuzz-sanfuzz.c
+│   ├── afl-fuzz-skipdet.c
+│   ├── afl-fuzz-state.c
+│   ├── afl-fuzz-stats.c
+│   ├── afl-fuzz-statsd.c
+│   ├── afl-fuzz.c
+│   ├── afl-gotcpu.c
+│   ├── afl-ld-lto.c
+│   ├── afl-performance.c
+│   ├── afl-performance.o
+│   ├── afl-sharedmem.c
+│   ├── afl-sharedmem.o
+│   ├── afl-showmap.c
+│   ├── afl-tmin.c
+│   └── hashmap.c
+├── test
+│   ├── ijon-maze.c
+│   ├── test-afl-showmap-streaming.sh
+│   ├── test-all.sh
+│   ├── test-basic.sh
+│   ├── test-cmplog-loops.sh
+│   ├── test-cmplog.c
+│   ├── test-compcov.c
+│   ├── test-compilers.sh
+│   ├── test-custom-mutator.c
+│   ├── test-custom-mutators.sh
+│   ├── test-dlopen.c
+│   ├── test-floatingpoint.c
+│   ├── test-fpExtra.sh
+│   ├── test-fp_Infcases.c
+│   ├── test-fp_NaNcases.c
+│   ├── test-fp_cases.c
+│   ├── test-fp_minusZerocases.c
+│   ├── test-frida-mode.sh
+│   ├── test-gcc-plugin.sh
+│   ├── test-ijon-complete.c
+│   ├── test-ijon-complete.sh
+│   ├── test-int_cases.c
+│   ├── test-libextensions.sh
+│   ├── test-llvm-lto.sh
+│   ├── test-llvm.sh
+│   ├── test-multiple-mutators.c
+│   ├── test-nautilus-grammar.json
+│   ├── test-nautilus-target.c
+│   ├── test-nautilus.sh
+│   ├── test-nyx-mode.sh
+│   ├── test-performance.sh
+│   ├── test-post.sh
+│   ├── test-pre.sh
+│   ├── test-qemu-mode.sh
+│   ├── test-showmap-exit.c
+│   ├── test-uint_cases.c
+│   ├── test-unicorn-mode.sh
+│   ├── test-unittests.sh
+│   ├── test-unsigaction.c
+│   └── unittests
+│       ├── unit_hash.c
+│       ├── unit_list.c
+│       ├── unit_maybe_alloc.c
+│       ├── unit_preallocable.c
+│       └── unit_rand.c
+├── test-instr.c
+├── test.c
+├── test_afl
+├── testcases
+│   ├── README.md
+│   ├── archives
+│   │   ├── common
+│   │   │   ├── ar
+│   │   │   ├── bzip2
+│   │   │   ├── cab
+│   │   │   ├── compress
+│   │   │   ├── cpio
+│   │   │   ├── gzip
+│   │   │   ├── lzo
+│   │   │   ├── rar
+│   │   │   ├── tar
+│   │   │   ├── xz
+│   │   │   └── zip
+│   │   └── exotic
+│   │       ├── arj
+│   │       ├── lha
+│   │       ├── lrzip
+│   │       ├── lzip
+│   │       ├── lzma
+│   │       ├── rzip
+│   │       └── zoo
+│   ├── images
+│   │   ├── bmp
+│   │   │   └── not_kitty.bmp
+│   │   ├── gif
+│   │   │   └── not_kitty.gif
+│   │   ├── ico
+│   │   │   └── not_kitty.ico
+│   │   ├── jp2
+│   │   │   └── not_kitty.jp2
+│   │   ├── jpeg
+│   │   │   └── not_kitty.jpg
+│   │   ├── jxr
+│   │   │   └── not_kitty.jxr
+│   │   ├── png
+│   │   │   ├── not_kitty.png
+│   │   │   ├── not_kitty_alpha.png
+│   │   │   ├── not_kitty_gamma.png
+│   │   │   └── not_kitty_icc.png
+│   │   ├── tiff
+│   │   │   └── not_kitty.tiff
+│   │   └── webp
+│   │       └── not_kitty.webp
+│   ├── multimedia
+│   │   └── h264
+│   │       └── small_movie.mp4
+│   └── others
+│       ├── elf
+│       │   └── small_exec.elf
+│       ├── js
+│       │   └── small_script.js
+│       ├── pcap
+│       │   └── small_capture.pcap
+│       ├── pdf
+│       │   └── small.pdf
+│       ├── rtf
+│       │   └── small_document.rtf
+│       ├── sql
+│       │   └── simple_queries.sql
+│       ├── text
+│       │   └── hello_world.txt
+│       └── xml
+│           └── small_document.xml
+├── types.h -> include/types.h
+├── unicorn_mode
+│   ├── README.md
+│   ├── UNICORNAFL_VERSION
+│   ├── build_unicorn_support.py
+│   ├── helper_scripts
+│   │   ├── ida_context_loader.py
+│   │   ├── unicorn_dumper_gdb.py
+│   │   ├── unicorn_dumper_ida.py
+│   │   ├── unicorn_dumper_lldb.py
+│   │   ├── unicorn_dumper_pwndbg.py
+│   │   └── unicorn_loader.py
+│   ├── samples
+│   │   ├── c
+│   │   │   ├── .gitignore
+│   │   │   ├── COMPILE.md
+│   │   │   ├── Makefile
+│   │   │   ├── harness.c
+│   │   │   ├── persistent_target.c
+│   │   │   ├── persistent_target_x86_64
+│   │   │   ├── sample_all.sh
+│   │   │   ├── sample_inputs
+│   │   │   └── simple_target_x86_64
+│   │   ├── compcov_x64
+│   │   │   ├── COMPILE.md
+│   │   │   ├── compcov_target.bin
+│   │   │   ├── compcov_target.c
+│   │   │   ├── compcov_target.elf
+│   │   │   ├── compcov_test_harness.py
+│   │   │   └── sample_inputs
+│   │   ├── persistent
+│   │   │   ├── .gitignore
+│   │   │   ├── COMPILE.md
+│   │   │   ├── Makefile
+│   │   │   ├── harness.c
+│   │   │   ├── persistent_target
+│   │   │   ├── persistent_target.c
+│   │   │   ├── persistent_target_x86_64
+│   │   │   ├── sample_all.sh
+│   │   │   ├── sample_inputs
+│   │   │   ├── simple_target_noncrashing.c
+│   │   │   └── simple_target_x86_64
+│   │   ├── python_simple
+│   │   │   ├── COMPILE.md
+│   │   │   ├── sample_inputs
+│   │   │   ├── simple_target.bin
+│   │   │   ├── simple_target.c
+│   │   │   ├── simple_test_harness.py
+│   │   │   └── simple_test_harness_alt.py
+│   │   └── speedtest
+│   │       ├── .gitignore
+│   │       ├── Makefile
+│   │       ├── README.md
+│   │       ├── c
+│   │       ├── get_offsets.py
+│   │       ├── python
+│   │       ├── rust
+│   │       ├── sample_inputs
+│   │       └── target.c
+│   ├── unicornafl
+│   └── update_ref.sh
+├── upload_harness.py
+├── utils
+│   ├── README.md
+│   ├── afl_network_proxy
+│   │   ├── GNUmakefile
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── afl-network-client.c
+│   │   └── afl-network-server.c
+│   ├── afl_proxy
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── afl-proxy.c
+│   ├── afl_showmap_streaming
+│   │   └── afl_showmap_streaming_mode.py
+│   ├── afl_untracer
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── TODO
+│   │   ├── afl-untracer.c
+│   │   ├── ghidra_get_patchpoints.java
+│   │   ├── ida_get_patchpoints.py
+│   │   ├── libtestinstr.c
+│   │   └── patches.txt
+│   ├── aflpp_driver
+│   │   ├── GNUmakefile
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── aflpp_driver.c
+│   │   ├── aflpp_driver.o
+│   │   ├── aflpp_driver_test.c
+│   │   ├── aflpp_qemu_driver.c
+│   │   ├── aflpp_qemu_driver.o
+│   │   ├── aflpp_qemu_driver_hook.c
+│   │   ├── libAFLDriver.a
+│   │   └── libAFLQemuDriver.a
+│   ├── analysis_scripts
+│   │   └── queue2csv.sh
+│   ├── argv_fuzzing
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── argv-fuzz-inl.h
+│   │   ├── argv_fuzz_demo.c
+│   │   ├── argv_fuzz_persistent_demo.c
+│   │   └── argvfuzz.c
+│   ├── asan_cgroups
+│   │   └── limit_memory.sh
+│   ├── autodict_ql
+│   │   ├── autodict-ql.py
+│   │   ├── build-codeql.sh
+│   │   ├── litan.py
+│   │   ├── litool.ql
+│   │   ├── memcmp-str.ql
+│   │   ├── memcmp-strings.py
+│   │   ├── qlpack.yml
+│   │   ├── readme.md
+│   │   ├── stan-strings.py
+│   │   ├── strcmp-str.ql
+│   │   ├── strcmp-strings.py
+│   │   ├── strncmp-str.ql
+│   │   ├── strncmp-strings.py
+│   │   └── strtool.ql
+│   ├── bash_shellshock
+│   │   └── shellshock-fuzz.diff
+│   ├── bench
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── hash.c
+│   ├── canvas_harness
+│   │   └── canvas_harness.html
+│   ├── clang_asm_normalize
+│   │   └── as
+│   ├── crash_triage
+│   │   └── triage_crashes.sh
+│   ├── defork
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── defork.c
+│   │   └── forking_target.c
+│   ├── distributed_fuzzing
+│   │   └── sync_script.sh
+│   ├── dynamic_covfilter
+│   │   ├── README.md
+│   │   └── make_symbol_list.py
+│   ├── libaflppdesock
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── libaflppdesock.c
+│   ├── libdislocator
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── libdislocator.so.c
+│   ├── libpng_no_checksum
+│   │   └── libpng-nocrc.patch
+│   ├── libtokencap
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── generate_libtoken_dict.sh
+│   │   └── libtokencap.so.c
+│   ├── mutation_chain
+│   │   └── mutation_chain.py
+│   ├── persistent_mode
+│   │   ├── Makefile
+│   │   ├── persistent_demo.c
+│   │   ├── persistent_demo_new.c
+│   │   └── test-instr.c
+│   ├── plot_ui
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── afl-plot-ui.c
+│   ├── qbdi_mode
+│   │   ├── README.md
+│   │   ├── assets
+│   │   │   └── screen1.png
+│   │   ├── build.sh
+│   │   ├── demo-so.c
+│   │   └── template.cpp
+│   ├── qemu_persistent_hook
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   ├── mipsel_read_into_a0.c
+│   │   ├── read_into_rdi.c
+│   │   └── test.c
+│   ├── replay_record
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── persistent_demo_replay.c
+│   ├── socket_fuzzing
+│   │   ├── Makefile
+│   │   ├── README.md
+│   │   └── socketfuzz.c
+│   ├── target_intelligence
+│   │   └── README.md
+│   └── unstable_edges
+│       ├── README.md
+│       └── symbolize_unstable.py
+├── 嵩山实验室自主立项项目课题任务书-课题一V20241029R04(1).docx
+├── 河南重大专项.docx
+└── 西电-中期报告.docx
+
+266 directories, 1111 files

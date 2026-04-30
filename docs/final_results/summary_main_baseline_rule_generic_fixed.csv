@@ -1,0 +1,9 @@
+endpoint,mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject
+person_detail,baseline,2814,0,0.000000,0,0,200,16,16,250,2598
+person_detail,rule_only,2825,0,0.000000,0,0,200,16,16,222,2637
+review_count,baseline,2927,0,0.000000,0,0,200,18,16,7,2954
+review_count,rule_only,2936,0,0.000000,0,0,200,20,16,8,2962
+hotpic_list,baseline,2817,0,0.000000,0,0,200,17,16,223,2629
+hotpic_list,rule_only,2835,0,0.000000,0,0,200,18,16,197,2672
+cms_doc_list,baseline,2926,0,0.000000,0,0,200,20,16,7,2953
+cms_doc_list,rule_only,2676,16,0.005979,0,0,200,20,16,7,2701

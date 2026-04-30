@@ -1,0 +1,4 @@
+PUT /x_calendar_assemble_control/jaxrs/event/list/filter
+Content-Type: application/json
+
+{"startTime": "2026-03-01 00:00:00", "endTime": "2026-03-31 23:59:59", "calendarIds": []}

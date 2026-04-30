@@ -1,0 +1,13 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": "OverflowDays"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 2147483647
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "health": "/health",
+
+  "auth": {
+    "type": "none",
+    "header": "Authorization",
+    "prefix": "Bearer ",
+    "token_env": "NV_TOKEN"
+  },
+
+  "endpoints": [
+    {"method": "POST", "path": "/api/login",      "tag": "auth_login"},
+    {"method": "POST", "path": "/api/doc/create", "tag": "doc_create"},
+    {"method": "POST", "path": "/api/doc/submit", "tag": "doc_submit"},
+    {"method": "POST", "path": "/api/doc/approve","tag": "doc_approve"},
+    {"method": "GET",  "path": "/api/doc/query",  "tag": "doc_query"}
+  ],
+
+  "biz_fields": ["code","errCode","errorCode","status","message","msg"],
+
+  "seed_defaults": {
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+
+  "seed_templates": {
+    "POST /api/login": {
+      "body_json": {"username":"u","password":"p"}
+    },
+    "POST /api/doc/create": {
+      "body_json": {"title":"t","priority":1,"content":"hello","tags":["a"]}
+    },
+    "POST /api/doc/submit": {
+      "body_json": {"docId":"D1","op":"submit","comment":"ok"}
+    },
+    "POST /api/doc/approve": {
+      "body_json": {"docId":"D1","op":"approve","comment":"ok"}
+    },
+    "GET /api/doc/query": {
+      "body_json": {}
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "target_type": "http_api",
+  "seed_dir": "in/o2oa_body_model_compare",
+  "model_name": "ae",
+  "threshold": "1.0",
+  "manifest": "model_stage/manifests/dataset_manifest_156.txt",
+  "duration_plan": [
+    20
+  ],
+  "notes": "O2OA default profile: AE@1.0 is the primary gate. Samples in the gray zone trigger the GAN second stage when available, otherwise DecisionEngine falls back to the local rule stage.",
+  "result_summary_csv": "out/cms_body_valid_compare_real/summary.csv",
+  "result_stats_json": "/tmp/nv_body_valid_stats.json",
+  "launch_cmd": [
+    "bash",
+    "-lc",
+    "NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/o2oa_default.json NV_DECISION_PROFILE_NAME=o2oa_default NV_TOKEN=\"$NV_TOKEN\" NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.0\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"{ROOT}/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"{RUN_DIR}\" RUNNER_DURATION_PLAN=\"20\" ./scripts/run_runner_real_fuzz_plan.sh"
+  ],
+  "task_name": "o2oa_formal_grey_probe_smoke",
+  "target_endpoint": "cms_doc_list",
+  "integration_profile": "o2oa_default",
+  "decision": {
+    "t_low": 0.8,
+    "t_high": 1.5,
+    "enable_second_stage": true,
+    "second_stage_type": "gan",
+    "second_stage_threshold": 1.0,
+    "second_stage_endpoint": "unix:///tmp/nv_valid_gan.sock",
+    "second_stage_default_score": 1.2,
+    "rpc_timeout_sec": 1.0,
+    "max_input_bytes": 262144
+  },
+  "integration_request": {
+    "task_name": "o2oa_formal_grey_probe_smoke",
+    "platform": "o2oa_default",
+    "target_type": "http_api",
+    "target_endpoint": "cms_doc_list",
+    "seed_source": "seed_file",
+    "seed_location": "in/o2oa_body_model_compare",
+    "mutation_scope": [
+      "field_value",
+      "boundary",
+      "structure"
+    ],
+    "max_test_cases": 2000,
+    "time_budget": null
+  },
+  "integration_profile_summary": {
+    "platform": "O2OA",
+    "scene": "cms_doc_list",
+    "model_route": "AE primary + GAN/rule dynamic redundancy",
+    "is_mainline": true,
+    "validation_scope": "O2OA HTTP/REST JSON data interface stage acceptance scope; evidence is centered on cms_doc_list and related data interfaces.",
+    "decision": {
+      "t_low": 0.8,
+      "t_high": 1.5,
+      "enable_second_stage": true,
+      "second_stage_type": "gan",
+      "second_stage_threshold": 1.0,
+      "second_stage_endpoint": "unix:///tmp/nv_valid_gan.sock",
+      "second_stage_default_score": 1.2,
+      "rpc_timeout_sec": 1.0,
+      "max_input_bytes": 262144
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "common": {
+    "max_bytes": 16384,
+    "max_depth": 8,
+    "max_keys": 128,
+    "max_string": 2048
+  },
+  "endpoints": {
+    "cms_doc_list": {
+      "type": "object",
+      "required": ["docStatusList", "categoryIdList", "key"],
+      "allow_unknown": true,
+      "properties": {
+        "docStatusList": {
+          "type": "array",
+          "maxItems": 20
+        },
+        "categoryIdList": {
+          "type": "array",
+          "maxItems": 20
+        },
+        "key": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "review_count": {
+      "type": "object",
+      "required": ["credentialList"],
+      "allow_unknown": true,
+      "properties": {
+        "credentialList": {
+          "type": "array",
+          "maxItems": 20
+        }
+      }
+    },
+    "hotpic_list": {
+      "type": "object",
+      "required": [],
+      "allow_unknown": true,
+      "properties": {}
+    },
+    "person_detail": {
+      "type": "object",
+      "required": [],
+      "allow_unknown": true,
+      "properties": {}
+    },
+    "calendar_filter": {
+      "type": "object",
+      "required": ["startTime", "endTime", "calendarIds"],
+      "allow_unknown": true,
+      "properties": {
+        "startTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "endTime": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "calendarIds": {
+          "type": "array",
+          "maxItems": 50
+        }
+      }
+    }
+  }
+}
