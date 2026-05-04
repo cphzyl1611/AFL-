@@ -4,6 +4,8 @@
 
 本报告评估 Flowable `process_start` 场景从现有 Flowable-AE v2 单阶段判定迁移到动态 second stage 的可行性。目标是形成最小迁移设计，不修改 AFL++ 主链，不修改 O2OA 已完成口径，不修改正式 `integration/platform_profiles/flowable_v2.json`，也不声称 Flowable 动态冗余已经完成。
 
+后续状态更新（2026-05-04）：本报告之后，Flowable 已完成临时 probe profile 下的 AE + local rule second stage 固定样本探针和真实服务 smoke。真实服务 smoke 任务为 `b3de7a9854a0`，`last_http_code=201`，`rpc_fail_total=0`，`BODY_DECISION_DBG=331`，stage 分布为 `ae_low=0`、`ae_high=0`、`second_pass=331`、`second_reject=0`，`second_stage_source=local_rule`。正式 `integration/platform_profiles/flowable_v2.json` 仍保持 `enable_second_stage=false`；Flowable-GAN 未完成，不能将 O2OA GAN 直接迁移到 Flowable，也不能声称完整多平台动态异构冗余全部完成。
+
 ## 2. Flowable 当前状态
 
 审查对象：
@@ -29,8 +31,8 @@
 | Flowable 数据集 | `in/flowable_process_start_dataset_v2/`，共 80 个 JSON 样本 |
 | Flowable AE v2 模型 | `model_stage/models/flowable_ae_v2_model.pt` 存在 |
 | Flowable AE v2 meta | `model_stage/models/flowable_ae_v2_meta.json` 存在 |
-| Flowable score service | 可复用 `model_stage/nv_valid_server_real.py` 启动 AE score service，但本轮未启动验证 |
-| Flowable 服务环境 | 仓库内未发现可直接启动的 compose；既有报告记录默认端口检查不能视为服务就绪 |
+| Flowable score service | 可复用 `model_stage/nv_valid_server_real.py` 启动 AE score service；后续真实 smoke 已使用 Flowable-AE v2 score service 验证 |
+| Flowable 服务环境 | 本报告生成时仓库内未发现可直接启动的 compose；后续已通过 Tomcat Docker 环境完成真实服务 smoke |
 
 ## 3. Flowable-AE v2 现有结果
 
@@ -167,17 +169,15 @@ Flowable 最小验证需要：
 - 灰区样本列表；
 - 20 秒 smoke 的 summary 与脱敏 debug evidence。
 
-## 9. 为什么不能声称 Flowable 动态冗余完成
+## 9. 为什么不能声称 Flowable 完整动态异构冗余完成
 
-当前不能声称 Flowable 动态冗余完成，原因是：
+本报告生成时不能声称 Flowable 动态冗余完成；后续真实服务 smoke 通过后，仍不能声称 Flowable 完整动态异构冗余完成，原因是：
 
 - 正式 Flowable profile 中 `enable_second_stage=false`；
-- 未完成 Flowable 灰区样本固定回放；
-- 未看到 Flowable runtime 出现 `stage=second_pass` / `stage=second_reject` 的 evidence；
-- 未完成 Flowable 真实服务 20 秒 second stage smoke；
 - 未完成 Flowable second stage 的阈值定标；
 - 未完成 Flowable GAN 独立验证；
 - O2OA 的 GAN online 证据不能外推为 Flowable GAN 证据。
+- 现有 Flowable 证据限定为临时 probe profile + local rule second stage，不等于正式 profile 启用或 Flowable-GAN 完成。
 
 ## 10. 工程结论
 
@@ -188,8 +188,8 @@ Flowable 最小验证需要：
 - rule fallback 可以作为 Flowable 最小迁移第一阶段；
 - 不建议直接复用 O2OA GAN；
 - 不建议马上修改正式 Flowable profile；
-- Flowable 动态异构冗余仍处于可行性审查与迁移设计阶段，不能声称完成。
+- Flowable 已从可行性审查推进到临时 probe profile + local rule second stage 真实服务 smoke 通过；但正式 profile 仍未启用 second stage，Flowable-GAN 与完整多平台动态异构冗余仍不能声称完成。
 
 推荐交付口径：
 
-> Flowable 侧已经具备 AE v2 模型、预留 decision 结构、数据集和 DecisionEngine 接入点，具备开展 second stage 最小迁移验证的基础。下一步应先用临时 profile 启用 rule fallback 探针，筛选 Flowable 灰区样本并验证 `second_pass` / `second_reject` 路径；GAN 仅作为后续增强，不应直接复用 O2OA GAN 并声称 Flowable GAN 有效。
+> Flowable 侧已经具备 AE v2 模型、预留 decision 结构、数据集和 DecisionEngine 接入点，并已通过临时 profile 完成 AE + local rule second stage 真实服务 smoke。下一步应在不修改正式 profile 的前提下继续扩充 Flowable 灰区样本、标签和阈值定标；GAN 仅作为后续增强，不应直接复用 O2OA GAN 并声称 Flowable GAN 有效。

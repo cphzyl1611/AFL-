@@ -111,5 +111,5 @@ rule fallback 与 GAN 的差异：
 - threshold=1.2 是最优阈值；
 - GAN online 效果优于 rule fallback；
 - 可以直接修改正式 profile；
-- Flowable 动态冗余已完成；
-- 多平台动态异构冗余已完成。
+- Flowable GAN online 已完成；
+- 完整多平台动态异构冗余已完成。

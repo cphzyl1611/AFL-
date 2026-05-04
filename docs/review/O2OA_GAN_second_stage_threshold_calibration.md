@@ -98,5 +98,5 @@ Recommended threshold `1.2` 对比：
 - 可以说：`1.2` 是当前小样本下的初步阈值候选；
 - 不能说：GAN second stage 必然优于 rule fallback；
 - GAN 更严格不等于更优，是否更优取决于 valid/invalid 真值、覆盖收益、异常发现率、误拒成本和重复统计；
-- 不能声称 Flowable 动态冗余已完成；
-- 不能声称多平台动态异构冗余全部完成。
+- 不能声称 Flowable GAN online 已完成；
+- 不能声称完整多平台动态异构冗余全部完成。

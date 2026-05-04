@@ -113,8 +113,8 @@ rule fallback 保持为 GAN RPC 不可用时的降级路径。它保障动态冗
 
 - threshold=1.2 是最优阈值；
 - GAN 效果优于 rule fallback；
-- Flowable 动态冗余已完成；
-- 多平台动态异构冗余已完成。
+- Flowable GAN online 已完成；
+- 完整多平台动态异构冗余已完成。
 
 ## 后续需要补充的数据
 

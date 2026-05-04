@@ -84,19 +84,19 @@ To learn about fuzzing other targets, see:
 - `high`：`ae_score >= t_high`，直接拒绝。
 - `uncertain`：`t_low < ae_score < t_high`，触发第二阶段。
 
-当前 O2OA 实现中，第二阶段优先走 GAN RPC 路径；若 GAN RPC 不可用，则进入规则型 fallback 路径。Flowable 当前保留 `decision` 结构，但未启用第二阶段。
+当前 O2OA 正式 profile 中，第二阶段优先走 GAN RPC 路径；若 GAN RPC 不可用，则进入规则型 fallback 路径。Flowable 正式 `flowable_v2.json` 仍保持 `enable_second_stage=false`，但已经通过临时 probe profile 完成 AE + local rule second stage 真实服务 smoke；Flowable-GAN 未完成。
 
 ## 架构链路
 
 文字链路如下：
 
-`fuzz_adapter -> decision_engine -> AE / GAN -> final decision`
+`fuzz_adapter -> decision_engine -> AE / GAN / Rule -> final decision`
 
 工程内的实际落点为：
 
 - `integration/fuzz_adapter.py`：加载平台 profile，并把 `decision` 配置透传到 runner 运行环境。
 - `nv_body_valid.py`：在 AE score 返回后执行 runtime 决策。
-- `integration/decision_engine.py`：完成分区判断、第二阶段调度、GAN 调用与 rule fallback。
+- `integration/decision_engine.py`：完成分区判断、第二阶段调度、GAN 调用、local rule 与 rule fallback。
 
 ## 决策流程
 
@@ -136,9 +136,31 @@ return "reject", {"stage": "fallback"}
 
 当前版本的实现边界如下：
 
-- O2OA profile 已具备第二阶段开关，优先尝试 GAN second stage；当 GAN RPC 未启动时，代码会回退到内置 rule stage。
-- Flowable profile 暂未启用第二模型，但 `decision` 结构已经固化到 profile 与运行时接口中。
-- 当前属于轻量动态冗余。第一阶段仍由 AE 主导，第二阶段只在灰区触发，不改变 AFL++、runner 和平台接入主链。
+- O2OA 正式 profile 已启用 GAN second stage，默认 `second_stage_threshold=1.0`；`threshold=1.2` 仅作为下一轮扩样本验证候选，不是正式默认。
+- Flowable 正式 profile 暂不启用 second stage，`flowable_v2.json` 仍保持 `enable_second_stage=false`；已通过临时 probe profile 完成 AE + local rule second stage 真实服务 smoke。
+- 当前属于阶段性动态二阶段验证。第一阶段仍由 AE 主导，第二阶段只在灰区触发，不改变 AFL++、runner 和平台接入主链；Flowable-GAN、跨平台 GAN 迁移和完整多平台动态异构冗余仍需后续独立验证。
+
+## 动态异构冗余机制阶段性结论
+
+当前可交付口径如下：
+
+- O2OA：AE + GAN online second stage 动态异构冗余闭环已完成，正式 profile 启用 GAN second stage，默认 `second_stage_threshold=1.0`。
+- Flowable：AE + local rule second stage 真实服务 smoke 已通过；正式 `integration/platform_profiles/flowable_v2.json` 仍保持 `enable_second_stage=false`，验证使用临时 probe profile。
+- 总体：多平台动态二阶段机制已完成阶段性验证，O2OA 覆盖 GAN online 路径，Flowable 覆盖 local rule second stage 真实服务路径。
+
+当前不能声称：
+
+- Flowable GAN online 已完成；
+- O2OA GAN 可以直接迁移到 Flowable；
+- GAN 效果优于 rule fallback；
+- 完整多平台动态异构冗余全部完成。
+
+关键报告路径：
+
+- `docs/review/动态异构冗余机制总体阶段性收口报告.md`
+- `docs/review/动态异构冗余机制真实联调验证报告.md`
+- `docs/review/Flowable_dynamic_redundancy_second_stage_probe_report.md`
+- `docs/review/O2OA_GAN_second_stage_threshold_policy_decision.md`
 
 ## 后续扩展方向
 

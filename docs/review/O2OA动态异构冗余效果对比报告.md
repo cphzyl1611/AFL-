@@ -63,5 +63,5 @@
 - 可以声称：本次小样本实验中，O2OA AE + Rule fallback 与 O2OA AE + GAN online 都完成了动态 second stage 运行路径验证，且 GAN online 确实出现 `second_stage_source=gan_rpc`。
 - 可以声称：本次小样本中 GAN online 相比 Rule fallback 呈现更高 reject 倾向。
 - 不能声称：GAN online 效果必然优于 Rule fallback；当前缺少真值标签、显著性检验、阈值定标和重复大样本统计。
-- 不能声称：Flowable 动态冗余已完成。
-- 不能声称：多平台动态异构冗余全部完成。
+- 不能声称：Flowable GAN online 已完成。
+- 不能声称：完整多平台动态异构冗余全部完成。

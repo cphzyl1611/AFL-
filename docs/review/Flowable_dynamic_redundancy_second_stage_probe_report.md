@@ -203,10 +203,10 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 
 - 不能声称 Flowable GAN online 已完成；
 - 不能声称 O2OA GAN 可直接迁移到 Flowable；
-- 不能声称多平台动态异构冗余全部完成；
+- 不能声称完整多平台动态异构冗余全部完成；
 - 正式 `flowable_v2.json` 仍不启用 second stage。
 
-## 9. 当前能否声称 Flowable 动态冗余完成
+## 9. 当前能否声称 Flowable 完整动态异构冗余完成
 
 不能。
 
@@ -221,7 +221,7 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 
 - Flowable 动态冗余完整完成；
 - Flowable GAN online 已完成；
-- 多平台动态异构冗余已完成；
+- 完整多平台动态异构冗余已完成；
 - O2OA GAN 可以直接迁移到 Flowable。
 
 ## 10. 后续路线
