@@ -152,6 +152,60 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 - Flowable REST endpoint 均连接失败；
 - 因服务不可用，无法进入真实 HTTP smoke 阶段。
 
+## Flowable second stage 真实服务 smoke
+
+在后续环境补齐后，本轮重新检查 Flowable REST 服务并执行 20 秒真实服务 smoke。
+
+环境确认：
+
+- Flowable REST 管理接口已返回 HTTP `200`；
+- `holidayRequest` 流程定义已存在；
+- `POST /flowable-rest/service/runtime/process-instances` 可启动流程实例；
+- 认证使用本地默认 Basic Auth 凭据验证，报告和 evidence 不记录明文凭据；
+- Flowable-AE v2 score service 使用 `/tmp/nv_valid_flowable.sock`；
+- 使用临时 profile `/tmp/flowable_v2_second_stage_probe.json`；
+- 正式 `integration/platform_profiles/flowable_v2.json` 未修改，仍保持 `enable_second_stage=false`；
+- 本轮未使用 O2OA GAN。
+
+真实 smoke 结果：
+
+| metric | value |
+| --- | ---: |
+| task_id | `b3de7a9854a0` |
+| status | `exited` |
+| duration | 20s |
+| last_http_code | 201 |
+| HTTP 200/201 count | 331 |
+| rpc_fail_total | 0 |
+| body_score_rpc_ok | 331 |
+| body_score_rpc_fail | 0 |
+| BODY_DECISION_DBG | 331 |
+| ae_low | 0 |
+| ae_high | 0 |
+| second_pass | 331 |
+| second_reject | 0 |
+| second_stage_source=local_rule | 331 |
+| rule_fallback | 0 |
+| fallback_reason | `-` |
+| pass | 331 |
+| reject | 0 |
+| crash / hang | 0 / 0 |
+
+轻量 evidence：
+
+- `docs/review/evidence/flowable_dynamic_redundancy/report_b3de7a9854a0_real_smoke.json`
+- `docs/review/evidence/flowable_dynamic_redundancy/stdout_summary_b3de7a9854a0_real_smoke.log`
+- `docs/review/evidence/flowable_dynamic_redundancy/decision_debug_excerpt_b3de7a9854a0_real_smoke.log`
+
+结论：Flowable second stage 真实服务 smoke 已通过。当前结论可以从“固定样本 probe 通过”提升为“Flowable rule fallback second stage 真实服务 smoke 通过”。
+
+边界仍需保留：
+
+- 不能声称 Flowable GAN online 已完成；
+- 不能声称 O2OA GAN 可直接迁移到 Flowable；
+- 不能声称多平台动态异构冗余全部完成；
+- 正式 `flowable_v2.json` 仍不启用 second stage。
+
 ## 9. 当前能否声称 Flowable 动态冗余完成
 
 不能。
@@ -160,12 +214,12 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 
 - Flowable second stage 最小固定样本探针通过；
 - 临时 profile 下，灰区样本能够进入 local rule second stage；
+- Flowable rule fallback second stage 真实服务 smoke 已通过；
 - Flowable 具备继续做动态冗余迁移验证的基础。
 
 不能声称：
 
 - Flowable 动态冗余完整完成；
-- Flowable 真实服务 second stage smoke 已完成；
 - Flowable GAN online 已完成；
 - 多平台动态异构冗余已完成；
 - O2OA GAN 可以直接迁移到 Flowable。
@@ -174,14 +228,13 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 
 建议后续按以下顺序推进：
 
-1. 准备可用的 Flowable REST 服务环境；
-2. 继续保持正式 `flowable_v2.json` 不变；
-3. 固化更多 Flowable 灰区样本；
-4. 建立 Flowable valid / invalid 标签集；
-5. 对 rule fallback 阈值做 Flowable 域定标；
-6. 使用临时 profile 做 20 秒 Flowable smoke；
-7. 如需 GAN，先训练或确认 Flowable 域 GAN，再做独立阈值扫描和在线验证。
+1. 继续保持正式 `flowable_v2.json` 不变；
+2. 固化更多 Flowable 灰区样本；
+3. 建立 Flowable valid / invalid 标签集；
+4. 对 rule fallback 阈值做 Flowable 域定标；
+5. 在更长时间和更多样本上重复 Flowable 真实服务 smoke；
+6. 如需 GAN，先训练或确认 Flowable 域 GAN，再做独立阈值扫描和在线验证。
 
 ## 11. 结论
 
-本轮完成 Flowable second stage 最小探针验证。验证范围限定为固定灰区样本 + 临时 rule fallback profile，不包含真实 Flowable smoke，不包含 GAN，不改变正式 profile。
+本轮完成 Flowable second stage 最小探针验证，并在 Flowable REST 服务可用后完成 20 秒真实服务 smoke。验证范围限定为临时 rule fallback profile，不包含 Flowable GAN，不改变正式 profile。
