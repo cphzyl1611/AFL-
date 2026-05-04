@@ -1,0 +1,3 @@
+threshold,runs,http_200_runs,rpc_fail_total,avg_pass,avg_reject,avg_second_pass,avg_second_reject,avg_gan_rpc_count,avg_BODY_DECISION_DBG,crash_total,hang_total
+1.0,3,3,0,91.67,51.33,14.67,9.00,23.67,143.00,0,0
+1.2,3,3,0,91.00,52.00,14.67,7.33,22.00,143.00,0,0

@@ -1,0 +1,29 @@
+{
+  "threshold": "1.2",
+  "run_id": 1,
+  "task_id": "b59b0a70ee98",
+  "status": "exited",
+  "http_200": "yes",
+  "last_http_code": 200,
+  "pass": 90,
+  "reject": 58,
+  "rpc_fail_total": 0,
+  "body_score_rpc_ok": 148,
+  "body_score_rpc_fail": 0,
+  "BODY_DECISION_DBG": 148,
+  "ae_low": 76,
+  "ae_high": 51,
+  "second_pass": 14,
+  "second_reject": 7,
+  "gan_rpc_count": 21,
+  "rule_fallback_count": 0,
+  "fallback_reason_gan_rpc_unavailable": 0,
+  "crash": 0,
+  "hang": 0,
+  "source_artifacts": {
+    "summary_dur20_csv": "/home/dministrator/AFLplusplus/runner/runs/b59b0a70ee98/summary_dur20.csv",
+    "stderr_log": "/home/dministrator/AFLplusplus/runner/runs/b59b0a70ee98/stderr.log",
+    "runner_report_json": "/home/dministrator/AFLplusplus/runner/tasks/b59b0a70ee98/report.json"
+  },
+  "note": "Lightweight summary only; full runner logs are not copied into review evidence."
+}
