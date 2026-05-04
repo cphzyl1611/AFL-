@@ -1,0 +1,10 @@
+source_dataset,filename,ae_score,decision,stage,second_stage_source,fallback_reason,second_score
+v2,in/flowable_process_start_dataset_v2/seed_ok_21.json,6.205194,pass,second_pass,local_rule,,0.227261
+v3,in/flowable_process_start_dataset_v3/seed_bad_25.json,5.945236,pass,second_pass,local_rule,,0.227979
+v3,in/flowable_process_start_dataset_v3/seed_border_14.json,6.210717,pass,second_pass,local_rule,,0.228936
+v3,in/flowable_process_start_dataset_v3/seed_border_15.json,5.911750,pass,second_pass,local_rule,,0.228816
+v3,in/flowable_process_start_dataset_v3/seed_border_16.json,6.274885,pass,second_pass,local_rule,,0.228936
+v3,in/flowable_process_start_dataset_v3/seed_ok_21.json,6.205194,pass,second_pass,local_rule,,0.227261
+v3,in/flowable_process_start_dataset_v3/seed_ok_55.json,5.949741,pass,second_pass,local_rule,,0.228098
+v3,in/flowable_process_start_dataset_v3/seed_ok_56.json,5.949741,pass,second_pass,local_rule,,0.228098
+v3,in/flowable_process_start_dataset_v3/seed_ok_59.json,6.216743,pass,second_pass,local_rule,,0.228337
