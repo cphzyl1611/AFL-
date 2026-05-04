@@ -119,11 +119,38 @@ O2OA GAN 已验证范围是 O2OA `cms_doc_list` 灰区 body。Flowable 场景是
 - `DecisionEngine` 可被 Flowable 场景复用；
 - 本轮未使用 O2OA GAN。
 
-## 8. 真实 Flowable smoke
+## Flowable 真实服务 smoke 尝试
 
-本轮检查本地 Flowable REST 管理接口，结果为连接失败，HTTP code 记录为 `000`。因此 Flowable 服务未确认可用，本轮没有强跑真实 Flowable smoke。
+本轮在固定样本 probe 之后追加 Flowable 真实服务环境诊断，目标是判断是否可以执行最短 20 秒真实 Flowable smoke。
+
+诊断结果：
+
+| check | result |
+| --- | --- |
+| Docker 容器 | 未发现 Flowable 容器；仅发现 O2OA 相关容器运行中 |
+| 8080/8081/8082 端口 | 未发现监听 |
+| Flowable compose | 未发现 `docker-compose.yml`、`compose.yml` 或可复用 Flowable compose |
+| Flowable 服务启动脚本 | 未发现可直接启动 Flowable REST 服务的脚本 |
+| 管理接口 | `http://127.0.0.1:8080/flowable-rest/service/management/engine` 返回 HTTP code `000`，连接失败 |
+| 根路径 | `http://127.0.0.1:8080/` 返回 HTTP code `000`，连接失败 |
+| REST 根路径 | `http://127.0.0.1:8080/flowable-rest/` 返回 HTTP code `000`，连接失败 |
+| deployments 接口 | `http://127.0.0.1:8080/flowable-rest/service/repository/deployments` 返回 HTTP code `000`，连接失败 |
+
+轻量诊断证据：
+
+`docs/review/evidence/flowable_dynamic_redundancy/flowable_service_readiness_diagnostic.json`
+
+因此 Flowable REST 服务未确认可用，本轮没有强跑真实 Flowable smoke。
 
 未生成 Flowable smoke task_id，也未生成 runner/runs 或 runner/tasks 证据。
+
+明确阻塞原因：
+
+- 当前 Docker 中没有 Flowable 容器；
+- `127.0.0.1:8080` 未监听；
+- 仓库内没有可复用的 Flowable REST 服务启动脚本或 compose；
+- Flowable REST endpoint 均连接失败；
+- 因服务不可用，无法进入真实 HTTP smoke 阶段。
 
 ## 9. 当前能否声称 Flowable 动态冗余完成
 

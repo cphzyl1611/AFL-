@@ -1,0 +1,50 @@
+{
+  "docker_check": {
+    "flowable_container_found": false,
+    "observed_containers": [
+      "brave_bell: exited",
+      "o2oa-docker-o2oa-1: up",
+      "o2oa-docker-db-1: up"
+    ]
+  },
+  "port_check": {
+    "checked_ports": [8080, 8081, 8082],
+    "listening": false,
+    "observed_listening_ports": [80, 20020, 20030]
+  },
+  "startup_artifact_check": {
+    "flowable_compose_found": false,
+    "flowable_service_start_script_found": false,
+    "notes": "Repository contains Flowable datasets, model files, runner templates and compare scripts, but no reusable Flowable REST service startup script or compose file was found."
+  },
+  "rest_endpoint_checks": [
+    {
+      "name": "engine",
+      "url": "http://127.0.0.1:8080/flowable-rest/service/management/engine",
+      "http_code": "000",
+      "error": "URLError"
+    },
+    {
+      "name": "root",
+      "url": "http://127.0.0.1:8080/",
+      "http_code": "000",
+      "error": "URLError"
+    },
+    {
+      "name": "flowable_rest_root",
+      "url": "http://127.0.0.1:8080/flowable-rest/",
+      "http_code": "000",
+      "error": "URLError"
+    },
+    {
+      "name": "deployments",
+      "url": "http://127.0.0.1:8080/flowable-rest/service/repository/deployments",
+      "http_code": "000",
+      "error": "URLError"
+    }
+  ],
+  "smoke_decision": {
+    "attempted_real_smoke": false,
+    "blocker": "Flowable REST service is not listening on 127.0.0.1:8080 and no reusable repository startup method was found."
+  }
+}
