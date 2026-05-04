@@ -1,0 +1,2 @@
+mode,total,valid_total,invalid_total,uncertain_total,pass,reject,valid_pass,valid_reject,invalid_pass,invalid_reject,uncertain_pass,uncertain_reject,http_2xx,http_4xx,http_5xx,http_unavailable,second_pass,second_reject
+local_rule,36,10,20,6,35,1,10,0,19,1,6,0,23,13,0,0,35,1

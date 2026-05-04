@@ -1,0 +1,12 @@
+{
+  "variables": [
+    {
+      "name": "employee",
+      "value": "Calibration User"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 2
+    }
+  ]
+}

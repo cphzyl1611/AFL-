@@ -1,0 +1,365 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "v0",
+      "value": 0
+    },
+    {
+      "name": "v1",
+      "value": 1
+    },
+    {
+      "name": "v2",
+      "value": 2
+    },
+    {
+      "name": "v3",
+      "value": 3
+    },
+    {
+      "name": "v4",
+      "value": 4
+    },
+    {
+      "name": "v5",
+      "value": 5
+    },
+    {
+      "name": "v6",
+      "value": 6
+    },
+    {
+      "name": "v7",
+      "value": 7
+    },
+    {
+      "name": "v8",
+      "value": 8
+    },
+    {
+      "name": "v9",
+      "value": 9
+    },
+    {
+      "name": "v10",
+      "value": 10
+    },
+    {
+      "name": "v11",
+      "value": 11
+    },
+    {
+      "name": "v12",
+      "value": 12
+    },
+    {
+      "name": "v13",
+      "value": 13
+    },
+    {
+      "name": "v14",
+      "value": 14
+    },
+    {
+      "name": "v15",
+      "value": 15
+    },
+    {
+      "name": "v16",
+      "value": 16
+    },
+    {
+      "name": "v17",
+      "value": 17
+    },
+    {
+      "name": "v18",
+      "value": 18
+    },
+    {
+      "name": "v19",
+      "value": 19
+    },
+    {
+      "name": "v20",
+      "value": 20
+    },
+    {
+      "name": "v21",
+      "value": 21
+    },
+    {
+      "name": "v22",
+      "value": 22
+    },
+    {
+      "name": "v23",
+      "value": 23
+    },
+    {
+      "name": "v24",
+      "value": 24
+    },
+    {
+      "name": "v25",
+      "value": 25
+    },
+    {
+      "name": "v26",
+      "value": 26
+    },
+    {
+      "name": "v27",
+      "value": 27
+    },
+    {
+      "name": "v28",
+      "value": 28
+    },
+    {
+      "name": "v29",
+      "value": 29
+    },
+    {
+      "name": "v30",
+      "value": 30
+    },
+    {
+      "name": "v31",
+      "value": 31
+    },
+    {
+      "name": "v32",
+      "value": 32
+    },
+    {
+      "name": "v33",
+      "value": 33
+    },
+    {
+      "name": "v34",
+      "value": 34
+    },
+    {
+      "name": "v35",
+      "value": 35
+    },
+    {
+      "name": "v36",
+      "value": 36
+    },
+    {
+      "name": "v37",
+      "value": 37
+    },
+    {
+      "name": "v38",
+      "value": 38
+    },
+    {
+      "name": "v39",
+      "value": 39
+    },
+    {
+      "name": "v40",
+      "value": 40
+    },
+    {
+      "name": "v41",
+      "value": 41
+    },
+    {
+      "name": "v42",
+      "value": 42
+    },
+    {
+      "name": "v43",
+      "value": 43
+    },
+    {
+      "name": "v44",
+      "value": 44
+    },
+    {
+      "name": "v45",
+      "value": 45
+    },
+    {
+      "name": "v46",
+      "value": 46
+    },
+    {
+      "name": "v47",
+      "value": 47
+    },
+    {
+      "name": "v48",
+      "value": 48
+    },
+    {
+      "name": "v49",
+      "value": 49
+    },
+    {
+      "name": "v50",
+      "value": 50
+    },
+    {
+      "name": "v51",
+      "value": 51
+    },
+    {
+      "name": "v52",
+      "value": 52
+    },
+    {
+      "name": "v53",
+      "value": 53
+    },
+    {
+      "name": "v54",
+      "value": 54
+    },
+    {
+      "name": "v55",
+      "value": 55
+    },
+    {
+      "name": "v56",
+      "value": 56
+    },
+    {
+      "name": "v57",
+      "value": 57
+    },
+    {
+      "name": "v58",
+      "value": 58
+    },
+    {
+      "name": "v59",
+      "value": 59
+    },
+    {
+      "name": "v60",
+      "value": 60
+    },
+    {
+      "name": "v61",
+      "value": 61
+    },
+    {
+      "name": "v62",
+      "value": 62
+    },
+    {
+      "name": "v63",
+      "value": 63
+    },
+    {
+      "name": "v64",
+      "value": 64
+    },
+    {
+      "name": "v65",
+      "value": 65
+    },
+    {
+      "name": "v66",
+      "value": 66
+    },
+    {
+      "name": "v67",
+      "value": 67
+    },
+    {
+      "name": "v68",
+      "value": 68
+    },
+    {
+      "name": "v69",
+      "value": 69
+    },
+    {
+      "name": "v70",
+      "value": 70
+    },
+    {
+      "name": "v71",
+      "value": 71
+    },
+    {
+      "name": "v72",
+      "value": 72
+    },
+    {
+      "name": "v73",
+      "value": 73
+    },
+    {
+      "name": "v74",
+      "value": 74
+    },
+    {
+      "name": "v75",
+      "value": 75
+    },
+    {
+      "name": "v76",
+      "value": 76
+    },
+    {
+      "name": "v77",
+      "value": 77
+    },
+    {
+      "name": "v78",
+      "value": 78
+    },
+    {
+      "name": "v79",
+      "value": 79
+    },
+    {
+      "name": "v80",
+      "value": 80
+    },
+    {
+      "name": "v81",
+      "value": 81
+    },
+    {
+      "name": "v82",
+      "value": 82
+    },
+    {
+      "name": "v83",
+      "value": 83
+    },
+    {
+      "name": "v84",
+      "value": 84
+    },
+    {
+      "name": "v85",
+      "value": 85
+    },
+    {
+      "name": "v86",
+      "value": 86
+    },
+    {
+      "name": "v87",
+      "value": 87
+    },
+    {
+      "name": "v88",
+      "value": 88
+    },
+    {
+      "name": "v89",
+      "value": 89
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": "A"
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": 2
+    }
+  ],
+  "unexpectedNested": {
+    "level0": {
+      "level1": {
+        "level2": {
+          "level3": {
+            "level4": {
+              "level5": {
+                "level6": {
+                  "level7": "x"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

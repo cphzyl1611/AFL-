@@ -1,0 +1,17 @@
+{
+  "processDefinitionKey": "holidayRequest",
+  "variables": [
+    {
+      "name": "employee",
+      "value": {
+        "nested": "object"
+      }
+    },
+    {
+      "name": "nrOfHolidays",
+      "value": [
+        "bad"
+      ]
+    }
+  ]
+}
