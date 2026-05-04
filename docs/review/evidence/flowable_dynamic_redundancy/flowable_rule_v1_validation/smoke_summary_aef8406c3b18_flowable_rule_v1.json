@@ -1,0 +1,22 @@
+{
+  "task_id": "aef8406c3b18",
+  "status": "exited",
+  "duration_sec": 20,
+  "mode": "flowable_rule_v1_real_smoke",
+  "last_http_code": 201,
+  "http_success_200_or_201": 301,
+  "rpc_fail_total": 0,
+  "body_score_rpc_ok": 339,
+  "body_score_rpc_fail": 0,
+  "BODY_DECISION_DBG": 339,
+  "ae_low": 0,
+  "ae_high": 0,
+  "second_pass": 301,
+  "second_reject": 38,
+  "second_stage_source": "flowable_rule_v1",
+  "second_stage_source_count": 339,
+  "pass": 301,
+  "reject": 38,
+  "crash": 0,
+  "hang": 0
+}

@@ -48,6 +48,16 @@ def max_string_len_in_json(value: Any) -> int:
     return max_len
 
 
+def _as_string_list(value: Any):
+    if not isinstance(value, list):
+        return []
+    result = []
+    for item in value:
+        if isinstance(item, str) and item.strip():
+            result.append(item.strip())
+    return result
+
+
 def load_profile_decision_config(profile_path: str) -> Dict[str, Any]:
     with open(profile_path, "r", encoding="utf-8") as f:
         obj = json.load(f)
@@ -74,6 +84,19 @@ class DecisionEngine:
         self.second_stage_default_score = float(config.get("second_stage_default_score", 1.2))
         self.rpc_timeout_sec = float(config.get("rpc_timeout_sec", 1.0))
         self.max_input_bytes = int(config.get("max_input_bytes", 262144))
+        self.allowed_process_definition_keys = set(_as_string_list(config.get("allowed_process_definition_keys", [])))
+        self.flowable_rule_max_json_depth = int(config.get("flowable_rule_max_json_depth", 6))
+        self.flowable_rule_max_string_len = int(config.get("flowable_rule_max_string_len", 512))
+        self.flowable_rule_max_total_keys = int(config.get("flowable_rule_max_total_keys", 80))
+        self.flowable_rule_max_variables = int(config.get("flowable_rule_max_variables", 50))
+        self.flowable_rule_max_variable_name_len = int(config.get("flowable_rule_max_variable_name_len", 128))
+        self.flowable_rule_allowed_root_fields = set(_as_string_list(config.get("flowable_rule_allowed_root_fields", [])))
+        self.flowable_rule_required_variables_by_key = self._normalize_string_list_map(
+            config.get("flowable_rule_required_variables_by_key", {})
+        )
+        self.flowable_rule_variable_type_hints = self._normalize_string_map_map(
+            config.get("flowable_rule_variable_type_hints", {})
+        )
         self._last_second_stage_meta: Dict[str, Any] = {}
 
     def to_config(self) -> Dict[str, Any]:
@@ -87,6 +110,15 @@ class DecisionEngine:
             "second_stage_default_score": self.second_stage_default_score,
             "rpc_timeout_sec": self.rpc_timeout_sec,
             "max_input_bytes": self.max_input_bytes,
+            "allowed_process_definition_keys": sorted(self.allowed_process_definition_keys),
+            "flowable_rule_max_json_depth": self.flowable_rule_max_json_depth,
+            "flowable_rule_max_string_len": self.flowable_rule_max_string_len,
+            "flowable_rule_max_total_keys": self.flowable_rule_max_total_keys,
+            "flowable_rule_max_variables": self.flowable_rule_max_variables,
+            "flowable_rule_max_variable_name_len": self.flowable_rule_max_variable_name_len,
+            "flowable_rule_allowed_root_fields": sorted(self.flowable_rule_allowed_root_fields),
+            "flowable_rule_required_variables_by_key": self.flowable_rule_required_variables_by_key,
+            "flowable_rule_variable_type_hints": self.flowable_rule_variable_type_hints,
         }
 
     def decide(self, ae_score, sample):
@@ -143,6 +175,17 @@ class DecisionEngine:
                 "second_stage_model": "rule",
                 "second_stage_source": "local_rule",
             })
+            return rule_score
+
+        if self.second_stage_type in {"flowable_rule", "flowable_rule_v1"}:
+            rule_score, rule_reason, reject_reason = self._run_flowable_rule_stage(sample)
+            self._last_second_stage_meta.update({
+                "second_stage_model": "flowable_rule_v1",
+                "second_stage_source": "flowable_rule_v1",
+                "rule_reason": rule_reason,
+            })
+            if reject_reason:
+                self._last_second_stage_meta["reject_reason"] = reject_reason
             return rule_score
 
         self._last_second_stage_meta.update({
@@ -215,6 +258,134 @@ class DecisionEngine:
             0.20 * string_ratio
         )
         return round(risk_score, 6)
+
+    def _run_flowable_rule_stage(self, sample):
+        payload = self._normalize_sample_bytes(sample)
+        if payload is None:
+            return self._flowable_rule_reject("invalid_or_oversize_payload")
+
+        try:
+            normalized = json.loads(payload.decode("utf-8"))
+        except Exception:
+            return self._flowable_rule_reject("invalid_json")
+
+        if not isinstance(normalized, dict):
+            return self._flowable_rule_reject("root_not_object")
+
+        if self.flowable_rule_allowed_root_fields:
+            for key in normalized:
+                if key not in self.flowable_rule_allowed_root_fields:
+                    return self._flowable_rule_reject(f"unexpected_root_field:{key}")
+
+        if json_depth(normalized) > self.flowable_rule_max_json_depth:
+            return self._flowable_rule_reject("json_depth_exceeded")
+
+        if json_key_count(normalized) > self.flowable_rule_max_total_keys:
+            return self._flowable_rule_reject("total_keys_exceeded")
+
+        if max_string_len_in_json(normalized) > self.flowable_rule_max_string_len:
+            return self._flowable_rule_reject("string_length_exceeded")
+
+        process_key = normalized.get("processDefinitionKey")
+        if not isinstance(process_key, str) or not process_key.strip():
+            return self._flowable_rule_reject("missing_or_empty_processDefinitionKey")
+        process_key = process_key.strip()
+
+        if self.allowed_process_definition_keys and process_key not in self.allowed_process_definition_keys:
+            return self._flowable_rule_reject("processDefinitionKey_not_allowed")
+
+        variables = normalized.get("variables", [])
+        if variables is None:
+            variables = []
+        if not isinstance(variables, list):
+            return self._flowable_rule_reject("variables_not_array")
+        if len(variables) > self.flowable_rule_max_variables:
+            return self._flowable_rule_reject("variables_count_exceeded")
+
+        seen_names = set()
+        type_hints = self.flowable_rule_variable_type_hints.get(process_key, {})
+        for item in variables:
+            if not isinstance(item, dict):
+                return self._flowable_rule_reject("variable_item_not_object")
+            name = item.get("name")
+            if not isinstance(name, str) or not name.strip():
+                return self._flowable_rule_reject("variable_name_missing_or_empty")
+            name = name.strip()
+            if len(name) > self.flowable_rule_max_variable_name_len:
+                return self._flowable_rule_reject("variable_name_too_long")
+            if "value" not in item:
+                return self._flowable_rule_reject("variable_value_missing")
+            value = item.get("value")
+            if not self._is_simple_flowable_value(value):
+                return self._flowable_rule_reject("variable_value_not_simple")
+            expected_type = type_hints.get(name)
+            if expected_type and not self._flowable_value_matches_type(value, expected_type):
+                return self._flowable_rule_reject(f"variable_type_mismatch:{name}")
+            seen_names.add(name)
+
+        for required_name in self.flowable_rule_required_variables_by_key.get(process_key, []):
+            if required_name not in seen_names:
+                return self._flowable_rule_reject(f"missing_required_variable:{required_name}")
+
+        return 0.0, "flowable_process_start_schema_pass", ""
+
+    def _flowable_rule_reject(self, reason: str):
+        score = max(self.second_stage_threshold, self.second_stage_default_score)
+        return score, reason, reason
+
+    def _is_simple_flowable_value(self, value: Any) -> bool:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            if isinstance(value, str):
+                return len(value) <= self.flowable_rule_max_string_len
+            return True
+        if isinstance(value, (dict, list)):
+            return (
+                json_depth(value) <= 3
+                and json_key_count(value) <= 20
+                and max_string_len_in_json(value) <= self.flowable_rule_max_string_len
+            )
+        return False
+
+    def _flowable_value_matches_type(self, value: Any, expected_type: str) -> bool:
+        expected_type = str(expected_type).strip().lower()
+        if expected_type in {"str", "string"}:
+            return isinstance(value, str)
+        if expected_type in {"number", "numeric"}:
+            return isinstance(value, (int, float)) and not isinstance(value, bool)
+        if expected_type in {"bool", "boolean"}:
+            return isinstance(value, bool)
+        if expected_type == "null":
+            return value is None
+        if expected_type == "scalar":
+            return value is None or isinstance(value, (str, int, float, bool))
+        if expected_type == "object":
+            return isinstance(value, dict)
+        if expected_type == "array":
+            return isinstance(value, list)
+        return True
+
+    def _normalize_string_list_map(self, value: Any) -> Dict[str, Any]:
+        if not isinstance(value, dict):
+            return {}
+        result = {}
+        for key, items in value.items():
+            if isinstance(key, str):
+                result[key] = _as_string_list(items)
+        return result
+
+    def _normalize_string_map_map(self, value: Any) -> Dict[str, Dict[str, str]]:
+        if not isinstance(value, dict):
+            return {}
+        result = {}
+        for outer_key, inner in value.items():
+            if not isinstance(outer_key, str) or not isinstance(inner, dict):
+                continue
+            clean_inner = {}
+            for inner_key, inner_value in inner.items():
+                if isinstance(inner_key, str) and isinstance(inner_value, str):
+                    clean_inner[inner_key] = inner_value
+            result[outer_key] = clean_inner
+        return result
 
     def _normalize_sample_bytes(self, sample) -> Optional[bytes]:
         if isinstance(sample, bytes):

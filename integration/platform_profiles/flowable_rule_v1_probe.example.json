@@ -1,0 +1,76 @@
+{
+  "profile": "flowable_rule_v1_probe",
+  "platform": "Flowable",
+  "scene": "process_start",
+  "target_type": "http_api",
+  "target_endpoint": "POST /flowable-rest/service/runtime/process-instances",
+  "seed_dir": "in/flowable_process_start_dataset_v2",
+  "model_route": "Flowable-AE v2 primary route with Flowable local rule v1 probe",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "template": "runner/templates/task_ae_flowable_eval_v2.json",
+  "duration_plan": [20, 60],
+  "is_mainline": false,
+  "validation_scope": "Experimental Flowable local rule v1 second-stage probe. This is not the formal default profile and does not replace flowable_v2.json.",
+  "description": "Flowable local rule v1 probe profile for expanded sample validation. It keeps the Flowable-AE v2 grey zone and enables a Flowable-specific local rule second stage only for experiments.",
+  "result_description": "Runner reports summary_dur20.csv, summary_dur60.csv, body_valid_stats_dur20.json and body_valid_stats_dur60.json when Flowable REST and score service are available.",
+  "notes": "Experimental probe profile only. Do not use as the formal default profile, do not describe it as replacing flowable_v2.json, and do not use it as evidence for Flowable-GAN.",
+  "decision": {
+    "t_low": 5.8,
+    "t_high": 6.3,
+    "enable_second_stage": true,
+    "second_stage_type": "flowable_rule",
+    "second_stage_threshold": 1.0,
+    "allowed_process_definition_keys": [
+      "holidayRequest",
+      "oneTaskProcess",
+      "vacationRequest",
+      "createTimersProcess",
+      "fixSystemFailure",
+      "escalationExample",
+      "reviewSaledLead"
+    ],
+    "flowable_rule_allowed_root_fields": [
+      "processDefinitionKey",
+      "processDefinitionId",
+      "message",
+      "businessKey",
+      "tenantId",
+      "variables",
+      "returnVariables",
+      "outcome"
+    ],
+    "flowable_rule_required_variables_by_key": {
+      "holidayRequest": ["employee", "nrOfHolidays"]
+    },
+    "flowable_rule_variable_type_hints": {
+      "holidayRequest": {
+        "employee": "string",
+        "nrOfHolidays": "number"
+      }
+    },
+    "flowable_rule_max_json_depth": 6,
+    "flowable_rule_max_string_len": 512,
+    "flowable_rule_max_total_keys": 80,
+    "flowable_rule_max_variables": 50,
+    "flowable_rule_max_variable_name_len": 128
+  },
+  "model_files": [
+    {
+      "name": "flowable_ae_v2_model",
+      "path": "model_stage/models/flowable_ae_v2_model.pt",
+      "required": true
+    },
+    {
+      "name": "flowable_ae_v2_meta",
+      "path": "model_stage/models/flowable_ae_v2_meta.json",
+      "required": true
+    }
+  ],
+  "runtime_requirements": [
+    "Flowable REST should be available at FLOWABLE_BASE, defaulting to http://127.0.0.1:8080 in the runner template.",
+    "The AE score service should be started with the Flowable-AE v2 model and meta.",
+    "Use this profile only by explicit NV_DECISION_PROFILE_PATH override."
+  ]
+}
