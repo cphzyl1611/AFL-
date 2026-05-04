@@ -1,0 +1,5 @@
+run_id,task_id,duration,last_http_code,http_2xx_count,rpc_fail_total,body_score_rpc_ok,body_score_rpc_fail,BODY_DECISION_DBG,ae_low,ae_high,second_pass,second_reject,flowable_rule_v1_count,pass,reject,crash,hang
+flowable_rule_v1_smoke_run1,26a0a386e8b3,20,201,304,0,342,0,342,0,0,304,38,342,304,38,0,0
+flowable_rule_v1_smoke_run2,38c6c245a87b,20,201,309,0,348,0,348,0,0,309,39,348,309,39,0,0
+flowable_rule_v1_smoke_run3,428493bb37c2,20,201,310,0,349,0,349,0,0,310,39,349,310,39,0,0
+flowable_rule_v1_smoke_run_long60,9132783c9ea1,60,201,932,0,1049,0,1049,0,0,932,117,1049,932,117,0,0

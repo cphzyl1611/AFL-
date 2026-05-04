@@ -111,19 +111,40 @@ valid_reject 从 0 变为 0。
 
 - 本轮只完成 36 条小规模固定回放；
 - 规则约束只覆盖当前标签集中最明确的 Flowable process start schema；
-- 尚未进行扩样本、重复 smoke、覆盖收益和延迟影响评估；
+- 已追加多轮真实 smoke 稳定性验证，但仍未完成扩样本、覆盖收益和延迟影响评估；
 - 正式 `flowable_v2.json` 仍应保持 `enable_second_stage=false`。
 
-## 10. 后续建议
+## 10. 多轮真实 smoke 补充验证
+
+后续已完成 3 轮 20 秒真实 smoke 和 1 轮 60 秒真实 smoke，用于观察 `flowable_rule_v1` 在真实 Flowable REST 服务中的稳定性。
+
+| run_id | task_id | duration | rpc_fail_total | last_http_code | second_pass / second_reject | flowable_rule_v1 count | crash / hang |
+| --- | --- | ---: | ---: | ---: | --- | ---: | --- |
+| flowable_rule_v1_smoke_run1 | `26a0a386e8b3` | 20s | 0 | 201 | 304 / 38 | 342 | 0 / 0 |
+| flowable_rule_v1_smoke_run2 | `38c6c245a87b` | 20s | 0 | 201 | 309 / 39 | 348 | 0 / 0 |
+| flowable_rule_v1_smoke_run3 | `428493bb37c2` | 20s | 0 | 201 | 310 / 39 | 349 | 0 / 0 |
+| flowable_rule_v1_smoke_run_long60 | `9132783c9ea1` | 60s | 0 | 201 | 932 / 117 | 1049 | 0 / 0 |
+
+补充报告：
+
+`docs/review/Flowable_rule_v1_multirun_smoke_report.md`
+
+补充 evidence：
+
+`docs/review/evidence/flowable_dynamic_redundancy/flowable_rule_v1_multirun/`
+
+结论：`flowable_rule_v1` 在本轮多轮真实 smoke 中稳定进入 second stage runtime，并产生可观测 `second_pass` / `second_reject`。该结果支持其进入下一轮扩样本验证，但仍不足以直接修改正式 `flowable_v2.json`。
+
+## 11. 后续建议
 
 1. 扩充 valid / invalid / uncertain 标签集，覆盖更多流程定义 key；
 2. 根据 HTTP 4xx/5xx 反馈补充规则定标；
 3. 在更大样本上检查 valid_reject 风险；
-4. 重复多轮 20 秒和更长时长真实 smoke；
-5. 仅在扩样本和多轮真实 smoke 都稳定后，再讨论是否修改正式 Flowable profile；
+4. 继续做更长时长和更多流程定义的真实 smoke；
+5. 仅在扩样本、覆盖收益和长时间稳定性都充分后，再讨论是否修改正式 Flowable profile；
 6. Flowable-GAN 仍需独立训练或验证，不能由本规则推出完成。
 
-## 11. 结论边界
+## 12. 结论边界
 
 可以写：`flowable_rule_v1` 在固定标签集回放中显著降低 invalid_pass，并具备初步 Flowable schema 过滤能力。
 
