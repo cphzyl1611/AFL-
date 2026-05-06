@@ -1,0 +1,40 @@
+{
+  "task_id": "54a4832c00ee",
+  "status": "exited",
+  "task_json": "/home/dministrator/AFLplusplus/runner/tasks/54a4832c00ee/task.json",
+  "report_json": "/home/dministrator/AFLplusplus/runner/tasks/54a4832c00ee/report.json",
+  "experiment_dir": "",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "duration_plan": [
+    300
+  ],
+  "notes": "Flowable post-enable stability validation; uses formal integration/platform_profiles/flowable_v2.json with flowable_rule_v1 enabled. O2OA GAN is not used.",
+  "pid": 68276,
+  "run_dir": "/home/dministrator/AFLplusplus/runner/runs/54a4832c00ee",
+  "afl_out_dir": "/home/dministrator/AFLplusplus/runner/runs/54a4832c00ee/afl_out",
+  "command": [
+    "bash",
+    "-lc",
+    "FLOWABLE_BASE=http://127.0.0.1:8080 NV_BODY_SCORE_ENDPOINT=unix:///tmp/nv_valid_flowable.sock NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/flowable_v2.json RUNNER_RUN_DIR=/home/dministrator/AFLplusplus/runner/runs/54a4832c00ee DUR=300 python3 /tmp/flowable_rule_v1_incremental_smoke_runner.py"
+  ],
+  "artifacts": {
+    "stdout.log": "/home/dministrator/AFLplusplus/runner/runs/54a4832c00ee/stdout.log",
+    "stderr.log": "/home/dministrator/AFLplusplus/runner/runs/54a4832c00ee/stderr.log"
+  },
+  "summary_dur20": {},
+  "summary_dur60": {},
+  "fuzzer_stats": {},
+  "generated_at": "2026-05-06 18:16:23",
+  "decision_summary": {
+    "model": "ae_flowable_v2",
+    "threshold": "6.3",
+    "status": "exited",
+    "dur20_pass_reject": "",
+    "dur60_pass_reject": "",
+    "rpc_fail_total": 0,
+    "has_dur20": false,
+    "has_dur60": false
+  }
+}

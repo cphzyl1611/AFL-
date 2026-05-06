@@ -116,6 +116,24 @@ O2OA 正式 profile 未修改。
 3. 回滚后 Flowable 回到 AE v2 第一阶段正式 baseline；
 4. 使用本轮 evidence 和后续异常样本进行误拒归因，再决定是否重新启用。
 
+## 8.1 启用后长时稳定性与回滚演练补充
+
+后续已完成 Flowable `flowable_rule_v1` 正式启用后的长时稳定性验证与回滚演练：
+
+- 报告：`docs/review/Flowable_rule_v1_post_enable_stability_and_rollback_report.md`
+- evidence：`docs/review/evidence/flowable_dynamic_redundancy/flowable_rule_v1_post_enable_stability/`
+
+补充结果：
+
+| phase | task_id | duration | second_pass / second_reject | rpc_fail_total | last_http_code | crash / hang |
+| --- | --- | ---: | --- | ---: | ---: | --- |
+| post-enable stability | `a494bb5476ca` | 180s | 2794 / 350 | 0 | 201 | 0 / 0 |
+| post-enable stability | `54a4832c00ee` | 300s | 4657 / 582 | 0 | 201 | 0 / 0 |
+| rollback drill | `9bc0d4fe3eee` | 20s | 0 / 0 | 0 | 0 | 0 / 0 |
+| restore validation | `b2bd9603650a` | 20s | 311 / 39 | 0 | 201 | 0 / 0 |
+
+回滚态未进入 `flowable_rule_v1`；恢复正式启用后重新进入 `flowable_rule_v1`。
+
 ## 9. 当前可声称内容
 
 可以声称：
