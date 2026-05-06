@@ -1,0 +1,48 @@
+{
+  "task_id": "779145c12c25",
+  "status": "exited",
+  "task_json": "/home/dministrator/AFLplusplus/runner/tasks/779145c12c25/task.json",
+  "report_json": "/home/dministrator/AFLplusplus/runner/tasks/779145c12c25/report.json",
+  "experiment_dir": "",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "duration_plan": [
+    60
+  ],
+  "notes": "Flowable formal profile enable validation; uses formal integration/platform_profiles/flowable_v2.json after flowable_rule_v1 second-stage enablement. O2OA GAN is not used.",
+  "pid": 67093,
+  "run_dir": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25",
+  "afl_out_dir": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25/afl_out",
+  "command": [
+    "bash",
+    "-lc",
+    "FLOWABLE_BASE=http://127.0.0.1:8080 NV_BODY_SCORE_ENDPOINT=unix:///tmp/nv_valid_flowable.sock NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/flowable_v2.json RUNNER_RUN_DIR=/home/dministrator/AFLplusplus/runner/runs/779145c12c25 DUR=60 python3 /tmp/flowable_rule_v1_incremental_smoke_runner.py"
+  ],
+  "artifacts": {
+    "summary_dur60.csv": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25/summary_dur60.csv",
+    "body_valid_stats_dur60.json": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25/body_valid_stats_dur60.json",
+    "stdout.log": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25/stdout.log",
+    "stderr.log": "/home/dministrator/AFLplusplus/runner/runs/779145c12c25/stderr.log"
+  },
+  "summary_dur20": {},
+  "summary_dur60": {
+    "mode": "flowable_rule_v1_real_smoke",
+    "body_score_pass": 934,
+    "body_score_reject": 117,
+    "body_score_rpc_fail": 0,
+    "nv_total_valid_exec": 1051
+  },
+  "fuzzer_stats": {},
+  "generated_at": "2026-05-06 14:02:11",
+  "decision_summary": {
+    "model": "ae_flowable_v2",
+    "threshold": "6.3",
+    "status": "exited",
+    "dur20_pass_reject": "",
+    "dur60_pass_reject": "934/117",
+    "rpc_fail_total": 0,
+    "has_dur20": false,
+    "has_dur60": true
+  }
+}

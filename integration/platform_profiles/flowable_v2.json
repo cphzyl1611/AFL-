@@ -5,7 +5,7 @@
   "target_type": "http_api",
   "target_endpoint": "POST /flowable-rest/service/runtime/process-instances",
   "seed_dir": "in/flowable_process_start_dataset_v2",
-  "model_route": "Flowable-AE v2 primary route with reserved decision profile",
+  "model_route": "Flowable-AE v2 primary route with Flowable local rule v1 second-stage",
   "model_name": "ae_flowable_v2",
   "threshold": "6.3",
   "manifest": "model_stage/manifests/flowable_manifest_90.txt",
@@ -13,15 +13,48 @@
   "duration_plan": [20, 60],
   "is_mainline": false,
   "validation_scope": "Second-platform minimum calibration validation on a static mixed Flowable dataset; this is not a full AFL++ mutation fuzzing chain.",
-  "description": "Flowable second-platform profile. It preserves the accepted Flowable-AE v2@6.3 final route and reserves the dynamic decision structure without enabling the second stage.",
+  "description": "Flowable second-platform profile. It preserves the accepted Flowable-AE v2@6.3 final route and formally enables the Flowable-specific local rule v1 second stage.",
   "result_description": "Runner reports summary_dur20.csv, summary_dur60.csv, body_valid_stats_dur20.json and body_valid_stats_dur60.json when Flowable REST and score service are available.",
-  "notes": "Current Flowable final profile: Flowable-AE v2@6.3. v3 is retained only as a reference because it did not outperform v2. Do not describe this profile as a complete second-platform AFL++ fuzzing main chain.",
+  "notes": "Current Flowable final profile: Flowable-AE v2@6.3 with Flowable local rule v1 second stage enabled. v3 is retained only as a reference because it did not outperform v2. This does not claim Flowable-GAN completion or complete strong multi-platform dynamic heterogeneous redundancy.",
   "decision": {
     "t_low": 5.8,
     "t_high": 6.3,
-    "enable_second_stage": false,
-    "second_stage_type": "rule",
-    "second_stage_threshold": 1.0
+    "enable_second_stage": true,
+    "second_stage_type": "flowable_rule",
+    "second_stage_threshold": 1.0,
+    "allowed_process_definition_keys": [
+      "holidayRequest",
+      "oneTaskProcess",
+      "vacationRequest",
+      "createTimersProcess",
+      "fixSystemFailure",
+      "escalationExample",
+      "reviewSaledLead"
+    ],
+    "flowable_rule_allowed_root_fields": [
+      "processDefinitionKey",
+      "processDefinitionId",
+      "message",
+      "businessKey",
+      "tenantId",
+      "variables",
+      "returnVariables",
+      "outcome"
+    ],
+    "flowable_rule_required_variables_by_key": {
+      "holidayRequest": ["employee", "nrOfHolidays"]
+    },
+    "flowable_rule_variable_type_hints": {
+      "holidayRequest": {
+        "employee": "string",
+        "nrOfHolidays": "number"
+      }
+    },
+    "flowable_rule_max_json_depth": 6,
+    "flowable_rule_max_string_len": 512,
+    "flowable_rule_max_total_keys": 80,
+    "flowable_rule_max_variables": 50,
+    "flowable_rule_max_variable_name_len": 128
   },
   "model_files": [
     {

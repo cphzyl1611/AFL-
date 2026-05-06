@@ -4,7 +4,7 @@
 
 Flowable 已完成 AE + `flowable_rule_v1` second stage 的多阶段验证，包括固定标签集回放、多轮真实 smoke、扩样本与多流程 key 覆盖验证、正式启用候选评审和受控灰度验证。
 
-本评审包用于把已有证据整理为正式启用变更评审材料。当前只生成评审文档，不修改正式 `integration/platform_profiles/flowable_v2.json`，不修改 O2OA 配置，不训练 GAN，也不把 O2OA GAN 复用到 Flowable。
+本评审包用于把已有证据整理为正式启用变更评审材料。该评审包生成时尚未修改正式 `integration/platform_profiles/flowable_v2.json`；后续已通过独立正式启用 commit 修改该 profile，并生成启用后回归报告。
 
 ## 2. 当前正式基线
 
@@ -200,18 +200,40 @@ Flowable 已完成 AE + `flowable_rule_v1` second stage 的多阶段验证，包
 - 吞吐、延迟和覆盖收益无不可接受回退；
 - O2OA GAN online 路径不受影响。
 
-## 13. 结论边界
+## 13. 正式启用结果补充
+
+后续已完成独立正式启用变更：
+
+- 正式启用报告：`docs/review/Flowable_rule_v1_formal_enable_report.md`
+- evidence：`docs/review/evidence/flowable_dynamic_redundancy/flowable_rule_v1_formal_enable/`
+- 正式 profile：`integration/platform_profiles/flowable_v2.json`
+
+启用后配置：
+
+- `enable_second_stage=true`
+- `second_stage_type=flowable_rule`
+- `second_stage_threshold=1.0`
+
+启用后最小 smoke：
+
+| duration | task_id | second_pass / second_reject | rpc_fail_total | last_http_code | crash / hang |
+| ---: | --- | --- | ---: | ---: | --- |
+| 20s | `7ac054e8bdfb` | 309 / 39 | 0 | 201 | 0 / 0 |
+| 60s | `779145c12c25` | 934 / 117 | 0 | 201 | 0 / 0 |
+
+O2OA 未受影响，仍保持 `second_stage_type=gan`、`second_stage_threshold=1.0`。
+
+## 14. 结论边界
 
 可以写：
 
 - `flowable_rule_v1` 可以进入正式 profile 变更评审；
 - `flowable_rule_v1` 已完成扩样本、多流程 key、多轮 smoke 和受控灰度验证；
-- 本轮建议准备正式启用 PR/commit。
+- `flowable_rule_v1` 已通过独立正式启用 commit 进入 `flowable_v2.json`；
+- 正式启用后最小 smoke 通过。
 
 不能写：
 
-- 正式 `flowable_v2.json` 已启用 second stage；
-- 本轮已经修改正式 Flowable profile；
 - Flowable-GAN 已完成；
 - O2OA GAN 可以直接迁移到 Flowable；
 - 完整强多平台动态异构冗余全部完成。

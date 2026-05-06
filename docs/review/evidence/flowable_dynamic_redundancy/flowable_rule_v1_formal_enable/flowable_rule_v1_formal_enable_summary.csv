@@ -1,0 +1,3 @@
+run_id,task_id,duration,last_http_code,http_2xx_count,rpc_fail_total,body_score_rpc_ok,body_score_rpc_fail,BODY_DECISION_DBG,ae_low,ae_high,second_pass,second_reject,flowable_rule_v1_count,pass,reject,crash,hang
+20s,7ac054e8bdfb,20,201,309,0,348,0,348,0,0,309,39,348,309,39,0,0
+60s,779145c12c25,60,201,934,0,1051,0,1051,0,0,934,117,1051,934,117,0,0
