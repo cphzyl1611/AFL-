@@ -142,11 +142,26 @@
 - candidate 可进入正式启用评审下一阶段；
 - 仍不建议直接修改正式 `flowable_v2.json`。
 
+## 9.2 正式启用变更评审包补充
+
+后续已生成正式启用变更评审包和拟变更 diff 说明：
+
+- 变更评审包：`docs/review/Flowable_rule_v1_formal_enable_change_review_package.md`
+- 拟变更说明：`docs/review/Flowable_rule_v1_formal_enable_proposed_diff.md`
+
+补充结论：
+
+- `flowable_rule_v1` 可以进入正式 profile 变更评审准备阶段；
+- 本轮仍不实际修改正式 `integration/platform_profiles/flowable_v2.json`；
+- 后续若正式启用，必须另开独立 profile 变更 commit，并保留回滚路径；
+- Flowable-GAN 和完整强多平台动态异构冗余仍不是本评审包的完成结论。
+
 ## 10. 最终评审结论
 
 评审结论：
 
 - 可以建议：`flowable_rule_v1` 进入 Flowable second stage 正式启用候选；
+- 可以建议：进入正式 profile 变更评审准备阶段；
 - 不建议：直接修改正式 `integration/platform_profiles/flowable_v2.json`；
 - 不能声称：正式 `flowable_v2.json` 已启用 second stage；
 - 不能声称：Flowable-GAN 已完成；
