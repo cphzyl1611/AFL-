@@ -84,7 +84,7 @@ To learn about fuzzing other targets, see:
 - `high`：`ae_score >= t_high`，直接拒绝。
 - `uncertain`：`t_low < ae_score < t_high`，触发第二阶段。
 
-当前 O2OA 正式 profile 中，第二阶段优先走 GAN RPC 路径；若 GAN RPC 不可用，则进入规则型 fallback 路径。Flowable 正式 `flowable_v2.json` 仍保持 `enable_second_stage=false`，但已经通过临时 probe profile 完成 AE + local rule second stage 真实服务 smoke；Flowable-GAN 未完成。
+当前 O2OA 正式 profile 中，第二阶段优先走 GAN RPC 路径；若 GAN RPC 不可用，则进入规则型 fallback 路径。Flowable 正式 `flowable_v2.json` 已启用 `flowable_rule_v1` second stage，并完成正式启用后长时 smoke、回滚演练和恢复验证；Flowable-GAN 未完成。
 
 ## 架构链路
 
@@ -137,26 +137,29 @@ return "reject", {"stage": "fallback"}
 当前版本的实现边界如下：
 
 - O2OA 正式 profile 已启用 GAN second stage，默认 `second_stage_threshold=1.0`；`threshold=1.2` 仅作为下一轮扩样本验证候选，不是正式默认。
-- Flowable 正式 profile 暂不启用 second stage，`flowable_v2.json` 仍保持 `enable_second_stage=false`；已通过临时 probe profile 完成 AE + local rule second stage 真实服务 smoke。
-- 当前属于阶段性动态二阶段验证。第一阶段仍由 AE 主导，第二阶段只在灰区触发，不改变 AFL++、runner 和平台接入主链；Flowable-GAN、跨平台 GAN 迁移和完整多平台动态异构冗余仍需后续独立验证。
+- Flowable 正式 profile 已启用 `flowable_rule_v1` second stage，`flowable_v2.json` 当前保持 `enable_second_stage=true`、`second_stage_type=flowable_rule`、`second_stage_threshold=1.0`。
+- 当前属于工程实现与阶段性交付验证完成状态。第一阶段仍由 AE 主导，第二阶段只在灰区触发，不改变 AFL++、runner 和平台接入主链；Flowable-GAN、跨平台 GAN 迁移和完整强多平台动态异构冗余仍需后续独立验证。
 
 ## 动态异构冗余机制阶段性结论
 
 当前可交付口径如下：
 
+- 最终口径：动态异构冗余机制在工程实现与阶段性交付验证意义上已完成。
 - O2OA：AE + GAN online second stage 动态异构冗余闭环已完成，正式 profile 启用 GAN second stage，默认 `second_stage_threshold=1.0`。
-- Flowable：AE + local rule second stage 真实服务 smoke 已通过；正式 `integration/platform_profiles/flowable_v2.json` 仍保持 `enable_second_stage=false`，验证使用临时 probe profile。
-- 总体：多平台动态二阶段机制已完成阶段性验证，O2OA 覆盖 GAN online 路径，Flowable 覆盖 local rule second stage 真实服务路径。
+- Flowable：正式 `integration/platform_profiles/flowable_v2.json` 已启用 AE + `flowable_rule_v1` second stage，并完成正式启用后 180s / 300s 长时 smoke、回滚演练和恢复验证。
+- 总体：O2OA 与 Flowable 双平台动态二阶段机制已完成阶段性交付验证。
 
 当前不能声称：
 
 - Flowable GAN online 已完成；
 - O2OA GAN 可以直接迁移到 Flowable；
 - GAN 效果优于 rule fallback；
-- 完整多平台动态异构冗余全部完成。
+- 180s / 300s smoke 等同于生产级长期验证；
+- 完整强多平台动态异构冗余全部完成。
 
 关键报告路径：
 
+- `docs/review/动态异构冗余机制最终完成说明.md`
 - `docs/review/动态异构冗余机制总体阶段性收口报告.md`
 - `docs/review/动态异构冗余机制真实联调验证报告.md`
 - `docs/review/Flowable_dynamic_redundancy_second_stage_probe_report.md`
