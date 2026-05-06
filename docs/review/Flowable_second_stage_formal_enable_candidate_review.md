@@ -127,6 +127,21 @@
 7. 候选 profile 灰度启用和回滚演练；
 8. Flowable-GAN 独立模型、阈值定标和在线验证。
 
+## 9.1 受控灰度验证补充
+
+后续已完成 baseline 与 `flowable_rule_v1` candidate 的受控灰度验证：
+
+- 报告：`docs/review/Flowable_rule_v1_gray_validation_report.md`
+- evidence：`docs/review/evidence/flowable_dynamic_redundancy/flowable_rule_v1_gray_validation/`
+
+灰度验证结论：
+
+- baseline 使用正式 `flowable_v2.json`，保持 `enable_second_stage=false`，灰区样本按正式基线拒绝；
+- candidate 使用临时灰度 profile，4 轮均稳定进入 `flowable_rule_v1` runtime；
+- candidate 4 轮均 `rpc_fail_total=0`，HTTP 末态均为 201，未观察到 crash / hang；
+- candidate 可进入正式启用评审下一阶段；
+- 仍不建议直接修改正式 `flowable_v2.json`。
+
 ## 10. 最终评审结论
 
 评审结论：

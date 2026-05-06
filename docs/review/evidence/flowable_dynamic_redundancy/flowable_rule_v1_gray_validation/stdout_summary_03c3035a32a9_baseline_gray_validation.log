@@ -1,0 +1,2 @@
+[SUMMARY] task=flowable_rule_v1_real_smoke duration=60 total=1131 pass=0 reject=1131 rpc_ok=1131 rpc_fail=0 last_http_code=0 http_201=0 BODY_DECISION_DBG=1131 ae_low=0 ae_high=0 second_pass=0 second_reject=0 flowable_rule_v1=0
+/home/dministrator/AFLplusplus/runner/runs/03c3035a32a9/summary_dur60.csv

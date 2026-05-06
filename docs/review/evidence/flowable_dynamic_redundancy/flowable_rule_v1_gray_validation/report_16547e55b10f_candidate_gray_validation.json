@@ -1,0 +1,48 @@
+{
+  "task_id": "16547e55b10f",
+  "status": "exited",
+  "task_json": "/home/dministrator/AFLplusplus/runner/tasks/16547e55b10f/task.json",
+  "report_json": "/home/dministrator/AFLplusplus/runner/tasks/16547e55b10f/report.json",
+  "experiment_dir": "",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "duration_plan": [
+    60
+  ],
+  "notes": "Flowable rule_v1 controlled gray validation candidate; uses Flowable-AE v2 and grey samples. Official flowable_v2 profile is not modified. O2OA GAN is not used.",
+  "pid": 65715,
+  "run_dir": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f",
+  "afl_out_dir": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f/afl_out",
+  "command": [
+    "bash",
+    "-lc",
+    "FLOWABLE_BASE=http://127.0.0.1:8080 NV_BODY_SCORE_ENDPOINT=unix:///tmp/nv_valid_flowable.sock NV_DECISION_PROFILE_PATH=/tmp/flowable_rule_v1_gray_candidate.json RUNNER_RUN_DIR=/home/dministrator/AFLplusplus/runner/runs/16547e55b10f DUR=60 python3 /tmp/flowable_rule_v1_incremental_smoke_runner.py"
+  ],
+  "artifacts": {
+    "summary_dur60.csv": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f/summary_dur60.csv",
+    "body_valid_stats_dur60.json": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f/body_valid_stats_dur60.json",
+    "stdout.log": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f/stdout.log",
+    "stderr.log": "/home/dministrator/AFLplusplus/runner/runs/16547e55b10f/stderr.log"
+  },
+  "summary_dur20": {},
+  "summary_dur60": {
+    "mode": "flowable_rule_v1_real_smoke",
+    "body_score_pass": 934,
+    "body_score_reject": 117,
+    "body_score_rpc_fail": 0,
+    "nv_total_valid_exec": 1051
+  },
+  "fuzzer_stats": {},
+  "generated_at": "2026-05-06 13:41:40",
+  "decision_summary": {
+    "model": "ae_flowable_v2",
+    "threshold": "6.3",
+    "status": "exited",
+    "dur20_pass_reject": "",
+    "dur60_pass_reject": "934/117",
+    "rpc_fail_total": 0,
+    "has_dur20": false,
+    "has_dur60": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "task_id": "971ca3367121",
+  "status": "exited",
+  "task_json": "/home/dministrator/AFLplusplus/runner/tasks/971ca3367121/task.json",
+  "report_json": "/home/dministrator/AFLplusplus/runner/tasks/971ca3367121/report.json",
+  "experiment_dir": "",
+  "model_name": "ae_flowable_v2",
+  "threshold": "6.3",
+  "manifest": "model_stage/manifests/flowable_manifest_90.txt",
+  "duration_plan": [
+    20
+  ],
+  "notes": "Flowable rule_v1 controlled gray validation baseline; uses Flowable-AE v2 and grey samples. Official flowable_v2 profile is not modified. O2OA GAN is not used.",
+  "pid": 65562,
+  "run_dir": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121",
+  "afl_out_dir": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121/afl_out",
+  "command": [
+    "bash",
+    "-lc",
+    "FLOWABLE_BASE=http://127.0.0.1:8080 NV_BODY_SCORE_ENDPOINT=unix:///tmp/nv_valid_flowable.sock NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/flowable_v2.json RUNNER_RUN_DIR=/home/dministrator/AFLplusplus/runner/runs/971ca3367121 DUR=20 python3 /tmp/flowable_rule_v1_incremental_smoke_runner.py"
+  ],
+  "artifacts": {
+    "summary_dur20.csv": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121/summary_dur20.csv",
+    "body_valid_stats_dur20.json": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121/body_valid_stats_dur20.json",
+    "stdout.log": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121/stdout.log",
+    "stderr.log": "/home/dministrator/AFLplusplus/runner/runs/971ca3367121/stderr.log"
+  },
+  "summary_dur20": {
+    "mode": "flowable_rule_v1_real_smoke",
+    "body_score_pass": 0,
+    "body_score_reject": 378,
+    "body_score_rpc_fail": 0,
+    "nv_total_valid_exec": 378
+  },
+  "summary_dur60": {},
+  "fuzzer_stats": {},
+  "generated_at": "2026-05-06 13:36:36",
+  "decision_summary": {
+    "model": "ae_flowable_v2",
+    "threshold": "6.3",
+    "status": "exited",
+    "dur20_pass_reject": "0/378",
+    "dur60_pass_reject": "",
+    "rpc_fail_total": 0,
+    "has_dur20": true,
+    "has_dur60": false
+  }
+}
