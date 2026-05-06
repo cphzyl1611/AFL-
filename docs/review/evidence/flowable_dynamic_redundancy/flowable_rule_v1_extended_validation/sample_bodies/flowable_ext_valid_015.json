@@ -1,0 +1,1 @@
+{"processDefinitionKey":"createTimersProcess","variables":[{"name":"initiator","value":"user_2"},{"name":"priority","value":2},{"name":"approved","value":true}],"returnVariables":true}

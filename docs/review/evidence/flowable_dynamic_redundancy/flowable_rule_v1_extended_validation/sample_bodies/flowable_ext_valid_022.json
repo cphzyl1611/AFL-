@@ -1,0 +1,1 @@
+{"processDefinitionKey":"escalationExample","variables":[{"name":"initiator","value":"user_1"},{"name":"priority","value":1},{"name":"approved","value":false}],"businessKey":"extended-escalationExample-1"}

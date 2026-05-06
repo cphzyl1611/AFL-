@@ -1,0 +1,1 @@
+{"processDefinitionKey":"escalationExample","variables":[{"name":"payload","value":{"nested":["a","b"],"flag":true}}],"outcome":"unknown_local_outcome"}

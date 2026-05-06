@@ -1,0 +1,1 @@
+{"processDefinitionKey":"vacationRequest","variables":[{"name":"initiator","value":"user_1"},{"name":"priority","value":1},{"name":"approved","value":false}],"businessKey":"extended-vacationRequest-1"}

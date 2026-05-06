@@ -1,0 +1,1 @@
+{"processDefinitionKey":"holidayRequest","variables":[{"name":"employee","value":"user_1"},{"name":"nrOfHolidays","value":2},{"name":"description","value":"extended validation"}],"businessKey":"extended-holidayRequest-1"}

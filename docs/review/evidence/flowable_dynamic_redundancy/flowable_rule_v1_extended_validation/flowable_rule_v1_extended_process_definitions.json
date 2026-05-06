@@ -1,0 +1,13 @@
+{
+  "found_processDefinitionKey": [
+    "holidayRequest",
+    "oneTaskProcess",
+    "vacationRequest",
+    "createTimersProcess",
+    "fixSystemFailure",
+    "escalationExample",
+    "reviewSaledLead"
+  ],
+  "missing_processDefinitionKey": [],
+  "total_process_definitions": 7
+}
