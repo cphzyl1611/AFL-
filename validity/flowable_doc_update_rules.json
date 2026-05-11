@@ -1,0 +1,50 @@
+{
+  "ruleset": "flowable_doc_update_rules",
+  "target": "Flowable document-process substitute process variables update body",
+  "root": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "value"
+      ]
+    }
+  },
+  "variable_format": {
+    "name_type": "string",
+    "type_field": {
+      "type": "string",
+      "recommended": "string"
+    }
+  },
+  "variables": {
+    "docTitle": {
+      "required": true,
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "docContent": {
+      "required": true,
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "modifyReason": {
+      "required": false,
+      "type": "string"
+    },
+    "docStatus": {
+      "required": false,
+      "type": "string",
+      "enum": [
+        "draft",
+        "updated",
+        "submitted",
+        "completed"
+      ]
+    }
+  }
+}

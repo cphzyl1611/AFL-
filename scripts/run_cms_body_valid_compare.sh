@@ -35,7 +35,7 @@ run_one() {
   export NV_TARGET_CONFIG="$CFG"
   export NV_ENDPOINT_NAME="$ENDPOINT"
   export NV_STATUS_PATH="$STATUS_PATH"
-  export NV_TOKEN="$NV_TOKEN"
+  export NV_TOKEN=${NV_TOKEN}
 
   # 关闭旧 C-side validity，避免干扰
   unset NV_TASK_PATH || true

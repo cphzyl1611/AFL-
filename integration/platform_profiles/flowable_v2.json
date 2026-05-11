@@ -15,7 +15,7 @@
   "validation_scope": "Second-platform minimum calibration validation on a static mixed Flowable dataset; this is not a full AFL++ mutation fuzzing chain.",
   "description": "Flowable second-platform profile. It preserves the accepted Flowable-AE v2@6.3 final route and formally enables the Flowable-specific local rule v1 second stage.",
   "result_description": "Runner reports summary_dur20.csv, summary_dur60.csv, body_valid_stats_dur20.json and body_valid_stats_dur60.json when Flowable REST and score service are available.",
-  "notes": "Current Flowable final profile: Flowable-AE v2@6.3 with Flowable local rule v1 second stage enabled. v3 is retained only as a reference because it did not outperform v2. This does not claim Flowable-GAN completion or complete strong multi-platform dynamic heterogeneous redundancy.",
+  "notes": "Current Flowable final profile: Flowable-AE v2@6.3 with Flowable local rule v1 second stage enabled. is_mainline=false and validation scope is minimum calibration on a static mixed dataset. v3 is retained only as a reference because it did not outperform v2. This profile explicitly does not claim Flowable-GAN completion or complete strong multi-platform dynamic heterogeneous redundancy.",
   "decision": {
     "t_low": 5.8,
     "t_high": 6.3,
@@ -60,17 +60,19 @@
     {
       "name": "flowable_ae_v2_model",
       "path": "model_stage/models/flowable_ae_v2_model.pt",
+      "sha256": "72780ccf24401f20e5ae7127955c0b192ec6cbd5d88099ce3c4dc9ab03053bee",
       "required": true
     },
     {
       "name": "flowable_ae_v2_meta",
       "path": "model_stage/models/flowable_ae_v2_meta.json",
+      "sha256": "b3728ec4340a18b6abdeffdce3213778bde4cedbaf6ec048efd497866d510e80",
       "required": true
     }
   ],
   "runtime_requirements": [
     "Flowable REST should be available at FLOWABLE_BASE, defaulting to http://127.0.0.1:8080 in the runner template.",
-    "The AE score service should be started with the Flowable-AE v2 model and meta.",
+    "The AE score service should be started with the Flowable-AE v2 model and meta and should listen on unix:///tmp/nv_valid_flowable.sock.",
     "The local scripts/run_runner_flowable_plan.sh path must be available."
   ]
 }

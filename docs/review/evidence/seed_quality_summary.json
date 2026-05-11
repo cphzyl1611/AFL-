@@ -1,0 +1,380 @@
+{
+  "schema": "seed_quality_summary_v1",
+  "description": "Local seed quality statistics for stage acceptance. The method is engineering heuristic based, not a fully automated semantic seed generator.",
+  "records": [
+    {
+      "seed_dir": "in/alfresco_metadata_update_dataset",
+      "seed_count": 4,
+      "json_seed_count": 4,
+      "valid_json_count": 4,
+      "invalid_json_count": 0,
+      "ok_seed_count": 2,
+      "border_seed_count": 1,
+      "bad_seed_count": 1,
+      "avg_size_bytes": 171.25,
+      "max_size_bytes": 217,
+      "min_size_bytes": 91,
+      "top_level_fields": [
+        "name",
+        "properties"
+      ],
+      "nested_field_paths": [
+        "name",
+        "name.invalid",
+        "properties",
+        "properties.cm:description",
+        "properties.cm:description.bad",
+        "properties.cm:title",
+        "properties.cm:title[]"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "cm:description",
+        "cm:title",
+        "name",
+        "properties"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_doc_create_dataset",
+      "seed_count": 4,
+      "json_seed_count": 4,
+      "valid_json_count": 4,
+      "invalid_json_count": 0,
+      "ok_seed_count": 2,
+      "border_seed_count": 1,
+      "bad_seed_count": 1,
+      "avg_size_bytes": 688.75,
+      "max_size_bytes": 739,
+      "min_size_bytes": 648,
+      "top_level_fields": [
+        "businessKey",
+        "processDefinitionKey",
+        "returnVariables",
+        "variables"
+      ],
+      "nested_field_paths": [
+        "businessKey",
+        "processDefinitionKey",
+        "returnVariables",
+        "variables",
+        "variables[]",
+        "variables[].name",
+        "variables[].type",
+        "variables[].value"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "businessKey",
+        "name",
+        "processDefinitionKey",
+        "variables"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_doc_update_dataset",
+      "seed_count": 4,
+      "json_seed_count": 4,
+      "valid_json_count": 4,
+      "invalid_json_count": 0,
+      "ok_seed_count": 2,
+      "border_seed_count": 1,
+      "bad_seed_count": 1,
+      "avg_size_bytes": 344.25,
+      "max_size_bytes": 405,
+      "min_size_bytes": 303,
+      "top_level_fields": [
+        "name",
+        "type",
+        "value"
+      ],
+      "nested_field_paths": [
+        "[]",
+        "[].name",
+        "[].type",
+        "[].value"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "name"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_process_start",
+      "seed_count": 1,
+      "json_seed_count": 1,
+      "valid_json_count": 1,
+      "invalid_json_count": 0,
+      "ok_seed_count": 1,
+      "border_seed_count": 0,
+      "bad_seed_count": 0,
+      "avg_size_bytes": 161.0,
+      "max_size_bytes": 161,
+      "min_size_bytes": 161,
+      "top_level_fields": [
+        "processDefinitionKey",
+        "variables"
+      ],
+      "nested_field_paths": [
+        "processDefinitionKey",
+        "variables",
+        "variables[]",
+        "variables[].name",
+        "variables[].value"
+      ],
+      "has_expected_negative": false,
+      "business_fields_detected": [
+        "name",
+        "processDefinitionKey",
+        "variables"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_process_start_dataset",
+      "seed_count": 50,
+      "json_seed_count": 50,
+      "valid_json_count": 50,
+      "invalid_json_count": 0,
+      "ok_seed_count": 30,
+      "border_seed_count": 10,
+      "bad_seed_count": 10,
+      "avg_size_bytes": 174.72,
+      "max_size_bytes": 352,
+      "min_size_bytes": 2,
+      "top_level_fields": [
+        "processDefinitionKey",
+        "variables"
+      ],
+      "nested_field_paths": [
+        "processDefinitionKey",
+        "variables",
+        "variables[]",
+        "variables[].name",
+        "variables[].value"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "name",
+        "processDefinitionKey",
+        "variables"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_process_start_dataset_v2",
+      "seed_count": 80,
+      "json_seed_count": 80,
+      "valid_json_count": 80,
+      "invalid_json_count": 0,
+      "ok_seed_count": 50,
+      "border_seed_count": 10,
+      "bad_seed_count": 20,
+      "avg_size_bytes": 184.65,
+      "max_size_bytes": 604,
+      "min_size_bytes": 2,
+      "top_level_fields": [
+        "processDefinitionKey",
+        "variables"
+      ],
+      "nested_field_paths": [
+        "processDefinitionKey",
+        "variables",
+        "variables[]",
+        "variables[].name",
+        "variables[].value",
+        "variables[].value.nested",
+        "variables[].value[]"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "name",
+        "processDefinitionKey",
+        "variables"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/flowable_process_start_dataset_v3",
+      "seed_count": 130,
+      "json_seed_count": 130,
+      "valid_json_count": 130,
+      "invalid_json_count": 0,
+      "ok_seed_count": 80,
+      "border_seed_count": 20,
+      "bad_seed_count": 30,
+      "avg_size_bytes": 193.25,
+      "max_size_bytes": 684,
+      "min_size_bytes": 2,
+      "top_level_fields": [
+        "processDefinitionKey",
+        "variables"
+      ],
+      "nested_field_paths": [
+        "processDefinitionKey",
+        "processDefinitionKey.k",
+        "processDefinitionKey[]",
+        "variables",
+        "variables[]",
+        "variables[].name",
+        "variables[].value",
+        "variables[].value.nested",
+        "variables[].value[]"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [
+        "name",
+        "processDefinitionKey",
+        "variables"
+      ],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed",
+        "has_business_fields"
+      ]
+    },
+    {
+      "seed_dir": "in/o2oa_body",
+      "seed_count": 5,
+      "json_seed_count": 5,
+      "valid_json_count": 5,
+      "invalid_json_count": 0,
+      "ok_seed_count": 0,
+      "border_seed_count": 0,
+      "bad_seed_count": 0,
+      "avg_size_bytes": 31.6,
+      "max_size_bytes": 84,
+      "min_size_bytes": 2,
+      "top_level_fields": [
+        "calendarIds",
+        "categoryIdList",
+        "credentialList",
+        "docStatusList",
+        "endTime",
+        "key",
+        "startTime"
+      ],
+      "nested_field_paths": [
+        "calendarIds",
+        "categoryIdList",
+        "credentialList",
+        "docStatusList",
+        "endTime",
+        "key",
+        "startTime"
+      ],
+      "has_expected_negative": false,
+      "business_fields_detected": [],
+      "notes": []
+    },
+    {
+      "seed_dir": "in/o2oa_body_cms_score",
+      "seed_count": 183,
+      "json_seed_count": 183,
+      "valid_json_count": 183,
+      "invalid_json_count": 0,
+      "ok_seed_count": 113,
+      "border_seed_count": 33,
+      "bad_seed_count": 37,
+      "avg_size_bytes": 109.03,
+      "max_size_bytes": 440,
+      "min_size_bytes": 49,
+      "top_level_fields": [
+        "categoryIdList",
+        "docStatusList",
+        "key",
+        "weirdField1",
+        "weirdField2",
+        "weirdField3"
+      ],
+      "nested_field_paths": [
+        "categoryIdList",
+        "categoryIdList[]",
+        "docStatusList",
+        "docStatusList[]",
+        "key",
+        "weirdField1",
+        "weirdField2",
+        "weirdField3"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed"
+      ]
+    },
+    {
+      "seed_dir": "in/o2oa_body_model_compare",
+      "seed_count": 18,
+      "json_seed_count": 18,
+      "valid_json_count": 18,
+      "invalid_json_count": 0,
+      "ok_seed_count": 7,
+      "border_seed_count": 7,
+      "bad_seed_count": 1,
+      "avg_size_bytes": 99.28,
+      "max_size_bytes": 147,
+      "min_size_bytes": 49,
+      "top_level_fields": [
+        "categoryIdList",
+        "docStatusList",
+        "key",
+        "tag",
+        "weirdField1",
+        "weirdField3"
+      ],
+      "nested_field_paths": [
+        "categoryIdList",
+        "categoryIdList[]",
+        "docStatusList",
+        "docStatusList[]",
+        "key",
+        "tag",
+        "weirdField1",
+        "weirdField3"
+      ],
+      "has_expected_negative": true,
+      "business_fields_detected": [],
+      "notes": [
+        "has_ok_seed",
+        "has_border_seed",
+        "has_expected_negative_seed"
+      ]
+    }
+  ],
+  "warnings": []
+}

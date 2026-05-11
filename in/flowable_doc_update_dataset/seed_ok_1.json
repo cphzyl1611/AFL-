@@ -1,0 +1,22 @@
+[
+  {
+    "name": "docTitle",
+    "type": "string",
+    "value": "部门周例会纪要修订稿"
+  },
+  {
+    "name": "docContent",
+    "type": "string",
+    "value": "补充责任人、完成时限和风险闭环说明。"
+  },
+  {
+    "name": "modifyReason",
+    "type": "string",
+    "value": "补充审核要求"
+  },
+  {
+    "name": "docStatus",
+    "type": "string",
+    "value": "submitted"
+  }
+]

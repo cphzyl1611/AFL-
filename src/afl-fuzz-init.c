@@ -2464,10 +2464,11 @@ void setup_dirs_fds(afl_state_t *afl) {
     fprintf(afl->fsrv.plot_file,
         ", nv_mab_a0_pos, nv_mab_a1_pos, nv_mab_a2_pos"
         ", nv_mab_a0_mean, nv_mab_a1_mean, nv_mab_a2_mean");
-    fprintf(afl->fsrv.plot_file, ", nv_http_ok, nv_http_fail");
     fprintf(afl->fsrv.plot_file, ", nv_mab_a0_pulls, nv_mab_a1_pulls, nv_mab_a2_pulls");
+    fprintf(afl->fsrv.plot_file, ", nv_http_ok, nv_http_fail");
     fprintf(afl->fsrv.plot_file, ", nv_ncov_hit");
     fprintf(afl->fsrv.plot_file, ", nv_err_cnt, nv_rec_cnt, nv_rec_ms_sum, nv_status_cnt");
+    fprintf(afl->fsrv.plot_file, ", nv_valid_cnt, nv_invalid_cnt, nv_err_rate, nv_rec_rate");
 
     fprintf(afl->fsrv.plot_file, "\n");
 
@@ -3455,4 +3456,3 @@ void save_cmdline(afl_state_t *afl, u32 argc, char **argv) {
   *buf = 0;
 
 }
-

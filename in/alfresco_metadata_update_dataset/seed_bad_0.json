@@ -1,0 +1,14 @@
+{
+  "name": {
+    "invalid": "not-a-string"
+  },
+  "properties": {
+    "cm:title": [
+      "invalid",
+      "array"
+    ],
+    "cm:description": {
+      "bad": "object"
+    }
+  }
+}

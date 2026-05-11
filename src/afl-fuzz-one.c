@@ -30,201 +30,10 @@
 #include "cmplog.h"
 #include "afl-mutations.h"
 
-extern u64 ss_new_bits_any;
 /* MOpt */
-/* ===== NV MAB (UCB) ===== */
-#include "third_party/cjson/cJSON.h"
-#include <stdio.h>
-
-static inline u64 nv_fnv1a64(const char *s) {
-  u64 h = 1469598103934665603ULL;
-  for (; *s; ++s) { h ^= (unsigned char)(*s); h *= 1099511628211ULL; }
-  return h ? h : 1;
-}
-
-static inline void nv_covset_init(afl_state_t *afl) {
-  if (afl->nv_covset) return;
-  afl->nv_cov_cap = 1u << 16; /* 65536 */
-  afl->nv_cov_used = 0;
-  afl->nv_covset = ck_alloc(afl->nv_cov_cap * sizeof(u64));
-  memset(afl->nv_covset, 0, afl->nv_cov_cap * sizeof(u64));
-}
-
-static inline int nv_covset_insert(afl_state_t *afl, u64 h) {
-  nv_covset_init(afl);
-  u32 mask = afl->nv_cov_cap - 1;
-  u32 i = (u32)h & mask;
-  while (1) {
-    u64 cur = afl->nv_covset[i];
-    if (!cur) { afl->nv_covset[i] = h; afl->nv_cov_used++; return 1; }
-    if (cur == h) return 0;
-    i = (i + 1) & mask;
-  }
-}
-#if 0
-static double nv_http_reward(afl_state_t *afl, const char *path) {
-
-  FILE *fp = fopen(path, "rb");
-  if (!fp) { afl->nv_http_status_fail++; return 0.0; }
-
-  fseek(fp, 0, SEEK_END);
-  long sz = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-  if (sz <= 0 || sz > 65536) { afl->nv_http_status_fail++; fclose(fp); return 0.0; }
-
-  char *buf = ck_alloc(sz + 1);
-  if (fread(buf, 1, sz, fp) != (size_t)sz) {
-    ck_free(buf);
-    fclose(fp);
-    afl->nv_http_status_fail++;
-    return 0.0;
-  }
-  buf[sz] = 0;
-  fclose(fp);
-
-  cJSON *root = cJSON_Parse(buf);
-  ck_free(buf);
-  if (!root) { afl->nv_http_status_fail++; return 0.0; }
-
-  /* ---- Parse fields ---- */
-  const cJSON *m  = cJSON_GetObjectItemCaseSensitive(root, "method");
-  const cJSON *p  = cJSON_GetObjectItemCaseSensitive(root, "path");
-  const cJSON *c  = cJSON_GetObjectItemCaseSensitive(root, "class");
-  const cJSON *to = cJSON_GetObjectItemCaseSensitive(root, "timeout");
-  const cJSON *rc = cJSON_GetObjectItemCaseSensitive(root, "recovered");
-  const cJSON *nd = cJSON_GetObjectItemCaseSensitive(root, "ncov_delta");
-  const cJSON *na = cJSON_GetObjectItemCaseSensitive(root, "nall");
-  const cJSON *tsj = cJSON_GetObjectItemCaseSensitive(root, "ts_ms");
-  const cJSON *bhj = cJSON_GetObjectItemCaseSensitive(root, "body_hash16");
-
-  u64 ts_ms = cJSON_IsNumber(tsj) ? (u64)tsj->valuedouble : 0;
-  u32 body_hash16 = cJSON_IsNumber(bhj) ? (u32)bhj->valuedouble : 0;
-
-  /* ---- Dedup (cross-process safe) ----
-     stamp = ts_ms XOR (body_hash16<<32). If ts_ms missing, fallback to 1 (no dedup). */
-  u64 stamp = ts_ms ? (ts_ms ^ ((u64)body_hash16 << 32)) : 0;
-  if (!stamp) stamp = 1; /* fallback: treat as always-new when no ts_ms */
-
-  /* ok means: JSON parsed successfully */
-  afl->nv_http_status_ok++;
-
-  if (stamp == afl->nv_last_status_seq) {
-    cJSON_Delete(root);
-    return 0.0; /* repeated status -> no reward, no ncov counting */
-  }
-  afl->nv_last_status_seq = stamp;
-
-  u64 ncov_delta = cJSON_IsNumber(nd) ? (u64)nd->valuedouble : 0;
-  if (ncov_delta > 0) afl->nv_ncov_hit++;
-
-  u64 nall = cJSON_IsNumber(na) ? (u64)na->valuedouble : 0;
-  (void)nall; /* currently unused */
-
-  const char *method = (cJSON_IsString(m) && m->valuestring) ? m->valuestring : "UNK";
-  const char *pathv  = (cJSON_IsString(p) && p->valuestring) ? p->valuestring : "/";
-  const char *cls    = (cJSON_IsString(c) && c->valuestring) ? c->valuestring : "other";
-
-  int timeout = cJSON_IsNumber(to) ? to->valueint : 0;
-  int recovered = cJSON_IsNumber(rc) ? rc->valueint : 0;
-
-  /* ---- Coverage-proxy key (B: METHOD+PATH+class) ---- */
-  char key[1024];
-  snprintf(key, sizeof(key), "%s %s|%s", method, pathv, cls);
-  u64 h = nv_fnv1a64(key);
-  int is_new = nv_covset_insert(afl, h);
-
-  int is_exc = timeout || (strcmp(cls, "5xx") == 0) || (strcmp(cls, "conn_refused") == 0);
-
-  /* ---- Reward (B: ΔN_cov dominates) ---- */
-  double reward = 0.0;
-  reward += 1000.0 * (double)ncov_delta;   /* main: ΔN_cov */
-  reward += is_exc ? 5.0 : 0.0;            /* aux: exception */
-  reward += recovered ? 2.0 : 0.0;         /* aux: recovery */
-  reward += is_new ? 0.2 : 0.0;            /* tiny: new class coverage */
-  if (strcmp(cls, "4xx") == 0) reward -= 0.1;
-
-  cJSON_Delete(root);
-  return reward;
-
-}
-#endif
-
-static inline int nv_arm_enabled(u32 scope_mask, nv_arm_id_t arm) {
-  switch (arm) {
-    case NV_ARM_FIELD_VALUE: return (scope_mask & 0x1) != 0;
-    case NV_ARM_BOUNDARY:    return (scope_mask & 0x2) != 0;
-    case NV_ARM_STRUCTURE:   return (scope_mask & 0x4) != 0;
-    default: return 0;
-  }
-}
-
-static inline nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask) {
-
-  /* respect task scope; fallback: if mask==0 enable all */
-  if (!scope_mask) scope_mask = 0x7;
-
-  /* cold start: try each enabled arm at least once */
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-    if (nv_arm_enabled(scope_mask, a) && mab->arms[a].pulls == 0) return a;
-  }
-
-  /* ensure minimum exploration for each enabled arm */
-  const u64 MIN_EXPLORE = 200;  /* 可调：200/500/1000 */
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-    if (nv_arm_enabled(scope_mask, a) && mab->arms[a].pulls < MIN_EXPLORE) {
-      return a;
-    }
-  }
-
-  /* if still no pulls (shouldn't happen), pick first enabled */
-  if (mab->total_pulls == 0) {
-    for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a)
-      if (nv_arm_enabled(scope_mask, a)) return a;
-    return NV_ARM_FIELD_VALUE;
-  }
-
-  /* UCB */
-  double best_ucb = -1e100;
-  nv_arm_id_t best = NV_ARM_FIELD_VALUE;
-
-  /* avoid ln(0) */
-  double ln_total = log((double)mab->total_pulls + 1.0);
-
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-
-    if (!nv_arm_enabled(scope_mask, a)) continue;
-
-    u64 pulls = mab->arms[a].pulls;
-    if (pulls == 0) return a;
-
-    double mean = mab->arms[a].mean_reward;
-    double ucb = mean + mab->c * sqrt(ln_total / (double)pulls);
-
-    if (ucb > best_ucb) { best_ucb = ucb; best = a; }
-
-  }
-
-  return best;
-
-}
 
 u32 nv_get_current_arm(afl_state_t *afl) {
   return (u32)afl->nv_mab.last_arm;
-}
-
-static inline void nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward) {
-
-  if (arm < 0 || arm >= NV_ARM_MAX) return;
-
-  mab->total_pulls++;
-  mab->arms[arm].pulls++;
-  mab->arms[arm].sum_reward += reward;
-  if (reward > 0) mab->arms[arm].pos_cnt++;
-  /* incremental mean update */
-  double mean = mab->arms[arm].mean_reward;
-  double n = (double)mab->arms[arm].pulls;
-  mab->arms[arm].mean_reward = mean + (reward - mean) / n;
-
 }
 
 static int select_algorithm(afl_state_t *afl, u32 max_algorithm) {
@@ -2145,6 +1954,7 @@ custom_mutator_stage:
             tmp[0] = (char)('0' + (int)arm);
             tmp[1] = 0;
             setenv("NV_CUR_ARM", tmp, 1);
+            unsetenv("NV_JSON_ARM_USED");
           }
 
           size_t mutated_size =
@@ -2161,23 +1971,22 @@ custom_mutator_stage:
 
             }
 
-            /* ---- NV MAB: pick mutation arm for this trial ---- */
-            /* reward baseline A: ss_new_bits_any delta (preferred) */
-            u64 nb_before = ss_new_bits_any;
+            const char *nv_used = getenv("NV_JSON_ARM_USED");
+            if (nv_used && nv_used[0] == (char)('0' + (int)arm) &&
+                nv_used[1] == 0) {
 
-            /* reward baseline B: queued_items delta (fallback, reflects saved interesting cases) */
-            u32 qi_before = afl->queued_items;
+              afl->nv_mab.pending_arm = arm;
+              afl->nv_mab.pending_update = 1;
+              afl->nv_mab.update_source = 1;
+
+            } else {
+
+              afl->nv_mab.pending_update = 0;
+              afl->nv_mab.update_source = 0;
+
+            }
 
             u8 abort_now = common_fuzz_stuff(afl, mutated_buf, (u32)mutated_size);
-
-            u64 nb_after = ss_new_bits_any;
-            u32 qi_after = afl->queued_items;
-
-            /* delta computations */
-            u64 nb_delta = (nb_after > nb_before) ? (nb_after - nb_before) : 0;
-            u32 qi_delta = (qi_after > qi_before) ? (qi_after - qi_before) : 0;
-
-            /* combined reward: keep semantics + avoid all-zero reward */
 
             if (abort_now) goto abandon_entry;
 
@@ -6577,4 +6386,3 @@ u8 fuzz_one(afl_state_t *afl) {
   return (key_val_lv_1 | key_val_lv_2);
 
 }
-

@@ -1,8 +1,21 @@
 # AFL++ Python custom mutator: afl_custom_fuzz()
-import os, json, random
+import os, json, random, ctypes
+
+try:
+    _LIBC = ctypes.CDLL(None)
+    _LIBC.getenv.restype = ctypes.c_char_p
+except Exception:
+    _LIBC = None
+
+def _live_getenv(name, default=""):
+    if _LIBC is not None:
+        raw = _LIBC.getenv(name.encode("utf-8"))
+        if raw is not None:
+            return raw.decode("utf-8", errors="ignore")
+    return os.getenv(name, default)
 
 def _get_arm():
-    s = os.getenv("NV_CUR_ARM", "0")
+    s = _live_getenv("NV_CUR_ARM", "0")
     try:
         a = int(s)
     except:
@@ -89,6 +102,15 @@ def _emit_http(first, headers_lines, body):
     return ("\n".join(out)).encode("utf-8", errors="ignore")
 
 # AFL++ expects these names
+def init(seed):
+    random.seed(seed)
+
+def fuzz(buf, add_buf, max_size):
+    return bytearray(afl_custom_fuzz(None, buf, add_buf, max_size))
+
+def deinit():
+    return None
+
 def afl_custom_init(seed):
     random.seed(seed)
     return {}
@@ -104,6 +126,7 @@ def afl_custom_fuzz(my_state, buf, add_buf, max_size):
         obj = {"raw": body[:128]}
 
     arm = _get_arm()
+    os.environ["NV_JSON_ARM_USED"] = str(arm)
     if arm == 0:
         obj = _mutate_field_value(obj)
     elif arm == 1:

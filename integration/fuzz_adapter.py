@@ -236,6 +236,28 @@ def build_runner_task(request: dict, profile: dict):
     return task_config
 
 
+def apply_simulated_runner_task(task_config: dict, request: dict):
+    duration = int(request.get("simulate_duration_sec", 20))
+    task_config["launch_cmd"] = [
+        sys.executable,
+        "{ROOT}/integration/fuzz_adapter_demo_worker.py",
+    ]
+    task_config["env"] = {
+        "RUN_DIR": "{RUN_DIR}",
+        "AFL_OUT_DIR": "{AFL_OUT_DIR}",
+        "TASK_ID": "{TASK_ID}",
+        "DEMO_DURATION_SEC": str(duration),
+    }
+    task_config["duration_plan"] = [20]
+    task_config["notes"] = (
+        str(task_config.get("notes", ""))
+        + " Runner/adapter integration demo mode: synthetic artifacts only; not fuzzing evidence."
+    ).strip()
+    task_config["integration_demo"] = True
+    task_config["result_summary_csv"] = ""
+    task_config["result_stats_json"] = ""
+
+
 def validate_profile_and_task(profile: dict, task_config: dict):
     checks = []
 
@@ -336,12 +358,16 @@ def action_submit(request: dict, dry_run=False):
 
     profile = load_profile(profile_name)
     task_config = build_runner_task(request, profile)
+    simulate = bool(request.get("simulate") or request.get("integration_demo"))
+    if simulate:
+        apply_simulated_runner_task(task_config, request)
     validation = validate_profile_and_task(profile, task_config)
 
     if dry_run:
         return success_response(
             "submit",
             dry_run=True,
+            simulate=simulate,
             task_id=None,
             profile=profile_name,
             validation=validation,
@@ -370,6 +396,7 @@ def action_submit(request: dict, dry_run=False):
         runner_task_id=runner_task_id,
         task_name=task_config.get("task_name", ""),
         profile=profile_name,
+        simulate=simulate,
         runner_task_json=str(task_path),
         run_dir=runner_out.get("run_dir"),
         afl_out_dir=runner_out.get("afl_out_dir"),
@@ -390,6 +417,7 @@ def action_query(request: dict):
         query_description=describe_status(status, report),
         status=status.get("status", ""),
         pid_alive=bool(status.get("pid_alive", False)),
+        metric_sources=status.get("metric_sources", {}),
         runner_status=status,
     )
 
@@ -452,6 +480,8 @@ def normalize_report(raw_id: str, report: dict, status: dict | None = None):
         "local_report_path": report_path,
         "status": report.get("status") or status.get("status", ""),
         "decision_summary": report.get("decision_summary", {}),
+        "metric_sources": report.get("metric_sources", {}),
+        "integration_boundary": report.get("integration_boundary", ""),
         "artifacts": report.get("artifacts", {}),
     }
 

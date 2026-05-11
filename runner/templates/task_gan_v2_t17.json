@@ -5,12 +5,12 @@
   "threshold": "1.7",
   "manifest": "model_stage/manifests/dataset_manifest_156.txt",
   "duration_plan": [20, 60],
-  "notes": "GAN v2 threshold 1.7 fuzz task",
+  "notes": "O2OA GAN v2 research-only fuzz task at threshold 1.7. It is not the default acceptance route and does not replace AE.",
   "result_summary_csv": "out/cms_body_valid_compare_real/summary.csv",
   "result_stats_json": "/tmp/nv_body_valid_stats.json",
   "launch_cmd": [
     "bash",
     "-lc",
-    "NV_TOKEN=\"$NV_TOKEN\" NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.7\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"{ROOT}/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"{RUN_DIR}\" RUNNER_DURATION_PLAN=\"20 60\" ./scripts/run_runner_real_fuzz_plan.sh"
+    "NV_TOKEN=${NV_TOKEN} NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_gan.sock\" NV_BODY_SCORE_THRESHOLD=\"1.7\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"{ROOT}/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"{RUN_DIR}\" RUNNER_DURATION_PLAN=\"20 60\" ./scripts/run_runner_real_fuzz_plan.sh"
   ]
 }

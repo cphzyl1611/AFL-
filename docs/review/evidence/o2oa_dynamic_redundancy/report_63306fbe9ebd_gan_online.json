@@ -17,7 +17,7 @@
   "command": [
     "bash",
     "-lc",
-    "NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/o2oa_default.json NV_DECISION_PROFILE_NAME=o2oa_default NV_TOKEN=\"$NV_TOKEN\" NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.0\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"/home/dministrator/AFLplusplus/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd\" RUNNER_DURATION_PLAN=\"20\" ./scripts/run_runner_real_fuzz_plan.sh"
+    "NV_DECISION_PROFILE_PATH=/home/dministrator/AFLplusplus/integration/platform_profiles/o2oa_default.json NV_DECISION_PROFILE_NAME=o2oa_default NV_TOKEN=${NV_TOKEN} NV_BODY_SCORE_ENDPOINT=\"unix:///tmp/nv_valid_real.sock\" NV_BODY_SCORE_THRESHOLD=\"1.0\" NV_DEBUG_BODY_VALID=1 IN_DIR=\"/home/dministrator/AFLplusplus/in/o2oa_body_model_compare\" RUNNER_RUN_DIR=\"/home/dministrator/AFLplusplus/runner/runs/63306fbe9ebd\" RUNNER_DURATION_PLAN=\"20\" ./scripts/run_runner_real_fuzz_plan.sh"
   ],
   "artifacts": {
     "nv_body_valid_stats.json": "/tmp/nv_body_valid_stats.json",

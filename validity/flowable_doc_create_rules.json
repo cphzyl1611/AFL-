@@ -1,0 +1,90 @@
+{
+  "ruleset": "flowable_doc_create_rules",
+  "target": "Flowable document-process substitute create/start body",
+  "root": {
+    "type": "object",
+    "required": [
+      "processDefinitionKey",
+      "businessKey",
+      "returnVariables",
+      "variables"
+    ],
+    "constraints": {
+      "processDefinitionKey": {
+        "type": "string",
+        "enum": [
+          "documentProcess"
+        ],
+        "required": true
+      },
+      "businessKey": {
+        "type": "string",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "returnVariables": {
+        "type": "boolean",
+        "required": true
+      },
+      "variables": {
+        "type": "array",
+        "required": true
+      }
+    }
+  },
+  "variable_format": {
+    "type": "object",
+    "required": [
+      "name",
+      "type",
+      "value"
+    ],
+    "name_type": "string",
+    "type_field": {
+      "type": "string",
+      "recommended": "string"
+    }
+  },
+  "variables": {
+    "docTitle": {
+      "required": true,
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "docContent": {
+      "required": true,
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "drafter": {
+      "required": false,
+      "type": "string"
+    },
+    "department": {
+      "required": false,
+      "type": "string"
+    },
+    "securityLevel": {
+      "required": false,
+      "type": "string",
+      "enum": [
+        "normal",
+        "internal",
+        "secret"
+      ]
+    },
+    "docStatus": {
+      "required": false,
+      "type": "string",
+      "enum": [
+        "draft",
+        "updated",
+        "submitted",
+        "completed"
+      ]
+    }
+  }
+}

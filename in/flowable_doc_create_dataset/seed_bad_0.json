@@ -1,0 +1,37 @@
+{
+  "processDefinitionKey": "documentProcess",
+  "businessKey": "DOC-SEED-BAD-001",
+  "returnVariables": true,
+  "variables": [
+    {
+      "name": "docTitle",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "docContent",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "drafter",
+      "type": "string",
+      "value": "rest-admin"
+    },
+    {
+      "name": "department",
+      "type": "string",
+      "value": "office"
+    },
+    {
+      "name": "securityLevel",
+      "type": "string",
+      "value": "public"
+    },
+    {
+      "name": "docStatus",
+      "type": "string",
+      "value": "unknown"
+    }
+  ]
+}

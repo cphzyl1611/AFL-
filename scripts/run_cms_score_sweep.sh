@@ -42,7 +42,7 @@ run_one() {
   rm -f "$STATUS_PATH" "$BODY_VALID_STATS"
 
   export NV_TARGET_CONFIG="$CFG"
-  export NV_TOKEN="$NV_TOKEN"
+  export NV_TOKEN=${NV_TOKEN}
   export NV_ENDPOINT_NAME="$ENDPOINT"
   export NV_STATUS_PATH="$STATUS_PATH"
 

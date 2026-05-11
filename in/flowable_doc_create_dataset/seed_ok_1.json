@@ -1,0 +1,37 @@
+{
+  "processDefinitionKey": "documentProcess",
+  "businessKey": "DOC-SEED-002",
+  "returnVariables": true,
+  "variables": [
+    {
+      "name": "docTitle",
+      "type": "string",
+      "value": "部门周例会纪要"
+    },
+    {
+      "name": "docContent",
+      "type": "string",
+      "value": "记录本周重点工作、风险事项和下周计划。"
+    },
+    {
+      "name": "drafter",
+      "type": "string",
+      "value": "rest-admin"
+    },
+    {
+      "name": "department",
+      "type": "string",
+      "value": "general-office"
+    },
+    {
+      "name": "securityLevel",
+      "type": "string",
+      "value": "internal"
+    },
+    {
+      "name": "docStatus",
+      "type": "string",
+      "value": "draft"
+    }
+  ]
+}

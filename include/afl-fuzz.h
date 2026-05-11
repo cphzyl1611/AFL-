@@ -546,7 +546,13 @@ typedef struct {
   double c;
   u32 enabled_mask;     /* = afl->nv_task.mutation_scope */
   nv_arm_id_t last_arm; /* record last choice */
+  nv_arm_id_t pending_arm;
+  u8 pending_update;    /* set only when an NV arm generated current input */
+  u8 update_source;     /* 0=none, 1=custom_json_mutator */
 } nv_mab_t;
+
+nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask);
+void        nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward);
 
 typedef struct afl_state {
   u64 nv_valid_cnt;
@@ -1605,4 +1611,3 @@ static inline u8 bitmap_read(u8 *map, u32 index) {
 #endif
 
 #endif
-

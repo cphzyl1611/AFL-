@@ -365,24 +365,53 @@ static void nv_write_eval_report_json(afl_state_t *afl, double bitmap_cvg,
 
   u64 tot_v = afl->nv_valid_cnt + afl->nv_invalid_cnt;
   double invalid_rate = tot_v ? (double)afl->nv_invalid_cnt / (double)tot_v : 0.0;
+  u8 has_nv_task = afl->nv_task_path && afl->nv_task_path[0];
+  const char *task_source = has_nv_task ? "nv_task_path" : "harness_only";
+  const char *target_type_name = "unknown";
+  if (afl->nv_task.target_type == NV_TARGET_HTTP_API) target_type_name = "http_api";
+  else if (afl->nv_task.target_type == NV_TARGET_BINARY) target_type_name = "binary";
 
   /* JSON */
   fputs("{\n", j);
 
   /* task (你现在 nv_task 里没有 task_id/task_name 字段，就先输出现有字段；后续若你补充字段再扩展) */
   fputs("  \"task\": {\n", j);
+  fprintf(j, "    \"source\": \"%s\",\n", task_source);
+  fputs("    \"source_note\": \"", j);
+  nv_json_puts_escaped(
+      j,
+      has_nv_task
+          ? "Loaded from NV_TASK_PATH; AFL++ task metadata is authoritative."
+          : "NV_TASK_PATH was not set; AFL++ task metadata is inactive and harness/report artifacts are the source of task context.");
+  fputs("\",\n", j);
+  fputs("    \"nv_task_path\": \"", j);
+  nv_json_puts_escaped(j, has_nv_task ? (const char *)afl->nv_task_path : "");
+  fputs("\",\n", j);
+  fprintf(j, "    \"target_type_name\": \"%s\",\n", target_type_name);
   fprintf(j, "    \"target_type\": %d,\n", (int)afl->nv_task.target_type);
 
   fputs("    \"target_endpoint\": \"", j);
-  nv_json_puts_escaped(j, (const char *)afl->nv_task.target_endpoint);
+  nv_json_puts_escaped(
+      j,
+      has_nv_task && afl->nv_task.target_endpoint
+          ? (const char *)afl->nv_task.target_endpoint
+          : "");
   fputs("\",\n", j);
 
   fputs("    \"seed_source\": \"", j);
-  nv_json_puts_escaped(j, (const char *)afl->nv_task.seed_source);
+  nv_json_puts_escaped(
+      j,
+      has_nv_task && afl->nv_task.seed_source
+          ? (const char *)afl->nv_task.seed_source
+          : "");
   fputs("\",\n", j);
 
   fputs("    \"seed_location\": \"", j);
-  nv_json_puts_escaped(j, (const char *)afl->nv_task.seed_location);
+  nv_json_puts_escaped(
+      j,
+      has_nv_task && afl->nv_task.seed_location
+          ? (const char *)afl->nv_task.seed_location
+          : "");
   fputs("\",\n", j);
 
   fprintf(j, "    \"mutation_scope\": %u,\n", (unsigned)afl->nv_task.mutation_scope);
@@ -619,6 +648,9 @@ void write_stats_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
   fprintf(f, "nv_mab_total_pulls : %llu\n",
           (unsigned long long)afl->nv_mab.total_pulls);
   fprintf(f, "nv_mab_last_arm    : %u\n", (unsigned)afl->nv_mab.last_arm);
+  fprintf(f, "nv_mab_pending_arm : %u\n", (unsigned)afl->nv_mab.pending_arm);
+  fprintf(f, "nv_mab_pending     : %u\n", (unsigned)afl->nv_mab.pending_update);
+  fprintf(f, "nv_mab_update_src  : %u\n", (unsigned)afl->nv_mab.update_source);
 
   fprintf(f, "nv_mab_arm0_pulls  : %llu\n",
           (unsigned long long)afl->nv_mab.arms[0].pulls);
@@ -880,6 +912,19 @@ void maybe_update_plot_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
         (unsigned long long)afl->nv_rec_cnt,
         (unsigned long long)afl->nv_rec_ms_sum,
         (unsigned long long)afl->nv_status_cnt);
+  double nv_plot_err_rate =
+      afl->nv_total_valid_exec
+          ? (double)afl->nv_err_exec / (double)afl->nv_total_valid_exec
+          : 0.0;
+  double nv_plot_rec_rate =
+      afl->nv_rec_total
+          ? (double)afl->nv_rec_success / (double)afl->nv_rec_total
+          : 0.0;
+  fprintf(afl->fsrv.plot_file, ", %llu, %llu, %.6f, %.6f",
+        (unsigned long long)afl->nv_valid_cnt,
+        (unsigned long long)afl->nv_invalid_cnt,
+        nv_plot_err_rate,
+        nv_plot_rec_rate);
 
   fprintf(afl->fsrv.plot_file, "\n");
 
@@ -2858,4 +2903,3 @@ inline void update_cmplog_time(afl_state_t *afl, u64 *time) {
   *time = cur;
 
 }
-

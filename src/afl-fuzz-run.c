@@ -219,7 +219,7 @@ static inline int nv_arm_enabled(u32 scope_mask, nv_arm_id_t arm) {
   }
 }
 
-static inline nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask) {
+nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask) {
 
   /* respect task scope; fallback: if mask==0 enable all */
   if (!scope_mask) scope_mask = 0x7;
@@ -269,7 +269,7 @@ static inline nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask) {
 
 }
 
-static inline void nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward) {
+void nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward) {
 
   if (arm < 0 || arm >= NV_ARM_MAX) return;
 
@@ -727,6 +727,12 @@ static inline void nv_account_invalid(afl_state_t *afl, nv_vreason_t vr) {
   else if (vr == NV_V_REJ_DOCID) afl->nv_invalid_docid_cnt++;
   else if (vr == NV_V_REJ_BODY) afl->nv_invalid_body_cnt++;
   else if (vr == NV_V_REJ_SCORE) afl->nv_invalid_score_cnt++;
+
+}
+
+static inline void nv_account_valid(afl_state_t *afl) {
+
+  afl->nv_valid_cnt++;
 
 }
 
@@ -1911,17 +1917,13 @@ u8 trim_case(afl_state_t *afl, struct queue_entry *q, u8 *in_buf) {
 
         if (unlikely(nv_v_is_reject(vr))) {
 
-          afl->nv_invalid_cnt++;
-
           nv_account_invalid(afl, vr);
 
           continue; /* skip this trim attempt */
 
         }
 
-        afl->nv_valid_cnt++;
-
-        afl->nv_valid_cnt++;
+        nv_account_valid(afl);
 
       }
 
@@ -2097,19 +2099,12 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
   if (unlikely(len = write_to_testcase(afl, (void **)&out_buf, len, 0)) == 0) {
 
+    afl->nv_mab.pending_update = 0;
+    afl->nv_mab.update_source = 0;
     return 0;
 
   }
 
-/* ---- NV MAB: pick arm before execution (global) ---- */
-nv_arm_id_t arm = nv_mab_pick(&afl->nv_mab, afl->nv_task.mutation_scope);
-afl->nv_mab.last_arm = arm;
-
-/* export arm for python mutator */
-{
-  char tmp[2] = {(char)('0' + (int)arm), 0};
-  setenv("NV_CUR_ARM", tmp, 1);
-}
   /* --- NV 2.4 validity filter: skip invalid before exec --- */
   if (afl->nv_task.enable_validity) {
 
@@ -2117,27 +2112,33 @@ afl->nv_mab.last_arm = arm;
 
     if (unlikely(nv_v_is_reject(vr))) {
 
-      afl->nv_invalid_cnt++;
-
       nv_account_invalid(afl, vr);
 
+      afl->nv_mab.pending_update = 0;
+      afl->nv_mab.update_source = 0;
       return 0; /* skip execution, but do NOT bail out */
 
     }
 
-    afl->nv_valid_cnt++;
+    nv_account_valid(afl);
 
   }
 
   fault = fuzz_run_target(afl, &afl->fsrv, afl->fsrv.exec_tmout);
 
-  if (afl->stop_soon) { return 1; }
+  if (afl->stop_soon) {
+    afl->nv_mab.pending_update = 0;
+    afl->nv_mab.update_source = 0;
+    return 1;
+  }
 
   if (fault == FSRV_RUN_TMOUT) {
 
     if (afl->subseq_tmouts++ > TMOUT_LIMIT) {
 
       ++afl->cur_skipped_items;
+      afl->nv_mab.pending_update = 0;
+      afl->nv_mab.update_source = 0;
       return 1;
 
     }
@@ -2155,6 +2156,8 @@ afl->nv_mab.last_arm = arm;
 
     afl->skip_requested = 0;
     ++afl->cur_skipped_items;
+    afl->nv_mab.pending_update = 0;
+    afl->nv_mab.update_source = 0;
     return 1;
 
   }
@@ -2162,13 +2165,19 @@ afl->nv_mab.last_arm = arm;
   /* This handles FAULT_ERROR for us: */
 
   afl->queued_discovered += save_if_interesting(afl, out_buf, len, fault);
-  /* ---- NV HTTP reward -> NV MAB update (after exec) ---- */
-{
-  const char *sp = getenv("NV_STATUS_PATH");
-  if (!sp) sp = "/tmp/nv_http_status.json";
-  double reward = nv_http_reward(afl, sp);
-  nv_mab_update(&afl->nv_mab, afl->nv_mab.last_arm, reward);
-}
+
+  if (afl->nv_mab.pending_update) {
+
+    nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
+    afl->nv_mab.pending_update = 0;
+    afl->nv_mab.update_source = 0;
+
+    const char *sp = getenv("NV_STATUS_PATH");
+    if (!sp) sp = "/tmp/nv_http_status.json";
+    double reward = nv_http_reward(afl, sp);
+    nv_mab_update(&afl->nv_mab, reward_arm, reward);
+
+  }
   if (!(afl->stage_cur % afl->stats_update_freq) ||
       afl->stage_cur + 1 == afl->stage_max) {
 
@@ -2179,4 +2188,3 @@ afl->nv_mab.last_arm = arm;
   return 0;
 
 }
-

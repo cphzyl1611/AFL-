@@ -1,0 +1,79 @@
+{
+  "profile": "flowable_document_process",
+  "platform": "Flowable",
+  "scene": "document_process_substitute",
+  "target_type": "http_api",
+  "target_endpoints": [
+    "POST /flowable-rest/service/runtime/process-instances",
+    "PUT /flowable-rest/service/runtime/process-instances/{processInstanceId}/variables"
+  ],
+  "seed_dirs": {
+    "create": "in/flowable_doc_create_dataset",
+    "update": "in/flowable_doc_update_dataset"
+  },
+  "rules": {
+    "create": "validity/flowable_doc_create_rules.json",
+    "update": "validity/flowable_doc_update_rules.json"
+  },
+  "model_route": "Flowable-AE v2 primary route with Flowable rule v1 second-stage",
+  "model_name": "ae_flowable_v2",
+  "second_stage_type": "flowable_rule_v1",
+  "is_mainline": false,
+  "validation_scope": "flowable_document_process_min_calibration",
+  "description": "Static profile for the Flowable-modeled document-process substitute scenario.",
+  "notes": "This is a Flowable-modeled document-process substitute scenario, not native O2OA document API coverage.",
+  "decision": {
+    "t_low": 5.8,
+    "t_high": 6.3,
+    "enable_second_stage": true,
+    "second_stage_type": "flowable_rule_v1",
+    "second_stage_threshold": 1.0,
+    "allowed_process_definition_keys": [
+      "documentProcess"
+    ],
+    "flowable_rule_allowed_root_fields": [
+      "processDefinitionKey",
+      "businessKey",
+      "returnVariables",
+      "variables"
+    ],
+    "flowable_rule_required_variables_by_key": {
+      "documentProcess": [
+        "docTitle",
+        "docContent"
+      ]
+    },
+    "flowable_rule_variable_type_hints": {
+      "documentProcess": {
+        "docTitle": "string",
+        "docContent": "string",
+        "drafter": "string",
+        "department": "string",
+        "securityLevel": "string",
+        "docStatus": "string",
+        "modifyReason": "string"
+      }
+    },
+    "flowable_rule_max_json_depth": 6,
+    "flowable_rule_max_string_len": 10000,
+    "flowable_rule_max_total_keys": 80,
+    "flowable_rule_max_variables": 50,
+    "flowable_rule_max_variable_name_len": 128
+  },
+  "model_files": [
+    {
+      "name": "flowable_ae_v2_model",
+      "path": "model_stage/models/flowable_ae_v2_model.pt",
+      "required": true
+    },
+    {
+      "name": "flowable_ae_v2_meta",
+      "path": "model_stage/models/flowable_ae_v2_meta.json",
+      "required": true
+    }
+  ],
+  "runtime_requirements": [
+    "Flowable REST service for local validation.",
+    "Flowable-AE v2 body score service for local validation."
+  ]
+}

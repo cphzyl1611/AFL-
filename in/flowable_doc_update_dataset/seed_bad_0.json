@@ -1,0 +1,22 @@
+[
+  {
+    "name": "docTitle",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "name": "docContent",
+    "type": "string",
+    "value": ""
+  },
+  {
+    "name": "modifyReason",
+    "type": "string",
+    "value": 1024
+  },
+  {
+    "name": "docStatus",
+    "type": "string",
+    "value": "unknown"
+  }
+]

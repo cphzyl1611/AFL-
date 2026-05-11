@@ -1,0 +1,22 @@
+[
+  {
+    "name": "docTitle",
+    "type": "string",
+    "value": "修订后的标题"
+  },
+  {
+    "name": "docContent",
+    "type": "string",
+    "value": "修订后的正文。"
+  },
+  {
+    "name": "modifyReason",
+    "type": "string",
+    "value": "根据审核意见修改"
+  },
+  {
+    "name": "docStatus",
+    "type": "string",
+    "value": "updated"
+  }
+]

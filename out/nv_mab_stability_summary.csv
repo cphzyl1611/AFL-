@@ -1,0 +1,4 @@
+run_id,exit_code,execs_done,saved_crashes,saved_hangs,nv_mab_total_pulls,nv_mab_arm0_pulls,nv_mab_arm1_pulls,nv_mab_arm2_pulls,nv_mab_arm0_mean,nv_mab_arm1_mean,nv_mab_arm2_mean,last_arm,has_plot_data,has_fuzzer_stats,expected_pass,notes
+1,0,67,0,0,59,57,1,1,1.0000035088e+03,1.0000000000e+03,1.0000000000e+03,0,true,true,true,three arms received pulls
+2,0,67,0,0,59,57,1,1,1.0000035088e+03,1.0000000000e+03,1.0000000000e+03,0,true,true,true,three arms received pulls
+3,0,67,0,0,59,57,1,1,1.0000035088e+03,1.0000000000e+03,1.0000000000e+03,0,true,true,true,three arms received pulls

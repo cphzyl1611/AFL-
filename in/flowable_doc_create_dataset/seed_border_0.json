@@ -1,0 +1,37 @@
+{
+  "processDefinitionKey": "documentProcess",
+  "businessKey": "DOC-SEED-BORDER-001",
+  "returnVariables": true,
+  "variables": [
+    {
+      "name": "docTitle",
+      "type": "string",
+      "value": "A"
+    },
+    {
+      "name": "docContent",
+      "type": "string",
+      "value": "B"
+    },
+    {
+      "name": "drafter",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "department",
+      "type": "string",
+      "value": ""
+    },
+    {
+      "name": "securityLevel",
+      "type": "string",
+      "value": "secret"
+    },
+    {
+      "name": "docStatus",
+      "type": "string",
+      "value": "submitted"
+    }
+  ]
+}

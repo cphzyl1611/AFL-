@@ -1,0 +1,25 @@
+{
+  "profile": "alfresco_metadata_update",
+  "platform": "alfresco",
+  "scene": "document_metadata_update",
+  "target_type": "http_api",
+  "is_mainline": false,
+  "validation_scope": "alfresco_metadata_update_min_calibration",
+  "target_semantics": "document_metadata_update",
+  "endpoint": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/{nodeId}",
+  "method": "PUT",
+  "body_type": "json",
+  "seed_dir": "in/alfresco_metadata_update_dataset",
+  "rules": "validity/alfresco_metadata_update_rules.json",
+  "notes": [
+    "Alfresco native document metadata update REST API.",
+    "Used to validate document-style business semantic interface.",
+    "Not native O2OA document API coverage.",
+    "Not a full AFL++ mutation-chain execution."
+  ],
+  "decision": {
+    "t_low": 1.0,
+    "t_high": 1.0,
+    "enable_second_stage": false
+  }
+}

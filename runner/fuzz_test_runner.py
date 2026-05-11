@@ -58,22 +58,101 @@ def is_pid_alive(pid: int) -> bool:
 
 
 
-def read_summary_csv(path: Path):
-    import csv
+def infer_summary_source(path: Path, context: dict | None = None):
+    context = context or {}
+    haystack = " ".join([
+        str(path),
+        str(context.get("model_name", "")),
+        str(context.get("manifest", "")),
+        str(context.get("notes", "")),
+        str(context.get("task_json", "")),
+    ]).lower()
+    if "flowable" in haystack:
+        return {
+            "summary_source": "python_static_loop",
+            "execution_scope": "flowable_min_calibration",
+            "metric_semantics": (
+                "Flowable summary comes from a Python static-loop request replay over "
+                "the Flowable seed dataset; nv_total_valid_exec is the replay loop count, "
+                "not a full AFL++ mutation-chain execution count."
+            ),
+        }
+    if "o2oa" in haystack or "cms_body_valid" in haystack:
+        return {
+            "summary_source": "aflpp_harness",
+            "execution_scope": "o2oa_aflpp_body_harness",
+            "metric_semantics": (
+                "O2OA summary combines AFL++ fuzzer_stats with nv_http_harness "
+                "body validity counters."
+            ),
+        }
+    return {
+        "summary_source": "summary_csv",
+        "execution_scope": "unspecified",
+        "metric_semantics": "Summary CSV source was not classified; inspect task notes and artifacts.",
+    }
+
+
+def find_afl_artifact(afl_out_dir: str, name: str) -> Path | None:
+    if not afl_out_dir:
+        return None
+    base = Path(afl_out_dir)
+    for p in [base / "default" / name, base / name]:
+        if p.exists():
+            return p
+    return None
+
+
+def read_summary_csv(path: Path, context: dict | None = None, preferred_mode: str = "rule_score"):
     if not path.exists():
         return None
     try:
         with path.open("r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            row = next(reader, None)
-        if not row:
+            rows = list(reader)
+        if not rows:
             return None
+        row = None
+        if preferred_mode:
+            row = next((r for r in rows if r.get("mode") == preferred_mode), None)
+        if row is None:
+            row = rows[0]
+
+        def to_int(name: str) -> int:
+            try:
+                return int(float(row.get(name, 0) or 0))
+            except Exception:
+                return 0
+
+        def to_float_str(name: str) -> str:
+            v = row.get(name, "")
+            if v == "":
+                return "0.000000"
+            return str(v)
+
+        source = infer_summary_source(path, context)
         return {
+            "source_file": str(path),
+            "summary_source": row.get("summary_source") or source["summary_source"],
+            "execution_scope": row.get("execution_scope") or source["execution_scope"],
+            "metric_semantics": row.get("metric_semantics") or source["metric_semantics"],
+            "available_modes": [r.get("mode", "") for r in rows],
+            "selected_mode": row.get("mode", ""),
             "mode": row.get("mode", ""),
-            "body_score_pass": int(row.get("body_score_pass", 0)),
-            "body_score_reject": int(row.get("body_score_reject", 0)),
-            "body_score_rpc_fail": int(row.get("body_score_rpc_fail", 0)),
-            "nv_total_valid_exec": int(row.get("nv_total_valid_exec", 0)),
+            "nv_total_valid_exec": to_int("nv_total_valid_exec"),
+            "nv_err_exec": to_int("nv_err_exec"),
+            "nv_err_rate": to_float_str("nv_err_rate"),
+            "saved_hangs": to_int("saved_hangs"),
+            "saved_crashes": to_int("saved_crashes"),
+            "last_http_code": to_int("last_http_code"),
+            "last_latency_ms": to_int("last_latency_ms"),
+            "last_ncov_total": to_int("last_ncov_total"),
+            "body_rule_pass": to_int("body_rule_pass"),
+            "body_rule_reject": to_int("body_rule_reject"),
+            "body_score_pass": to_int("body_score_pass"),
+            "body_score_reject": to_int("body_score_reject"),
+            "body_score_rpc_ok": to_int("body_score_rpc_ok"),
+            "body_score_rpc_fail": to_int("body_score_rpc_fail"),
         }
     except Exception:
         return None
@@ -113,6 +192,8 @@ def build_decision_summary(status: dict, summary_20: dict, summary_60: dict):
         "rpc_fail_total": rpc_fail_total,
         "has_dur20": bool(summary_20),
         "has_dur60": bool(summary_60),
+        "summary_source": (summary_60 or summary_20 or {}).get("summary_source", ""),
+        "execution_scope": (summary_60 or summary_20 or {}).get("execution_scope", ""),
     }
 
 
@@ -306,15 +387,31 @@ def query(task_id: str):
         current_status = "stopped"
 
     fuzzer_stats = {}
+    eval_report = {}
     afl_out_dir = status.get("afl_out_dir", "")
     if afl_out_dir:
-        stats_path = Path(afl_out_dir) / "default" / "fuzzer_stats"
-        fuzzer_stats = read_fuzzer_stats(stats_path)
+        stats_path = find_afl_artifact(afl_out_dir, "fuzzer_stats")
+        if stats_path:
+            fuzzer_stats = read_fuzzer_stats(stats_path)
+        eval_path = find_afl_artifact(afl_out_dir, "eval_report.json")
+        if eval_path:
+            try:
+                eval_report = load_json(eval_path)
+            except Exception:
+                eval_report = {}
 
     out = dict(status)
     out["status"] = current_status
     out["pid_alive"] = live
     out["fuzzer_stats"] = fuzzer_stats
+    out["eval_report"] = eval_report
+    out["metric_sources"] = {
+        "fuzzer_stats": "aflpp_native_or_demo" if fuzzer_stats else "not_available",
+        "eval_report": (
+            eval_report.get("task", {}).get("source", "aflpp_eval_report")
+            if eval_report else "not_available"
+        ),
+    }
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
 
@@ -370,8 +467,8 @@ def report(task_id: str):
         p20 = run_path / "summary_dur20.csv"
         p60 = run_path / "summary_dur60.csv"
 
-        s20 = read_summary_csv(p20)
-        s60 = read_summary_csv(p60)
+        s20 = read_summary_csv(p20, status)
+        s60 = read_summary_csv(p60, status)
 
         if s20:
             summary_20 = s20
@@ -390,7 +487,7 @@ def report(task_id: str):
 
     if not summary_20 and result_summary_csv:
         p = resolve_under_root(result_summary_csv)
-        s = read_summary_csv(p)
+        s = read_summary_csv(p, status)
         if s:
             summary_20 = s
             artifacts[p.name] = str(p)
@@ -404,8 +501,8 @@ def report(task_id: str):
     if exp_path and exp_path.exists():
         p20 = exp_path / "summary_dur20.csv"
         p60 = exp_path / "summary_dur60.csv"
-        s20 = read_summary_csv(p20)
-        s60 = read_summary_csv(p60)
+        s20 = read_summary_csv(p20, status)
+        s60 = read_summary_csv(p60, status)
         if s20:
             summary_20 = s20
         if s60:
@@ -430,16 +527,23 @@ def report(task_id: str):
 
     afl_out_dir = status.get("afl_out_dir", "")
     if afl_out_dir:
-        default_dir = Path(afl_out_dir) / "default"
         for name in ["fuzzer_stats", "eval_report.json"]:
-            p = default_dir / name
-            if p.exists():
+            p = find_afl_artifact(afl_out_dir, name)
+            if p and p.exists():
                 artifacts[name] = str(p)
 
     fuzzer_stats = {}
+    eval_report = {}
     if afl_out_dir:
-        stats_path = Path(afl_out_dir) / "default" / "fuzzer_stats"
-        fuzzer_stats = read_fuzzer_stats(stats_path)
+        stats_path = find_afl_artifact(afl_out_dir, "fuzzer_stats")
+        if stats_path:
+            fuzzer_stats = read_fuzzer_stats(stats_path)
+        eval_path = find_afl_artifact(afl_out_dir, "eval_report.json")
+        if eval_path:
+            try:
+                eval_report = load_json(eval_path)
+            except Exception:
+                eval_report = {}
     
     pid = status.get("pid")
     live = False
@@ -458,6 +562,18 @@ def report(task_id: str):
         save_json(status_path, status)
 
     decision_summary = build_decision_summary(status, summary_20, summary_60)
+    metric_sources = {
+        "fuzzer_stats": "aflpp_native" if fuzzer_stats else "not_available",
+        "eval_report": (
+            eval_report.get("task", {}).get("source", "aflpp_eval_report")
+            if eval_report else "not_available"
+        ),
+        "summary_dur20": summary_20.get("summary_source", "not_available") if summary_20 else "not_available",
+        "summary_dur60": summary_60.get("summary_source", "not_available") if summary_60 else "not_available",
+    }
+    integration_boundary = (
+        "runner/adapter-level task semantics; this report is not proof of a deployed HTTP/RPC gateway service"
+    )
 
     report_obj = {
         "task_id": task_id,
@@ -478,6 +594,9 @@ def report(task_id: str):
         "summary_dur20": summary_20,
         "summary_dur60": summary_60,
         "fuzzer_stats": fuzzer_stats,
+        "eval_report": eval_report,
+        "metric_sources": metric_sources,
+        "integration_boundary": integration_boundary,
         "generated_at": now_str(),
         "decision_summary": decision_summary,
     }

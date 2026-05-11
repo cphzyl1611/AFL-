@@ -20,7 +20,10 @@ SCORE_THRESHOLD_DEFAULT="1.5"
 mkdir -p "$OUT_ROOT"
 
 SUMMARY_CSV="$OUT_ROOT/summary.csv"
-echo "mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail" > "$SUMMARY_CSV"
+SUMMARY_SOURCE="aflpp_harness"
+EXECUTION_SCOPE="o2oa_aflpp_body_harness"
+METRIC_SEMANTICS="AFL++ fuzzer_stats plus nv_http_harness body validity counters"
+echo "mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,summary_source,execution_scope,metric_semantics" > "$SUMMARY_CSV"
 
 run_one() {
   local mode="$1"   # baseline | rule_only | rule_score
@@ -34,7 +37,7 @@ run_one() {
   export NV_TARGET_CONFIG="$CFG"
   export NV_ENDPOINT_NAME="$ENDPOINT"
   export NV_STATUS_PATH="$STATUS_PATH"
-  export NV_TOKEN="$NV_TOKEN"
+  export NV_TOKEN=${NV_TOKEN}
 
   # 关闭旧 C-side validity，避免干扰
   unset NV_TASK_PATH || true
@@ -82,7 +85,7 @@ run_one() {
   local stats="$outdir/fuzzer_stats"
   if [[ ! -f "$stats" ]]; then
     echo "[WARN] missing fuzzer_stats for mode=$mode"
-    echo "$mode,0,0,0,0,0,-1,-1,-1,0,0,0,0,0,0" >> "$SUMMARY_CSV"
+    echo "$mode,0,0,0,0,0,-1,-1,-1,0,0,0,0,0,0,$SUMMARY_SOURCE,$EXECUTION_SCOPE,$METRIC_SEMANTICS" >> "$SUMMARY_CSV"
     return
   fi
 
@@ -150,7 +153,7 @@ PY
     body_score_rpc_fail="${bparsed[5]}"
   fi
 
-  echo "$mode,$nv_total_valid_exec,$nv_err_exec,$nv_err_rate,$saved_hangs,$saved_crashes,$last_http_code,$last_latency_ms,$last_ncov_total,$body_rule_pass,$body_rule_reject,$body_score_pass,$body_score_reject,$body_score_rpc_ok,$body_score_rpc_fail" >> "$SUMMARY_CSV"
+  echo "$mode,$nv_total_valid_exec,$nv_err_exec,$nv_err_rate,$saved_hangs,$saved_crashes,$last_http_code,$last_latency_ms,$last_ncov_total,$body_rule_pass,$body_rule_reject,$body_score_pass,$body_score_reject,$body_score_rpc_ok,$body_score_rpc_fail,$SUMMARY_SOURCE,$EXECUTION_SCOPE,$METRIC_SEMANTICS" >> "$SUMMARY_CSV"
 }
 
 run_one baseline

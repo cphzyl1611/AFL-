@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:flowable="http://flowable.org/bpmn"
+  targetNamespace="http://example.com/document">
+
+  <process id="documentProcess" name="Document Process" isExecutable="true">
+
+    <startEvent id="startEvent" name="Start" />
+    <sequenceFlow id="flow_start_to_update" sourceRef="startEvent" targetRef="updateDocumentTask" />
+
+    <userTask id="updateDocumentTask" name="Update Document" flowable:assignee="rest-admin" />
+    <sequenceFlow id="flow_update_to_end" sourceRef="updateDocumentTask" targetRef="endEvent" />
+
+    <endEvent id="endEvent" name="End" />
+
+  </process>
+
+</definitions>

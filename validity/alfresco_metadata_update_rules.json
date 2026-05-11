@@ -1,0 +1,44 @@
+{
+  "ruleset": "alfresco_metadata_update_rules",
+  "target": "Alfresco native document metadata update JSON body",
+  "root": {
+    "type": "object",
+    "required": [
+      "name",
+      "properties"
+    ]
+  },
+  "fields": {
+    "name": {
+      "required": true,
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "properties": {
+      "required": true,
+      "type": "object",
+      "required_fields": {
+        "cm:title": {
+          "required": true,
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cm:description": {
+          "required": false,
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1000
+        }
+      }
+    }
+  },
+  "expected_negative_seeds": [
+    "seed_bad_0.json"
+  ],
+  "notes": [
+    "seed_bad_0.json is a preset invalid sample and should be rejected by local rules or receive an Alfresco 400 response if replayed.",
+    "This ruleset is for Alfresco metadata JSON update min calibration, not native O2OA document API coverage."
+  ]
+}

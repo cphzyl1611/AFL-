@@ -1,0 +1,37 @@
+{
+  "processDefinitionKey": "documentProcess",
+  "businessKey": "DOC-SEED-001",
+  "returnVariables": true,
+  "variables": [
+    {
+      "name": "docTitle",
+      "type": "string",
+      "value": "关于系统联调测试的通知"
+    },
+    {
+      "name": "docContent",
+      "type": "string",
+      "value": "这是电子公文正文。"
+    },
+    {
+      "name": "drafter",
+      "type": "string",
+      "value": "rest-admin"
+    },
+    {
+      "name": "department",
+      "type": "string",
+      "value": "office"
+    },
+    {
+      "name": "securityLevel",
+      "type": "string",
+      "value": "normal"
+    },
+    {
+      "name": "docStatus",
+      "type": "string",
+      "value": "draft"
+    }
+  ]
+}

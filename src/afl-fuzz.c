@@ -152,6 +152,22 @@ static u8 *nv_read_entire_file(const char *path, size_t *out_len) {
 
 }
 
+static u32 nv_parse_scope_one_text(const char *s) {
+
+  if (!s || !*s) return 0;
+
+  char *end = NULL;
+  unsigned long vv = strtoul(s, &end, 0);
+  if (end && end != s && *end == '\0') { return (u32)vv & 0x7; }
+
+  u32 mask = 0;
+  if (strstr(s, "field") || strstr(s, "field_value")) mask |= 0x1;
+  if (strstr(s, "bound") || strstr(s, "boundary")) mask |= 0x2;
+  if (strstr(s, "struct") || strstr(s, "structure")) mask |= 0x4;
+  return mask & 0x7;
+
+}
+
 static u32 nv_parse_scope(cJSON *scope) {
 
   /* default: enable all three arms */
@@ -173,27 +189,29 @@ static u32 nv_parse_scope(cJSON *scope) {
   /* string forms, optional */
   if (cJSON_IsString(scope) && scope->valuestring) {
 
-    const char *s = scope->valuestring;
-
-    /* allow "7" as string too */
-    char *end = NULL;
-    unsigned long vv = strtoul(s, &end, 0);
-    if (end && end != s && *end == '\0') {
-
-      u32 v = (u32)vv & 0x7;
-      if (!v) return DEFAULT_SCOPE;
-      return v;
-
-    }
-
-    /* keyword style: "field_value,boundary,structure" */
-    u32 mask = 0;
-    if (strstr(s, "field") || strstr(s, "field_value")) mask |= 0x1;
-    if (strstr(s, "bound") || strstr(s, "boundary"))     mask |= 0x2;
-    if (strstr(s, "struct") || strstr(s, "structure"))   mask |= 0x4;
+    u32 mask = nv_parse_scope_one_text(scope->valuestring);
 
     if (!mask) return DEFAULT_SCOPE;
     return mask;
+
+  }
+
+  if (cJSON_IsArray(scope)) {
+
+    u32 mask = 0;
+    cJSON *it = NULL;
+    cJSON_ArrayForEach(it, scope) {
+
+      if (cJSON_IsString(it) && it->valuestring) {
+        mask |= nv_parse_scope_one_text(it->valuestring);
+      } else if (cJSON_IsNumber(it)) {
+        mask |= ((u32)it->valuedouble) & 0x7;
+      }
+
+    }
+
+    if (!mask) return DEFAULT_SCOPE;
+    return mask & 0x7;
 
   }
 
@@ -373,6 +391,9 @@ static void nv_load_task_json(afl_state_t *afl, const char *path) {
   afl->nv_mab.total_pulls = 0;
   afl->nv_mab.c = 0.05;               /* MVP: constant */
   afl->nv_mab.last_arm = NV_ARM_FIELD_VALUE;
+  afl->nv_mab.pending_arm = NV_ARM_FIELD_VALUE;
+  afl->nv_mab.pending_update = 0;
+  afl->nv_mab.update_source = 0;
   memset(afl->nv_mab.arms, 0, sizeof(afl->nv_mab.arms));
   if (mtc && cJSON_IsNumber(mtc)) afl->nv_task.max_test_cases = (u64)mtc->valuedouble;
   if (tb  && cJSON_IsNumber(tb))  afl->nv_task.time_budget_sec = (u64)tb->valuedouble;
@@ -4355,4 +4376,3 @@ stop_fuzzing:
 }
 
 #endif                                                          /* !AFL_LIB */
-

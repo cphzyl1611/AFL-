@@ -1,0 +1,13 @@
+group,run_id,mutation_scope,exit_code,execs_done,saved_crashes,saved_hangs,nv_mab_total_pulls,arm0_pulls,arm1_pulls,arm2_pulls,arm0_mean,arm1_mean,arm2_mean,last_arm,expected_pass,notes
+fixed_field_value,1,field_value,0,55,0,0,48,48,0,0,1.0000041667e+03,0.0000000000e+00,0.0000000000e+00,0,true,only arm0 pulls increased
+fixed_field_value,2,field_value,0,54,0,0,47,47,0,0,1.0000042553e+03,0.0000000000e+00,0.0000000000e+00,0,true,only arm0 pulls increased
+fixed_field_value,3,field_value,0,65,0,0,58,58,0,0,1.0000034483e+03,0.0000000000e+00,0.0000000000e+00,0,true,only arm0 pulls increased
+fixed_boundary,1,boundary,0,55,0,0,48,0,48,0,0.0000000000e+00,1.0000041667e+03,0.0000000000e+00,1,true,only arm1 pulls increased
+fixed_boundary,2,boundary,0,54,0,0,47,0,47,0,0.0000000000e+00,1.0000042553e+03,0.0000000000e+00,1,true,only arm1 pulls increased
+fixed_boundary,3,boundary,0,64,0,0,57,0,57,0,0.0000000000e+00,1.0000035088e+03,0.0000000000e+00,1,true,only arm1 pulls increased
+fixed_structure,1,structure,0,55,0,0,48,0,0,48,0.0000000000e+00,0.0000000000e+00,1.0000041667e+03,2,true,only arm2 pulls increased
+fixed_structure,2,structure,0,54,0,0,47,0,0,47,0.0000000000e+00,0.0000000000e+00,1.0000042553e+03,2,true,only arm2 pulls increased
+fixed_structure,3,structure,0,67,0,0,59,0,0,59,0.0000000000e+00,0.0000000000e+00,1.0000033898e+03,2,true,only arm2 pulls increased
+nv_mab_all,1,field_value|boundary|structure,0,55,0,0,48,46,1,1,1.0000043478e+03,1.0000000000e+03,1.0000000000e+03,0,true,three arms received pulls
+nv_mab_all,2,field_value|boundary|structure,0,54,0,0,47,45,1,1,1.0000044444e+03,1.0000000000e+03,1.0000000000e+03,0,true,three arms received pulls
+nv_mab_all,3,field_value|boundary|structure,0,67,0,0,59,57,1,1,1.0000035088e+03,1.0000000000e+03,1.0000000000e+03,0,true,three arms received pulls

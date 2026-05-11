@@ -21,10 +21,15 @@ FLOWABLE_PATH = os.getenv("FLOWABLE_PATH", "/flowable-rest/service/runtime/proce
 FLOWABLE_USER = os.getenv("FLOWABLE_USER", "rest-admin")
 FLOWABLE_PASS = os.getenv("FLOWABLE_PASS", "test")
 
-NV_BODY_SCORE_ENDPOINT = os.getenv("NV_BODY_SCORE_ENDPOINT", "unix:///tmp/nv_valid_real.sock")
+NV_BODY_SCORE_ENDPOINT = os.getenv("NV_BODY_SCORE_ENDPOINT", "unix:///tmp/nv_valid_flowable.sock")
 NV_BODY_SCORE_THRESHOLD = float(os.getenv("NV_BODY_SCORE_THRESHOLD", "1.0"))
 DUR = int(os.getenv("DUR", "20"))
 SLEEP_MS = int(os.getenv("FLOWABLE_SLEEP_MS", "50"))
+SUMMARY_SOURCE = "python_static_loop"
+EXECUTION_SCOPE = "flowable_min_calibration"
+METRIC_SEMANTICS = (
+    "Python static-loop Flowable request replay; not a full AFL++ mutation-chain execution"
+)
 
 SUMMARY_CSV = OUT_DIR / "summary.csv"
 STATS_JSON = Path("/tmp/nv_body_valid_stats.json")
@@ -135,13 +140,15 @@ def main():
             "mode","nv_total_valid_exec","nv_err_exec","nv_err_rate",
             "saved_hangs","saved_crashes","last_http_code","last_latency_ms",
             "last_ncov_total","body_rule_pass","body_rule_reject",
-            "body_score_pass","body_score_reject","body_score_rpc_ok","body_score_rpc_fail"
+            "body_score_pass","body_score_reject","body_score_rpc_ok","body_score_rpc_fail",
+            "summary_source","execution_scope","metric_semantics"
         ])
         writer.writerow([
             "rule_score", nv_total_valid_exec, 0, "0.000000",
             0, 0, last_http_code, last_latency_ms,
             0, body_rule_pass, body_rule_reject,
-            body_score_pass, body_score_reject, body_score_rpc_ok, body_score_rpc_fail
+            body_score_pass, body_score_reject, body_score_rpc_ok, body_score_rpc_fail,
+            SUMMARY_SOURCE, EXECUTION_SCOPE, METRIC_SEMANTICS
         ])
 
     stats = {
