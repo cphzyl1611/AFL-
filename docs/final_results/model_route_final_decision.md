@@ -84,9 +84,14 @@ GAN 第二轮在第一轮基础上进行了小步调优，包括：
 
 ### 默认模型
 - AE
+- source-of-truth：`model_stage/models/sefanogan_ae_model.pt`
+- sha256：`5de67e66e28af65fdf6adb5c506c91148fcc356accd49113c267896bbd69d3dc`
 
 ### 后续研究模型
 - GAN v2(t17_ab9010)（SE-fAnoGAN-ES 研究增强路线，threshold=1.7，alpha=0.90，beta=0.10）
+- O2OA online 二阶段增强的 source-of-truth：`model_stage/models/sefanogan_gan_model.pt`
+- sha256：`205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624`
+- 汇报口径：GAN online 可作为 O2OA 有效性验证链路的二阶段增强，不能表述为替换 AE 的默认验收主线。
 
 ### 保留但不再扩展
 - GAN 第一轮

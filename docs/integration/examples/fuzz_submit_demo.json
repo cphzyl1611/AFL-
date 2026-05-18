@@ -1,0 +1,12 @@
+{
+  "task_name": "adapter_demo_smoke_001",
+  "platform": "o2oa_default",
+  "target_type": "http_api",
+  "target_endpoint": "adapter_demo",
+  "seed_source": "seed_file",
+  "seed_location": "in/o2oa_body_model_compare",
+  "mutation_scope": ["field_value", "boundary", "structure"],
+  "time_budget": 20,
+  "simulate": true,
+  "simulate_duration_sec": 20
+}

@@ -4,13 +4,21 @@
 - 模型：AE
 - 阈值：1.0
 - 模板：task_ae_default.json
-- 状态：O2OA 默认模型权重需要在交付前人工核验，确保 `model_stage/models/sefanogan_ae_model.pt` 与 O2OA AE@1.0 一致。
+- 状态：O2OA 默认模型权重以 `model_stage/models/sefanogan_ae_model.pt` 为 source-of-truth，sha256=`5de67e66e28af65fdf6adb5c506c91148fcc356accd49113c267896bbd69d3dc`；配套 meta 为 `model_stage/models/sefanogan_ae_meta.json`，sha256=`208daf66d82873dec8c19923d9c0a5a6b82ca36c512de52b0ff16b24ecb7acf2`。
 
 ## 当前研究增强口径
-- 模型：GAN v2（t17_ab9010）
-- 阈值：1.7
+- 模型：O2OA GAN online 二阶段增强模型
+- 阈值：1.0（online 二阶段 profile）；离线研究比较保留 GAN v2 t17_ab9010 / threshold=1.7 作为研究证据
 - 标定：alpha=0.90，beta=0.10
-- 模板：task_gan_v2_default.json
+- 模板：`integration/platform_profiles/o2oa_default.json` 的 `decision.second_stage_type=gan`；`task_gan_v2_default.json` 仅作为研究模板
+- source-of-truth：`model_stage/models/sefanogan_gan_model.pt`，sha256=`205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624`；`model_stage/models/sefanogan_gan_meta.json`，sha256=`87d189dde54ac578d170850d090032d3268887517d259ad5fc96855a15b9c495`
+
+## Flowable 支线口径
+- 模型：Flowable-AE v2
+- 阈值：6.3
+- 二阶段：`flowable_rule_v1`
+- socket：`unix:///tmp/nv_valid_flowable.sock`
+- source-of-truth：`model_stage/models/flowable_ae_v2_model.pt`，sha256=`72780ccf24401f20e5ae7127955c0b192ec6cbd5d88099ce3c4dc9ab03053bee`；`model_stage/models/flowable_ae_v2_meta.json`，sha256=`b3728ec4340a18b6abdeffdce3213778bde4cedbaf6ec048efd497866d510e80`
 
 ## 关键文件
 - fuzz_test_runner.py：外层控制器
@@ -25,6 +33,7 @@
 ## 场景口径边界
 - O2OA 主线当前以 O2OA HTTP/REST JSON 数据接口为阶段验收口径，证据集中在 `cms_doc_list` 并辅以多接口配置；不要表述为已完整覆盖电子公文创建、保存、更新全业务流程。
 - Flowable 是第二平台最小校准验证，最终工作口径为 Flowable-AE v2 @ 6.3；当前 Flowable 链路不是完整 AFL++ 变异模糊测试主链。
+- 当前动态异构冗余仅指模糊测试有效性验证链路中的二阶段判定机制；不要表述为完整拟态系统级执行体调度、自愈或重构机制。
 
 ## 当前结论
 - AE 作为默认模型
