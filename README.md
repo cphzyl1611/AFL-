@@ -22,7 +22,19 @@
 - NV_MAB 工程闭环基本完成，并完成轻量稳定性与最小多轮消融验证；
 - 可进入总项目集成联调。
 
-## 3. 当前已验证能力矩阵
+## 3. 平台定位
+
+当前平台口径：
+
+- 后续主验证平台：Alfresco，已覆盖 multipart upload 创建/保存、text/plain 内容更新、JSON metadata update 三类标准文档接口；
+- 历史保留平台：O2OA，保留为原项目指定场景、历史 smoke 和需求对照；
+- 流程替代平台：Flowable，保留为 `documentProcess` 电子公文替代场景。
+
+迁移说明见：
+
+- `docs/review/O2OA到Alfresco主验证平台迁移说明.md`
+
+## 4. 当前已验证能力矩阵
 
 | 能力项 | 当前状态 | 说明 |
 |---|---|---|
@@ -36,7 +48,7 @@
 | 测评链路版 DHR | 基本完成 | O2OA AE + GAN online、Flowable AE v2 + `flowable_rule_v1` 支撑二阶段异构判定增强。 |
 | 完整系统级 DHR | 未完成/不宣称 | 不含多执行体调度、输出裁决、动态重构、自愈恢复。 |
 
-## 4. 快速复现入口
+## 5. 快速复现入口
 
 | 文档 | 用途 |
 |---|---|
@@ -45,7 +57,7 @@
 
 完整复现按 `docs/reproduce/实验复现指南.md` 执行；现场快速确认优先使用 `docs/reproduce/快速演示命令.md`。
 
-## 5. 轻量 API 与集成调用
+## 6. 轻量 API 与集成调用
 
 本仓库提供本地轻量 API Server，用于总项目集成联调阶段查询能力、查看报告索引，并以白名单方式提交轻量任务或 dry run。
 
@@ -84,7 +96,7 @@ python3 integration/api_server.py --host 127.0.0.1 --port 18081
 - 不允许任意 shell 命令；
 - O2OA token 不应写入仓库。
 
-## 6. 工程质量检查与 CI
+## 7. 工程质量检查与 CI
 
 当前仓库已补充基础工程质量检查入口：
 
@@ -106,7 +118,7 @@ python3 -m unittest discover -s tests
 
 这些检查用于阶段性交付质量保障，不等同于完整平台级质量保障体系。
 
-## 7. 主要报告索引
+## 8. 主要报告索引
 
 - `docs/review/模糊测试模块项目要求完成证明与复现说明.md`
 - `docs/review/文档类业务接口能力阶段性收口报告.md`
@@ -118,10 +130,11 @@ python3 -m unittest discover -s tests
 - `docs/review/Alfresco元数据更新接口接入验证报告.md`
 - `docs/review/Alfresco内容更新接口接入验证报告.md`
 - `docs/review/Alfresco上传创建接口接入验证报告.md`
+- `docs/review/O2OA到Alfresco主验证平台迁移说明.md`
 - `docs/review/真实服务环境smoke验证报告.md`
 - `docs/review/接口能力审计报告.md`
 
-## 8. 当前不能宣称的内容
+## 9. 当前不能宣称的内容
 
 当前不能宣称：
 
@@ -136,8 +149,9 @@ python3 -m unittest discover -s tests
 - 完整 MCP Server 已完成；
 - 完整平台 HTTP/RPC 网关服务已完成。
 
-## 9. 后续工作
+## 10. 后续工作
 
+- 后续优先围绕 Alfresco 扩展 AE v1 / score profile / 二阶段有效性判定；
 - 如有稳定 O2OA 写入接口环境，可补原生 O2OA 创建/更新接口；
 - 如有需求，可在 Alfresco `text/plain` 内容更新和 multipart upload min_calibration 基础上扩展更长时间 fuzz；
 - 如总项目提供拟态执行体环境，再做系统级 DHR；
