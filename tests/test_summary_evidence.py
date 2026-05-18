@@ -72,6 +72,28 @@ class SummaryEvidenceTest(unittest.TestCase):
         }
         self.assertTrue(required.issubset(header), f"missing {required - header}")
 
+    def test_optional_alfresco_ae_v1_score_header(self) -> None:
+        path = REPO_ROOT / "out/alfresco_ae_v1_score_compare/summary.csv"
+        if not path.exists():
+            self.skipTest("optional Alfresco AE v1 score summary is not present")
+        header = self.read_header("out/alfresco_ae_v1_score_compare/summary.csv")
+        required = {
+            "mode",
+            "nv_total_valid_exec",
+            "nv_err_exec",
+            "nv_err_rate",
+            "body_rule_pass",
+            "body_rule_reject",
+            "body_score_pass",
+            "body_score_reject",
+            "body_score_rpc_ok",
+            "body_score_rpc_fail",
+            "summary_source",
+            "execution_scope",
+            "metric_semantics",
+        }
+        self.assertTrue(required.issubset(header), f"missing {required - header}")
+
 
 if __name__ == "__main__":
     unittest.main()

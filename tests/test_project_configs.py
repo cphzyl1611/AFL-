@@ -45,6 +45,15 @@ class ProjectConfigsTest(unittest.TestCase):
         self.assertEqual(data.get("profile"), "alfresco_multipart_upload")
         self.assertEqual(data.get("body_type"), "multipart/form-data")
 
+    def test_alfresco_ae_v1_profile_parse(self) -> None:
+        data = self.assert_json_file(REPO_ROOT / "integration/platform_profiles/alfresco_ae_v1.json")
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data.get("profile"), "alfresco_ae_v1")
+        decision = data.get("decision")
+        self.assertIsInstance(decision, dict)
+        self.assertTrue(decision.get("enable_second_stage"))
+        self.assertEqual(decision.get("second_stage_type"), "ae_v1")
+
     def test_validity_rules_parse(self) -> None:
         rules = sorted((REPO_ROOT / "validity").glob("*.json"))
         self.assertGreater(len(rules), 0)

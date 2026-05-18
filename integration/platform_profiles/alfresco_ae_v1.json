@@ -1,0 +1,27 @@
+{
+  "profile": "alfresco_ae_v1",
+  "platform": "alfresco",
+  "is_mainline": false,
+  "validation_scope": "standard_document_platform_ae_v1",
+  "target_semantics": [
+    "metadata_update",
+    "document_content_update",
+    "document_create_save"
+  ],
+  "endpoint": "local://alfresco_ae_v1_score_compare",
+  "method": "LOCAL",
+  "body_type": "mixed",
+  "notes": [
+    "Alfresco AE v1 engineering two-stage validity scoring.",
+    "Not GAN / fAnoGAN.",
+    "Not native O2OA coverage.",
+    "Not a full AFL++ mutation-chain execution."
+  ],
+  "decision": {
+    "t_low": 1.0,
+    "t_high": 1.0,
+    "enable_second_stage": true,
+    "second_stage_type": "ae_v1",
+    "model_meta": "model_stage/models/alfresco_ae_v1_meta.json"
+  }
+}

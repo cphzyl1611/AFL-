@@ -31,11 +31,16 @@ VALIDITY_RULE_GLOB = "validity/*.json"
 SEED_GLOB = "in/**/*.json"
 
 STANDARD_SUMMARIES = [
+    Path("out/alfresco_ae_v1_score_compare/summary.csv"),
     Path("out/alfresco_metadata_update_manual_latest/summary.csv"),
     Path("out/alfresco_content_update_manual_latest/summary.csv"),
     Path("out/alfresco_multipart_upload_manual_latest/summary.csv"),
     Path("out/cms_body_valid_compare_real/summary.csv"),
     Path("out/real_service_smoke_20260508/o2oa_real/summary.csv"),
+]
+
+MODEL_META_FILES = [
+    Path("model_stage/models/alfresco_ae_v1_meta.json"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -143,6 +148,44 @@ def check_schemas(state: ValidationState) -> None:
         state.fail("schemas", "; ".join(failures))
     else:
         state.pass_("schemas", f"count={len(SCHEMA_FILES)}")
+
+
+def check_model_meta(state: ValidationState, sensitive_paths: list[Path]) -> None:
+    failures: list[str] = []
+    for rel_path in MODEL_META_FILES:
+        path = REPO_ROOT / rel_path
+        if not path.is_file():
+            failures.append(f"{rel_path.as_posix()}: missing")
+            continue
+        try:
+            data = load_json(path)
+        except Exception as exc:  # noqa: BLE001
+            failures.append(f"{rel_path.as_posix()}: {exc}")
+            continue
+        if not isinstance(data, dict):
+            failures.append(f"{rel_path.as_posix()}: top-level value is not object")
+            continue
+        for key in ("model_name", "model_type", "feature_names", "mean", "std", "threshold_high", "train_sample_count"):
+            if key not in data:
+                failures.append(f"{rel_path.as_posix()}: missing {key}")
+        feature_names_value = data.get("feature_names")
+        mean_value = data.get("mean")
+        std_value = data.get("std")
+        if not isinstance(feature_names_value, list) or not all(isinstance(item, str) for item in feature_names_value):
+            failures.append(f"{rel_path.as_posix()}: feature_names must be list[str]")
+        if not isinstance(mean_value, list) or not all(isinstance(item, (int, float)) for item in mean_value):
+            failures.append(f"{rel_path.as_posix()}: mean must be list[number]")
+        if not isinstance(std_value, list) or not all(isinstance(item, (int, float)) for item in std_value):
+            failures.append(f"{rel_path.as_posix()}: std must be list[number]")
+        if isinstance(feature_names_value, list) and isinstance(mean_value, list) and isinstance(std_value, list):
+            if not (len(feature_names_value) == len(mean_value) == len(std_value)):
+                failures.append(f"{rel_path.as_posix()}: feature_names/mean/std length mismatch")
+        sensitive_paths.append(path)
+
+    if failures:
+        state.fail("model_meta", "; ".join(failures[:20]))
+    else:
+        state.pass_("model_meta", f"count={len(MODEL_META_FILES)}")
 
 
 def mutation_scope_is_valid(value: Any) -> bool:
@@ -366,6 +409,7 @@ def main() -> int:
 
     check_schemas(state)
     sensitive_paths.extend(REPO_ROOT / schema for schema in SCHEMA_FILES)
+    check_model_meta(state, sensitive_paths)
     check_demo_task(state, sensitive_paths)
     check_platform_profiles(state, sensitive_paths)
     check_validity_rules(state, sensitive_paths)
