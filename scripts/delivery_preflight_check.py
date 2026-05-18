@@ -56,12 +56,12 @@ WORDING_ROOTS = [
 ]
 
 SENSITIVE_PATTERNS = [
-    re.compile(r"JOFj_[A-Za-z0-9_-]+"),
-    re.compile(r"Authorization: [A-Za-z0-9_-]{10,}"),
-    re.compile(r"x-token[:=][A-Za-z0-9_-]{10,}"),
-    re.compile(r"Cookie: x-token=[A-Za-z0-9_-]{10,}"),
-    re.compile(r"NV_TOKEN=[A-Za-z0-9_-]{10,}"),
-    re.compile(r"NV_TOKEN=.*[A-Za-z0-9_-]{24,}"),
+    re.compile("JOFj" + r"_[A-Za-z0-9_-]+"),
+    re.compile("Authorization: " + r"[A-Za-z0-9_-]{10,}"),
+    re.compile("x-token" + r"[:=][A-Za-z0-9_-]{10,}"),
+    re.compile("Cookie: x-token=" + r"[A-Za-z0-9_-]{10,}"),
+    re.compile("NV" + "_TOKEN=" + r"[A-Za-z0-9_-]{10,}"),
+    re.compile("NV" + "_TOKEN=" + r".*[A-Za-z0-9_-]{24,}"),
 ]
 
 ALLOW_SENSITIVE_CONTEXT = [

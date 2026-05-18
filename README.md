@@ -38,9 +38,12 @@
 
 ## 4. 快速复现入口
 
-完整复现步骤见：
+| 文档 | 用途 |
+|---|---|
+| `docs/reproduce/实验复现指南.md` | 完整复现实验，包含环境、平台、token 和多场景复现 |
+| `docs/reproduce/快速演示命令.md` | 快速确认交付状态、preflight、API smoke 和轻量 API 查询 |
 
-- `docs/reproduce/实验复现指南.md`
+完整复现按 `docs/reproduce/实验复现指南.md` 执行；现场快速确认优先使用 `docs/reproduce/快速演示命令.md`。
 
 ## 5. 轻量 API 与集成调用
 
