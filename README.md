@@ -30,7 +30,7 @@
 | Flowable `documentProcess` 创建/保存替代场景 | 已验证 | 映射为流程实例启动，是电子公文创建/保存的建模替代场景。 |
 | Flowable `documentProcess` 内容更新替代场景 | 已验证 | 映射为流程变量更新，`seed_bad_0.json` 是预设非法样本。 |
 | Alfresco 文档创建/保存 | 已手工验证 | 标准文档平台原生接口，作为文档类业务语义证据。 |
-| Alfresco 文档内容更新 | 已手工验证 | 标准文档平台原生内容更新接口。 |
+| Alfresco 文档内容更新 | 已手工验证，已新增 text/plain min_calibration 接入 | 标准文档平台原生内容更新接口；本轮新增 seed/rule/profile/script，目标环境不可访问时可 skipped 重跑。 |
 | Alfresco 元数据更新 | 已接入 smoke | JSON body 接口，适配当前 body-only JSON fuzz 框架。 |
 | NV_MAB 反馈变异策略 | 基本完成 | 已完成工程闭环、最小 smoke、轻量稳定性和最小多轮消融验证。 |
 | 测评链路版 DHR | 基本完成 | O2OA AE + GAN online、Flowable AE v2 + `flowable_rule_v1` 支撑二阶段异构判定增强。 |
@@ -116,6 +116,7 @@ python3 -m unittest discover -s tests
 - `docs/review/Flowable电子公文替代场景验证报告.md`
 - `docs/review/Alfresco文档接口手工验证报告.md`
 - `docs/review/Alfresco元数据更新接口接入验证报告.md`
+- `docs/review/Alfresco内容更新接口接入验证报告.md`
 - `docs/review/真实服务环境smoke验证报告.md`
 - `docs/review/接口能力审计报告.md`
 
@@ -137,6 +138,6 @@ python3 -m unittest discover -s tests
 ## 9. 后续工作
 
 - 如有稳定 O2OA 写入接口环境，可补原生 O2OA 创建/更新接口；
-- 如有需求，可扩展 Alfresco `text/plain` 内容 fuzz 和 multipart 上传 fuzz；
+- 如有需求，可在 Alfresco `text/plain` 内容更新 min_calibration 基础上扩展更长时间 fuzz，并扩展 multipart 上传 fuzz；
 - 如总项目提供拟态执行体环境，再做系统级 DHR；
 - 当前阶段建议停止扩功能，转入集成联调和交付。

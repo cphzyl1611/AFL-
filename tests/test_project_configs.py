@@ -33,6 +33,12 @@ class ProjectConfigsTest(unittest.TestCase):
                 self.assertIsInstance(data, dict)
                 self.assertTrue("profile" in data or "platform" in data)
 
+    def test_alfresco_content_update_profile_parse(self) -> None:
+        data = self.assert_json_file(REPO_ROOT / "integration/platform_profiles/alfresco_content_update.json")
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data.get("profile"), "alfresco_content_update")
+        self.assertEqual(data.get("body_type"), "text/plain")
+
     def test_validity_rules_parse(self) -> None:
         rules = sorted((REPO_ROOT / "validity").glob("*.json"))
         self.assertGreater(len(rules), 0)
@@ -47,6 +53,13 @@ class ProjectConfigsTest(unittest.TestCase):
         for path in seeds:
             with self.subTest(path=path):
                 self.assert_json_file(path)
+
+    def test_alfresco_content_update_text_seeds_exist(self) -> None:
+        seed_dir = REPO_ROOT / "in/alfresco_content_update_dataset"
+        self.assertTrue(seed_dir.is_dir())
+        seeds = sorted(seed_dir.glob("*.txt"))
+        self.assertGreaterEqual(len(seeds), 4)
+        self.assertTrue((seed_dir / "seed_bad_0.txt").is_file())
 
 
 if __name__ == "__main__":

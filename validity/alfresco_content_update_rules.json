@@ -1,0 +1,24 @@
+{
+  "ruleset": "alfresco_content_update_rules",
+  "target": "Alfresco native document content update text/plain body",
+  "content_type": "text/plain; charset=utf-8",
+  "body": {
+    "type": "string",
+    "encoding": "utf-8",
+    "minLength": 1,
+    "maxLength": 4096,
+    "allow_binary": false
+  },
+  "expected_negative_seeds": [
+    "seed_bad_0.txt"
+  ],
+  "expected_negative_markers": [
+    "__EXPECTED_INVALID_EMPTY_CONTENT__"
+  ],
+  "notes": [
+    "content must be text/plain UTF-8 text.",
+    "seed_bad_0.txt is a preset invalid sample and should be rejected by local rules before replay.",
+    "This ruleset is for Alfresco standard document platform content update min calibration, not native O2OA document API coverage.",
+    "This ruleset does not cover multipart upload fuzzing."
+  ]
+}

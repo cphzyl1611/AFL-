@@ -1,0 +1,26 @@
+{
+  "profile": "alfresco_content_update",
+  "platform": "alfresco",
+  "scene": "document_content_update",
+  "target_type": "http_api",
+  "is_mainline": false,
+  "validation_scope": "standard_document_platform_content_update",
+  "target_semantics": "document_content_update",
+  "endpoint": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/{nodeId}/content",
+  "method": "PUT",
+  "body_type": "text/plain",
+  "seed_dir": "in/alfresco_content_update_dataset",
+  "rules": "validity/alfresco_content_update_rules.json",
+  "notes": [
+    "Alfresco standard document platform content update REST API.",
+    "Used to validate document content update business semantic interface.",
+    "Not native O2OA document API coverage.",
+    "Not a full AFL++ mutation-chain execution.",
+    "Multipart upload fuzzing is out of scope for this profile."
+  ],
+  "decision": {
+    "t_low": 1.0,
+    "t_high": 1.0,
+    "enable_second_stage": false
+  }
+}

@@ -32,6 +32,7 @@ SEED_GLOB = "in/**/*.json"
 
 STANDARD_SUMMARIES = [
     Path("out/alfresco_metadata_update_manual_latest/summary.csv"),
+    Path("out/alfresco_content_update_manual_latest/summary.csv"),
     Path("out/cms_body_valid_compare_real/summary.csv"),
     Path("out/real_service_smoke_20260508/o2oa_real/summary.csv"),
 ]

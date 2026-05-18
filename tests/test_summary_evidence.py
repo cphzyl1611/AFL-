@@ -36,6 +36,24 @@ class SummaryEvidenceTest(unittest.TestCase):
         required = {"group", "nv_mab_total_pulls", "arm0_pulls", "arm1_pulls", "arm2_pulls", "expected_pass"}
         self.assertTrue(required.issubset(header), f"missing {required - header}")
 
+    def test_optional_alfresco_content_update_header(self) -> None:
+        path = REPO_ROOT / "out/alfresco_content_update_manual_latest/summary.csv"
+        if not path.exists():
+            self.skipTest("optional Alfresco content update summary is not present")
+        header = self.read_header("out/alfresco_content_update_manual_latest/summary.csv")
+        required = {
+            "mode",
+            "nv_total_valid_exec",
+            "nv_err_exec",
+            "nv_err_rate",
+            "body_rule_pass",
+            "body_rule_reject",
+            "summary_source",
+            "execution_scope",
+            "metric_semantics",
+        }
+        self.assertTrue(required.issubset(header), f"missing {required - header}")
+
 
 if __name__ == "__main__":
     unittest.main()
