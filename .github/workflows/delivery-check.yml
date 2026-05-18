@@ -1,0 +1,30 @@
+name: delivery-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  delivery-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Python syntax check
+        run: |
+          python3 -m py_compile integration/api_server.py
+          python3 -m py_compile nv_json_mutator.py
+          python3 -m py_compile scripts/compute_security_score.py scripts/analyze_seed_quality.py
+
+      - name: Lightweight API smoke
+        run: python3 scripts/smoke_api_server.py
+
+      - name: Delivery preflight checks
+        run: python3 scripts/delivery_preflight_check.py
