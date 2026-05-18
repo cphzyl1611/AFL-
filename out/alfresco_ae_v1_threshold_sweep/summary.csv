@@ -1,0 +1,9 @@
+threshold,total_samples,expected_valid,expected_invalid,rule_only_pass,rule_only_reject,ae_only_pass,ae_only_reject,rule_ae_pass,rule_ae_reject,rule_only_false_accept,rule_only_false_reject,ae_only_false_accept,ae_only_false_reject,false_accept,false_reject,accuracy,notes
+0.500000,33,9,24,10,23,0,33,0,33,1,0,0,9,0,9,0.727273,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+0.933776,33,9,24,10,23,16,17,5,28,1,0,11,4,0,4,0.878788,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+1.000000,33,9,24,10,23,22,11,6,27,1,0,16,3,0,3,0.909091,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+1.623614,33,9,24,10,23,29,4,9,24,1,0,20,0,0,0,1.000000,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+2.000000,33,9,24,10,23,29,4,9,24,1,0,20,0,0,0,1.000000,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+2.029517,33,9,24,10,23,29,4,9,24,1,0,20,0,0,0,1.000000,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+2.435421,33,9,24,10,23,29,4,9,24,1,0,20,0,0,0,1.000000,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.
+3.000000,33,9,24,10,23,29,4,9,24,1,0,20,0,0,0,1.000000,false_accept/false_reject/accuracy are for rule+AE; extra columns show rule_only and ae_only errors.

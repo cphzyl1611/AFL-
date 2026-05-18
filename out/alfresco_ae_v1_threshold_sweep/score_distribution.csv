@@ -1,0 +1,10 @@
+scenario,sample_origin,expected_valid,min_score,median_score,max_score,count
+content_update,seed,false,0.936224,0.936224,0.936224,1
+content_update,seed,true,0.752459,0.773157,0.811793,3
+content_update,synthetic_invalid,false,0.653128,0.905434,182.470788,6
+metadata_update,seed,false,1.167730,1.167730,1.167730,1
+metadata_update,seed,true,0.937674,1.060269,1.123614,3
+metadata_update,synthetic_invalid,false,0.885073,0.974091,4.318939,7
+multipart_upload,seed,false,1.053788,1.053788,1.053788,1
+multipart_upload,seed,true,0.919997,0.933776,1.033334,3
+multipart_upload,synthetic_invalid,false,0.771050,0.800870,238.412539,8

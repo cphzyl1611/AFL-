@@ -94,6 +94,57 @@ class SummaryEvidenceTest(unittest.TestCase):
         }
         self.assertTrue(required.issubset(header), f"missing {required - header}")
 
+    def test_optional_alfresco_ae_v1_threshold_sweep_headers(self) -> None:
+        summary_path = REPO_ROOT / "out/alfresco_ae_v1_threshold_sweep/summary.csv"
+        if not summary_path.exists():
+            self.skipTest("optional Alfresco AE v1 threshold sweep output is not present")
+
+        summary_header = self.read_header("out/alfresco_ae_v1_threshold_sweep/summary.csv")
+        summary_required = {
+            "threshold",
+            "total_samples",
+            "expected_valid",
+            "expected_invalid",
+            "rule_only_pass",
+            "rule_only_reject",
+            "ae_only_pass",
+            "ae_only_reject",
+            "rule_ae_pass",
+            "rule_ae_reject",
+            "false_accept",
+            "false_reject",
+            "accuracy",
+        }
+        self.assertTrue(summary_required.issubset(summary_header), f"missing {summary_required - summary_header}")
+
+        details_header = self.read_header("out/alfresco_ae_v1_threshold_sweep/details.csv")
+        details_required = {
+            "scenario",
+            "sample_name",
+            "sample_origin",
+            "expected_valid",
+            "rule_pass",
+            "ae_score",
+            "threshold",
+            "ae_pass",
+            "rule_ae_decision",
+            "error_type",
+            "feature_vector",
+        }
+        self.assertTrue(details_required.issubset(details_header), f"missing {details_required - details_header}")
+
+        distribution_header = self.read_header("out/alfresco_ae_v1_threshold_sweep/score_distribution.csv")
+        distribution_required = {
+            "scenario",
+            "sample_origin",
+            "expected_valid",
+            "min_score",
+            "median_score",
+            "max_score",
+            "count",
+        }
+        self.assertTrue(distribution_required.issubset(distribution_header), f"missing {distribution_required - distribution_header}")
+
 
 if __name__ == "__main__":
     unittest.main()

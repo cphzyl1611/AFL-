@@ -61,6 +61,24 @@ NV_MAB_SUMMARIES = {
     Path("out/nv_mab_ablation_summary.csv"): {"group", "nv_mab_total_pulls", "arm0_pulls", "arm1_pulls", "arm2_pulls", "expected_pass"},
 }
 
+THRESHOLD_SWEEP_SUMMARIES = {
+    Path("out/alfresco_ae_v1_threshold_sweep/summary.csv"): {
+        "threshold",
+        "total_samples",
+        "expected_valid",
+        "expected_invalid",
+        "rule_only_pass",
+        "rule_only_reject",
+        "ae_only_pass",
+        "ae_only_reject",
+        "rule_ae_pass",
+        "rule_ae_reject",
+        "false_accept",
+        "false_reject",
+        "accuracy",
+    },
+}
+
 SENSITIVE_PATTERNS = [
     re.compile("JOFj" + r"_[A-Za-z0-9_-]+"),
     re.compile("Authorization: " + r"[A-Za-z0-9_-]{10,}"),
@@ -381,6 +399,17 @@ def check_summary_headers(state: ValidationState) -> None:
             continue
         header = set(read_csv_header(full))
         missing = expected_standard - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in THRESHOLD_SWEEP_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional threshold sweep summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
         if missing:
             failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
         checked += 1
