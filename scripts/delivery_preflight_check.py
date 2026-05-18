@@ -2,8 +2,9 @@
 """Unified local delivery preflight checks for the fuzzing module.
 
 The checks are intentionally lightweight: file presence, Python syntax,
-lightweight API smoke, sensitive-placeholder scanning, and wording-boundary
-scanning. They do not run O2OA, Flowable, Alfresco, or long fuzzing jobs.
+configuration validation, unittest, lightweight API smoke,
+sensitive-placeholder scanning, and wording-boundary scanning. They do not run
+O2OA, Flowable, Alfresco, or long fuzzing jobs.
 """
 
 from __future__ import annotations
@@ -29,6 +30,14 @@ REQUIRED_FILES = [
     "out/nv_mab_smoke_summary.csv",
     "out/nv_mab_stability_summary.csv",
     "out/nv_mab_ablation_summary.csv",
+    "schemas/fuzz_task.schema.json",
+    "schemas/platform_profile.schema.json",
+    "schemas/validity_rule.schema.json",
+    "schemas/summary_header.schema.json",
+    "scripts/validate_project_configs.py",
+    "tests/test_api_server_basic.py",
+    "tests/test_project_configs.py",
+    "tests/test_summary_evidence.py",
 ]
 
 PY_COMPILE_FILES = [
@@ -36,6 +45,7 @@ PY_COMPILE_FILES = [
     "nv_json_mutator.py",
     "scripts/compute_security_score.py",
     "scripts/analyze_seed_quality.py",
+    "scripts/validate_project_configs.py",
 ]
 
 SCAN_ROOTS = [
@@ -217,6 +227,36 @@ def check_api_smoke(state: CheckState) -> None:
         state.fail("api_smoke", proc.stdout.strip() or f"returncode={proc.returncode}")
 
 
+def check_config_validation(state: CheckState) -> None:
+    proc = subprocess.run(
+        [sys.executable, "scripts/validate_project_configs.py"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if proc.returncode == 0:
+        state.pass_("config_validation", "VALIDATE_PROJECT_CONFIGS_PASS")
+    else:
+        state.fail("config_validation", proc.stdout.strip() or f"returncode={proc.returncode}")
+
+
+def check_unittest(state: CheckState) -> None:
+    proc = subprocess.run(
+        [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if proc.returncode == 0:
+        state.pass_("unittest", "tests passed")
+    else:
+        state.fail("unittest", proc.stdout.strip() or f"returncode={proc.returncode}")
+
+
 def has_allowed_sensitive_context(line: str) -> bool:
     lowered = line.lower()
     return any(token.lower() in lowered for token in ALLOW_SENSITIVE_CONTEXT)
@@ -281,6 +321,8 @@ def main() -> int:
     state = CheckState()
     check_required_files(state)
     check_py_compile(state)
+    check_config_validation(state)
+    check_unittest(state)
     check_api_smoke(state)
     check_sensitive_scan(state)
     check_wording_scan(state)

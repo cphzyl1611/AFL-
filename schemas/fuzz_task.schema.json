@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fuzz task request",
+  "type": "object",
+  "description": "Loose schema for runner/adapter fuzz task requests and demo task files.",
+  "properties": {
+    "task_name": {
+      "type": "string"
+    },
+    "scenario": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "target_type": {
+      "type": "string",
+      "enum": [
+        "http_api",
+        "file_upload",
+        "protocol_message",
+        "binary",
+        "http"
+      ]
+    },
+    "target_endpoint": {
+      "type": "string"
+    },
+    "seed_source": {
+      "type": "string"
+    },
+    "seed_location": {
+      "type": "string"
+    },
+    "mutation_scope": {
+      "oneOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "max_test_cases": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "time_budget": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "duration": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "simulate": {
+      "type": "boolean"
+    },
+    "simulate_duration_sec": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "target_type"
+      ]
+    },
+    {
+      "required": [
+        "scenario"
+      ]
+    }
+  ],
+  "additionalProperties": true
+}

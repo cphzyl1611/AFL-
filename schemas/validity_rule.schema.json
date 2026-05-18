@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Validity rule",
+  "description": "Loose schema for validity/*.json rule files. Historical rule files are not forced into one strict shape.",
+  "oneOf": [
+    {
+      "type": "object"
+    },
+    {
+      "type": "array"
+    }
+  ],
+  "definitions": {
+    "common_rule_fields": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "required": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "properties": {
+          "type": "object"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

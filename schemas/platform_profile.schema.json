@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Platform profile",
+  "type": "object",
+  "description": "Loose schema for integration/platform_profiles/*.json.",
+  "properties": {
+    "profile": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "is_mainline": {
+      "type": "boolean"
+    },
+    "validation_scope": {
+      "type": "string"
+    },
+    "target_semantics": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "body_type": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "t_low": {
+          "type": "number"
+        },
+        "t_high": {
+          "type": "number"
+        },
+        "enable_second_stage": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "notes": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "profile"
+      ]
+    },
+    {
+      "required": [
+        "platform"
+      ]
+    }
+  ],
+  "additionalProperties": true
+}

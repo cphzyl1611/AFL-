@@ -84,7 +84,29 @@ python3 integration/api_server.py --host 127.0.0.1 --port 18081
 - 不允许任意 shell 命令；
 - O2OA token 不应写入仓库。
 
-## 6. 主要报告索引
+## 6. 工程质量检查与 CI
+
+当前仓库已补充基础工程质量检查入口：
+
+- GitHub Actions `delivery-check`；
+- `scripts/delivery_preflight_check.py` 一键交付预检查；
+- `scripts/validate_project_configs.py` 配置、schema、seed 和 summary evidence 校验；
+- `tests/` 基础 `unittest`；
+- API smoke；
+- 敏感信息扫描；
+- 口径扫描。
+
+常用命令：
+
+```bash
+python3 scripts/delivery_preflight_check.py
+python3 scripts/validate_project_configs.py
+python3 -m unittest discover -s tests
+```
+
+这些检查用于阶段性交付质量保障，不等同于完整平台级质量保障体系。
+
+## 7. 主要报告索引
 
 - `docs/review/模糊测试模块项目要求完成证明与复现说明.md`
 - `docs/review/文档类业务接口能力阶段性收口报告.md`
@@ -97,7 +119,7 @@ python3 integration/api_server.py --host 127.0.0.1 --port 18081
 - `docs/review/真实服务环境smoke验证报告.md`
 - `docs/review/接口能力审计报告.md`
 
-## 7. 当前不能宣称的内容
+## 8. 当前不能宣称的内容
 
 当前不能宣称：
 
@@ -112,7 +134,7 @@ python3 integration/api_server.py --host 127.0.0.1 --port 18081
 - 完整 MCP Server 已完成；
 - 完整平台 HTTP/RPC 网关服务已完成。
 
-## 8. 后续工作
+## 9. 后续工作
 
 - 如有稳定 O2OA 写入接口环境，可补原生 O2OA 创建/更新接口；
 - 如有需求，可扩展 Alfresco `text/plain` 内容 fuzz 和 multipart 上传 fuzz；
