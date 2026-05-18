@@ -1,14 +1,8 @@
+# This workflow is kept for optional future container delivery.
+# It is manual-only in the current stage-delivery branch because container image delivery is not part of the current fuzzing module acceptance scope.
 name: Container
 on:
-  push:
-    branches:
-      - stable
-      - dev
-    tags:
-      - "*"
-  #pull_request:
-  #  branches:
-  #    - stable # No need for stable-pull-request, as that equals dev-push
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
