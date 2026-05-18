@@ -42,7 +42,46 @@
 
 - `docs/reproduce/实验复现指南.md`
 
-## 5. 主要报告索引
+## 5. 轻量 API 与集成调用
+
+本仓库提供本地轻量 API Server，用于总项目集成联调阶段查询能力、查看报告索引，并以白名单方式提交轻量任务或 dry run。
+
+入口文件：
+
+- `integration/api_server.py`
+
+启动命令：
+
+```bash
+python3 integration/api_server.py --host 127.0.0.1 --port 18081
+```
+
+常用接口：
+
+| 接口 | 作用 |
+|---|---|
+| `GET /health` | 服务健康检查 |
+| `GET /capabilities` | 查看支持的测试场景 |
+| `GET /reports` | 查看关键报告索引 |
+| `POST /fuzz/submit` | 提交白名单测试任务或 dry run |
+| `GET /fuzz/tasks/{task_id}` | 查询任务状态 |
+| `POST /fuzz/tasks/{task_id}/stop` | 停止任务 |
+| `GET /fuzz/tasks/{task_id}/report` | 查询任务报告 |
+
+详细文档：
+
+- `docs/integration/轻量API调用说明.md`
+- `docs/integration/MCP接入预研说明.md`
+
+边界：
+
+- 这是本地轻量集成 API；
+- 不是完整平台级 HTTP/RPC 网关；
+- 当前未实现完整 MCP Server；
+- 不允许任意 shell 命令；
+- O2OA token 不应写入仓库。
+
+## 6. 主要报告索引
 
 - `docs/review/模糊测试模块项目要求完成证明与复现说明.md`
 - `docs/review/文档类业务接口能力阶段性收口报告.md`
@@ -55,7 +94,7 @@
 - `docs/review/真实服务环境smoke验证报告.md`
 - `docs/review/接口能力审计报告.md`
 
-## 6. 当前不能宣称的内容
+## 7. 当前不能宣称的内容
 
 当前不能宣称：
 
@@ -67,9 +106,10 @@
 - 长时间稳定性或完整论文级消融完成；
 - Flowable 完整 AFL++ mutation-chain 完成；
 - 完整拟态系统级动态异构冗余完成；
+- 完整 MCP Server 已完成；
 - 完整平台 HTTP/RPC 网关服务已完成。
 
-## 7. 后续工作
+## 8. 后续工作
 
 - 如有稳定 O2OA 写入接口环境，可补原生 O2OA 创建/更新接口；
 - 如有需求，可扩展 Alfresco `text/plain` 内容 fuzz 和 multipart 上传 fuzz；
