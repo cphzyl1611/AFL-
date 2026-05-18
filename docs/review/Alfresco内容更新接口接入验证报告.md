@@ -75,61 +75,80 @@ out/alfresco_content_update_manual_latest/summary.csv
 out/alfresco_content_update_manual_latest/details.csv
 ```
 
-如果本机 `127.0.0.1:8080` Alfresco 不可访问，脚本会写入 `mode=skipped` 的 summary，并返回 0，避免把环境不可用误判为接口实现失败。
+本次真实验证使用 `ALFRESCO_BASE=http://localhost:8080` 访问本机 Alfresco，root API 已返回 HTTP 200。
 
 ## 5. summary 结果
 
-本轮当前执行环境无法访问本机 Alfresco API，fixture 创建阶段返回：
+本次真实服务 min_calibration smoke 已通过，summary 关键字段如下：
 
 ```text
-<urlopen error [Errno 1] Operation not permitted>
-```
-
-因此本轮 summary 为 skipped，不作为目标系统真实回放通过证据：
-
-```text
-mode=skipped
-nv_total_valid_exec=0
+mode=rule_score
+nv_total_valid_exec=4
 nv_err_exec=0
 nv_err_rate=0.000000
-last_http_code=0
-body_rule_pass=0
-body_rule_reject=0
+saved_hangs=0
+saved_crashes=0
+last_http_code=200
+body_rule_pass=3
+body_rule_reject=1
+body_score_pass=0
+body_score_reject=0
+body_score_rpc_ok=0
+body_score_rpc_fail=0
 summary_source=python_static_loop
 execution_scope=alfresco_content_update_min_calibration
 ```
 
-待本地 Alfresco 可访问时，期望结果为：
+该结果来自：
 
-- `seed_ok_0.txt`、`seed_ok_1.txt`、`seed_border_0.txt` 返回 2xx；
-- `seed_bad_0.txt` 在规则层拒绝，不发送到目标；
-- `nv_err_exec=0`；
-- `saved_hangs=0`；
-- `saved_crashes=0`。
+```text
+out/alfresco_content_update_manual_latest/summary.csv
+```
 
 ## 6. details 结果
 
-当前 skipped 环境下，`details.csv` 记录 fixture 创建不可访问：
+本次 details 逐 seed 结果如下：
 
 ```text
-seed_file=__fixture__
-sent_to_target=false
-http_code=0
-error=<urlopen error [Errno 1] Operation not permitted>
+seed_bad_0.txt:
+  is_expected_negative=true
+  rule_pass=false
+  sent_to_target=false
+  http_code=0
+  error=preset_invalid_seed_rule_reject
+
+seed_border_0.txt:
+  is_expected_negative=false
+  rule_pass=true
+  sent_to_target=true
+  http_code=200
+
+seed_ok_0.txt:
+  is_expected_negative=false
+  rule_pass=true
+  sent_to_target=true
+  http_code=200
+
+seed_ok_1.txt:
+  is_expected_negative=false
+  rule_pass=true
+  sent_to_target=true
+  http_code=200
 ```
 
-本地 Alfresco 可访问后，逐 seed details 应记录：
+`seed_bad_0.txt` 是预设非法样本，在规则层拒绝，不发送到 Alfresco，不计为主链失败。
 
-- `seed_ok_0.txt`：`rule_pass=true`，`sent_to_target=true`；
-- `seed_ok_1.txt`：`rule_pass=true`，`sent_to_target=true`；
-- `seed_border_0.txt`：`rule_pass=true`，`sent_to_target=true`；
-- `seed_bad_0.txt`：`is_expected_negative=true`，`rule_pass=false`，`sent_to_target=false`。
+该结果来自：
+
+```text
+out/alfresco_content_update_manual_latest/details.csv
+```
 
 ## 7. 阶段性结论
 
-当前已完成 Alfresco text/plain 内容更新接口的 seed、规则、profile、运行脚本和报告接入。该接入补强了标准文档平台“文档内容更新”业务语义验证能力。
+当前已完成 Alfresco text/plain 内容更新接口的 seed、规则、profile、运行脚本和真实服务 min_calibration smoke。3 个合法/边界样本返回 HTTP 200，1 个 expected negative 样本在规则层拒绝，`nv_err_exec=0`。
 
-本轮执行环境未实际访问 Alfresco，因此不能把当前 skipped 结果写成目标系统 smoke 已通过。待本地 Alfresco 服务可访问时，按本报告运行命令重跑并归档 summary/details。
+该接入补强了标准文档平台“文档内容更新”业务语义验证能力。
 
 ## 8. 边界
 

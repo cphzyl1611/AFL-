@@ -1,0 +1,5 @@
+seed_file,is_expected_negative,rule_pass,sent_to_target,http_code,latency_ms,error,response_node_id,content_size
+seed_bad_0.txt,true,false,false,0,0,preset_invalid_seed_rule_reject,,35
+seed_border_0.txt,false,true,true,200,118,,4142ec40-f62c-43c3-82ec-40f62c43c302,2
+seed_ok_0.txt,false,true,true,200,107,,4142ec40-f62c-43c3-82ec-40f62c43c302,110
+seed_ok_1.txt,false,true,true,200,110,,4142ec40-f62c-43c3-82ec-40f62c43c302,98
