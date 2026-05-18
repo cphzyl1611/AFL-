@@ -1,0 +1,35 @@
+{
+  "ruleset": "alfresco_multipart_upload_rules",
+  "target": "Alfresco native document create/save multipart upload",
+  "method": "POST",
+  "content_type": "multipart/form-data",
+  "file_field": "filedata",
+  "nodeType": "cm:content",
+  "autoRename": true,
+  "filename": {
+    "type": "string",
+    "required_suffix": ".txt"
+  },
+  "file_content": {
+    "type": "string",
+    "encoding": "utf-8",
+    "minLength": 1,
+    "maxLength": 4096,
+    "allow_binary": false,
+    "allow_nul_byte": false
+  },
+  "expected_negative_seeds": [
+    "seed_bad_0.txt"
+  ],
+  "expected_negative_markers": [
+    "__EXPECTED_INVALID_EMPTY_UPLOAD__"
+  ],
+  "notes": [
+    "Multipart upload uses filedata as the file field.",
+    "Uploaded nodeType is cm:content and autoRename is true.",
+    "Generated filenames must end with .txt.",
+    "seed_bad_0.txt is a preset invalid sample and should be rejected by local rules before replay.",
+    "This ruleset is for Alfresco standard document platform create/save min calibration, not native O2OA document API coverage.",
+    "Binary content and NUL bytes are out of scope for this min calibration."
+  ]
+}

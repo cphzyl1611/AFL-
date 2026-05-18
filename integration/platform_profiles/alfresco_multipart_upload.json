@@ -1,0 +1,25 @@
+{
+  "profile": "alfresco_multipart_upload",
+  "platform": "alfresco",
+  "scene": "document_create_save",
+  "target_type": "http_api",
+  "is_mainline": false,
+  "validation_scope": "standard_document_platform_multipart_upload",
+  "target_semantics": "document_create_save",
+  "endpoint": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children",
+  "method": "POST",
+  "body_type": "multipart/form-data",
+  "seed_dir": "in/alfresco_multipart_upload_dataset",
+  "rules": "validity/alfresco_multipart_upload_rules.json",
+  "notes": [
+    "Alfresco standard document platform multipart upload REST API.",
+    "Used to validate document create/save business semantic interface.",
+    "Not native O2OA document API coverage.",
+    "Not a full AFL++ mutation-chain execution."
+  ],
+  "decision": {
+    "t_low": 1.0,
+    "t_high": 1.0,
+    "enable_second_stage": false
+  }
+}

@@ -33,8 +33,14 @@ SEED_GLOB = "in/**/*.json"
 STANDARD_SUMMARIES = [
     Path("out/alfresco_metadata_update_manual_latest/summary.csv"),
     Path("out/alfresco_content_update_manual_latest/summary.csv"),
+    Path("out/alfresco_multipart_upload_manual_latest/summary.csv"),
     Path("out/cms_body_valid_compare_real/summary.csv"),
     Path("out/real_service_smoke_20260508/o2oa_real/summary.csv"),
+]
+
+TEXT_SEED_DIRS = [
+    Path("in/alfresco_content_update_dataset"),
+    Path("in/alfresco_multipart_upload_dataset"),
 ]
 
 NV_MAB_SUMMARIES = {
@@ -263,7 +269,39 @@ def check_seeds(state: ValidationState, sensitive_paths: list[Path]) -> None:
     if failures:
         state.fail("seeds", "; ".join(failures))
     else:
-        state.pass_("seeds", f"count={len(paths)}")
+        state.pass_("seeds", f"json_count={len(paths)}")
+
+
+def check_text_seeds(state: ValidationState, sensitive_paths: list[Path]) -> None:
+    failures: list[str] = []
+    checked = 0
+    for seed_dir in TEXT_SEED_DIRS:
+        full_dir = REPO_ROOT / seed_dir
+        if not full_dir.is_dir():
+            failures.append(f"{seed_dir.as_posix()}: missing")
+            continue
+        txt_seeds = sorted(full_dir.glob("*.txt"))
+        if len(txt_seeds) < 4:
+            failures.append(f"{seed_dir.as_posix()}: expected at least 4 .txt seeds")
+            continue
+        for path in txt_seeds:
+            try:
+                body = path.read_bytes()
+            except OSError as exc:
+                failures.append(f"{rel(path)}: {exc}")
+                continue
+            if b"\x00" in body:
+                failures.append(f"{rel(path)}: contains NUL byte")
+            try:
+                body.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                failures.append(f"{rel(path)}: not utf-8 text: {exc}")
+            sensitive_paths.append(path)
+            checked += 1
+    if failures:
+        state.fail("text_seeds", "; ".join(failures[:20]))
+    else:
+        state.pass_("text_seeds", f"count={checked}")
 
 
 def read_csv_header(path: Path) -> list[str]:
@@ -332,6 +370,7 @@ def main() -> int:
     check_platform_profiles(state, sensitive_paths)
     check_validity_rules(state, sensitive_paths)
     check_seeds(state, sensitive_paths)
+    check_text_seeds(state, sensitive_paths)
     check_summary_headers(state)
     check_sensitive_scan(state, sensitive_paths)
 

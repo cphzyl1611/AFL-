@@ -54,6 +54,24 @@ class SummaryEvidenceTest(unittest.TestCase):
         }
         self.assertTrue(required.issubset(header), f"missing {required - header}")
 
+    def test_optional_alfresco_multipart_upload_header(self) -> None:
+        path = REPO_ROOT / "out/alfresco_multipart_upload_manual_latest/summary.csv"
+        if not path.exists():
+            self.skipTest("optional Alfresco multipart upload summary is not present")
+        header = self.read_header("out/alfresco_multipart_upload_manual_latest/summary.csv")
+        required = {
+            "mode",
+            "nv_total_valid_exec",
+            "nv_err_exec",
+            "nv_err_rate",
+            "body_rule_pass",
+            "body_rule_reject",
+            "summary_source",
+            "execution_scope",
+            "metric_semantics",
+        }
+        self.assertTrue(required.issubset(header), f"missing {required - header}")
+
 
 if __name__ == "__main__":
     unittest.main()

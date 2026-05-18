@@ -1,0 +1,5 @@
+seed_file,is_expected_negative,rule_pass,sent_to_target,http_code,latency_ms,error,response_node_id,uploaded_name,content_size
+seed_bad_0.txt,true,false,false,0,0,preset_invalid_seed_rule_reject,,nv_upload_1779104308_16313_0_seed_bad_0.txt,34
+seed_border_0.txt,false,true,true,201,168,,d65259fd-fdd8-4979-9259-fdfdd8d9799e,nv_upload_1779104308_16313_1_seed_border_0.txt,2
+seed_ok_0.txt,false,true,true,201,135,,668055ac-58a9-4a81-8055-ac58a91a8177,nv_upload_1779104308_16313_2_seed_ok_0.txt,110
+seed_ok_1.txt,false,true,true,201,116,,b0254691-0272-4f6b-a546-910272cf6ba8,nv_upload_1779104308_16313_3_seed_ok_1.txt,83
