@@ -73,6 +73,34 @@ def wait_until_ready(process: subprocess.Popen[bytes]) -> None:
     raise SmokeError(f"API server was not ready before timeout: {last_error}")
 
 
+def alfresco_score_samples() -> list[dict[str, Any]]:
+    return [
+        {
+            "scenario": "metadata_update",
+            "payload": {
+                "name": "official_doc.txt",
+                "properties": {
+                    "cm:title": "标题",
+                    "cm:description": "说明",
+                },
+            },
+        },
+        {
+            "scenario": "content_update",
+            "content": "正文内容",
+        },
+        {
+            "scenario": "multipart_upload",
+            "filename": "official_doc.txt",
+            "fields": {
+                "nodeType": "cm:content",
+                "autoRename": "true",
+            },
+            "content": "上传文件内容",
+        },
+    ]
+
+
 def run_smoke() -> None:
     command = [
         sys.executable,
@@ -101,16 +129,41 @@ def run_smoke() -> None:
         scenarios = capabilities.get("scenarios")
         expect(isinstance(scenarios, list), "/capabilities scenarios is not a list")
         expect("nv_mab_smoke" in scenarios, "/capabilities missing nv_mab_smoke")
+        tools = capabilities.get("tools")
+        expect(isinstance(tools, dict), "/capabilities tools is not a dict")
+        expect("alfresco_ae_v1_score" in tools, "/capabilities missing alfresco_ae_v1_score")
 
         status, reports = http_json("GET", "/reports")
         expect(status == 200, f"/reports status={status}")
         expect(isinstance(reports.get("reports"), list), "/reports missing report list")
+        report_paths = {item.get("path") for item in reports.get("reports", []) if isinstance(item, dict)}
+        expect(
+            "docs/review/Alfresco_AE_v1_score_service联调报告.md" in report_paths,
+            "/reports missing Alfresco AE v1 score service report",
+        )
+        expect(
+            "out/alfresco_ae_v1_service_compare/summary.csv" in report_paths,
+            "/reports missing Alfresco AE v1 service compare summary",
+        )
 
         status, submit = http_json("POST", "/fuzz/submit", {"scenario": "nv_mab_smoke", "dry_run": True})
         expect(status == 200, f"/fuzz/submit dry_run status={status}")
         expect(submit.get("status") == "dry_run", "/fuzz/submit did not return dry_run")
         command_result = submit.get("command")
         expect(isinstance(command_result, list) and command_result, "/fuzz/submit missing command")
+
+        for sample in alfresco_score_samples():
+            status, score = http_json("POST", "/score/alfresco_ae_v1", sample)
+            expect(status == 200, f"/score/alfresco_ae_v1 status={status} for {sample['scenario']}")
+            expect(score.get("status") == "ok", "/score/alfresco_ae_v1 did not return ok")
+            expect(score.get("tool") == "alfresco_ae_v1_score", "/score/alfresco_ae_v1 tool mismatch")
+            expect(score.get("scenario") == sample["scenario"], "/score/alfresco_ae_v1 scenario mismatch")
+            expect("score" in score, "/score/alfresco_ae_v1 missing score")
+            expect(score.get("decision") in {"pass", "reject"}, "/score/alfresco_ae_v1 decision mismatch")
+            expect(
+                score.get("model_type") == "ae_like_statistical_baseline",
+                "/score/alfresco_ae_v1 model_type mismatch",
+            )
     finally:
         if process.poll() is None:
             process.terminate()

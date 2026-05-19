@@ -22,6 +22,11 @@ from urllib.parse import unquote, urlparse
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from model_stage.alfresco_ae_v1_scorer import AlfrescoAEV1Scorer  # noqa: E402
+
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18081
 SERVICE_VERSION = "stage-delivery"
@@ -36,6 +41,18 @@ SCENARIOS = [
     "alfresco_ae_v1_score_service",
     "o2oa_smoke_optional",
 ]
+
+ALFRESCO_AE_V1_SCORE_CAPABILITY = {
+    "description": "Alfresco AE v1 local scoring adapter",
+    "scenarios": [
+        "metadata_update",
+        "content_update",
+        "multipart_upload",
+    ],
+    "endpoint": "POST /score/alfresco_ae_v1",
+    "model_type": "ae_like_statistical_baseline",
+    "boundary": "local adapter, not full platform gateway, not MCP server, not GAN/fAnoGAN",
+}
 
 LOCAL_SUMMARIES = {
     "nv_mab_smoke": Path("out/nv_mab_smoke_summary.csv"),
@@ -67,12 +84,19 @@ KEY_REPORTS = [
     Path("docs/review/NV_MAB轻量稳定性与最小消融验证报告.md"),
     Path("docs/review/Flowable电子公文替代场景验证报告.md"),
     Path("docs/review/Alfresco元数据更新接口接入验证报告.md"),
+    Path("docs/review/Alfresco_AE_v1二阶段有效性判定验证报告.md"),
+    Path("docs/review/Alfresco_AE_v1阈值校准与误判分析报告.md"),
     Path("docs/review/Alfresco_AE_v1_score_service联调报告.md"),
+    Path("docs/review/Alfresco_AE_v1轻量API接入报告.md"),
+    Path("out/alfresco_ae_v1_score_compare/summary.csv"),
+    Path("out/alfresco_ae_v1_threshold_sweep/summary.csv"),
+    Path("out/alfresco_ae_v1_service_compare/summary.csv"),
     Path("docs/review/真实服务环境smoke验证报告.md"),
 ]
 
 TASKS: dict[str, dict[str, Any]] = {}
 TASK_LOCK = threading.Lock()
+_ALFRESCO_AE_V1_SCORER: AlfrescoAEV1Scorer | None = None
 
 
 def utc_now() -> str:
@@ -90,6 +114,36 @@ def json_error(message: str, status: int = 400, **extra: Any) -> tuple[int, dict
     body = {"error": message}
     body.update(extra)
     return status, body
+
+
+def get_alfresco_ae_v1_scorer() -> AlfrescoAEV1Scorer:
+    global _ALFRESCO_AE_V1_SCORER
+    if _ALFRESCO_AE_V1_SCORER is None:
+        _ALFRESCO_AE_V1_SCORER = AlfrescoAEV1Scorer()
+    return _ALFRESCO_AE_V1_SCORER
+
+
+def score_alfresco_ae_v1_sample(sample: dict[str, Any]) -> dict[str, Any]:
+    scenario = str(sample.get("scenario", "")).strip()
+    if scenario not in {"metadata_update", "content_update", "multipart_upload"}:
+        raise ValueError("unsupported Alfresco AE v1 scenario")
+
+    scorer = get_alfresco_ae_v1_scorer()
+    result = scorer.score_sample(sample)
+    return {
+        "status": "ok",
+        "tool": "alfresco_ae_v1_score",
+        "scenario": scenario,
+        "score": result["score"],
+        "pass": bool(result["pass"]),
+        "decision": result["decision"],
+        "reason": result["reason"],
+        "threshold_high": result["threshold_high"],
+        "threshold_low": result["threshold_low"],
+        "model_name": result["model_name"],
+        "model_type": result["model_type"],
+        "feature_vector": result.get("feature_vector", []),
+    }
 
 
 def parse_json_body(handler: BaseHTTPRequestHandler) -> dict[str, Any]:
@@ -297,6 +351,9 @@ class ApiHandler(BaseHTTPRequestHandler):
         if path == "/capabilities":
             return 200, {
                 "scenarios": SCENARIOS,
+                "tools": {
+                    "alfresco_ae_v1_score": ALFRESCO_AE_V1_SCORE_CAPABILITY,
+                },
                 "notes": {
                     "o2oa_smoke_optional": "requires NV_TOKEN and authorized local O2OA environment",
                     "alfresco_ae_v1_score_service": "local score service integration smoke; not a full platform gateway",
@@ -331,6 +388,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         return json_error("not found", 404)
 
     def route_post(self, path: str, body_obj: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        if path == "/score/alfresco_ae_v1":
+            try:
+                return 200, score_alfresco_ae_v1_sample(body_obj)
+            except ValueError as exc:
+                return json_error(str(exc), 400, status="error", tool="alfresco_ae_v1_score", decision="reject")
+
         if path == "/fuzz/submit":
             scenario = body_obj.get("scenario")
             if not isinstance(scenario, str):
