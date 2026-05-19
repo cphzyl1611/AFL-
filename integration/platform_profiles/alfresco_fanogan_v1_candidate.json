@@ -1,0 +1,22 @@
+{
+  "profile": "alfresco_fanogan_v1_candidate",
+  "platform": "alfresco",
+  "validation_scope": "standard_document_platform_fanogan_candidate",
+  "target_semantics": [
+    "metadata_update",
+    "document_content_update",
+    "document_create_save"
+  ],
+  "decision": {
+    "enable_second_stage": true,
+    "second_stage_type": "fanogan_v1_candidate",
+    "model_meta": "model_stage/models/alfresco_fanogan_v1_candidate_meta.json"
+  },
+  "notes": [
+    "Alfresco fAnoGAN v1 candidate for offline validity scoring comparison.",
+    "Candidate only; not full SE-fAnoGAN-ES.",
+    "Not GAN production model.",
+    "Not full AFL++ mutation-chain.",
+    "AE v1 remains primary unless candidate clearly outperforms it."
+  ]
+}

@@ -42,10 +42,12 @@ STANDARD_SUMMARIES = [
 
 MODEL_META_FILES = [
     Path("model_stage/models/alfresco_ae_v1_meta.json"),
+    Path("model_stage/models/alfresco_fanogan_v1_candidate_meta.json"),
 ]
 
 REPORT_FILES = [
     Path("docs/review/MCP_adapter原型接入报告.md"),
+    Path("docs/review/Alfresco_fAnoGAN_v1候选有效性验证报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -81,6 +83,30 @@ THRESHOLD_SWEEP_SUMMARIES = {
         "false_accept",
         "false_reject",
         "accuracy",
+    },
+}
+
+FANOGAN_CANDIDATE_SUMMARIES = {
+    Path("out/alfresco_fanogan_v1_candidate_compare/summary.csv"): {
+        "mode",
+        "total_samples",
+        "expected_valid",
+        "expected_invalid",
+        "rule_only_pass",
+        "rule_only_reject",
+        "ae_v1_pass",
+        "ae_v1_reject",
+        "fanogan_pass",
+        "fanogan_reject",
+        "rule_fanogan_pass",
+        "rule_fanogan_reject",
+        "false_accept",
+        "false_reject",
+        "accuracy",
+        "model_type",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
     },
 }
 
@@ -426,6 +452,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional threshold sweep summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in FANOGAN_CANDIDATE_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional fAnoGAN candidate summary")
             continue
         header = set(read_csv_header(full))
         missing = required - header

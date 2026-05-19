@@ -1,0 +1,6 @@
+strategy,false_accept,false_reject,accuracy,notes
+rule_only,1,0,0.969697,single strategy baseline
+ae_only,20,0,0.393939,single strategy baseline
+rule_ae,0,0,1.000000,rule+score strategy combines rule filtering with model score
+fanogan_only,12,0,0.636364,single strategy baseline
+rule_fanogan,0,0,1.000000,rule+score strategy combines rule filtering with model score

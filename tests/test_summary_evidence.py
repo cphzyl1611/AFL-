@@ -182,6 +182,54 @@ class SummaryEvidenceTest(unittest.TestCase):
         }
         self.assertTrue(details_required.issubset(details_header), f"missing {details_required - details_header}")
 
+    def test_optional_alfresco_fanogan_candidate_headers(self) -> None:
+        summary_path = REPO_ROOT / "out/alfresco_fanogan_v1_candidate_compare/summary.csv"
+        if not summary_path.exists():
+            self.skipTest("optional Alfresco fAnoGAN candidate output is not present")
+
+        summary_header = self.read_header("out/alfresco_fanogan_v1_candidate_compare/summary.csv")
+        summary_required = {
+            "mode",
+            "total_samples",
+            "expected_valid",
+            "expected_invalid",
+            "rule_only_pass",
+            "rule_only_reject",
+            "ae_v1_pass",
+            "ae_v1_reject",
+            "fanogan_pass",
+            "fanogan_reject",
+            "rule_fanogan_pass",
+            "rule_fanogan_reject",
+            "false_accept",
+            "false_reject",
+            "accuracy",
+            "model_type",
+            "summary_source",
+            "execution_scope",
+        }
+        self.assertTrue(summary_required.issubset(summary_header), f"missing {summary_required - summary_header}")
+
+        details_header = self.read_header("out/alfresco_fanogan_v1_candidate_compare/details.csv")
+        details_required = {
+            "scenario",
+            "sample_name",
+            "sample_origin",
+            "expected_valid",
+            "rule_pass",
+            "ae_score",
+            "ae_decision",
+            "fanogan_score",
+            "fanogan_decision",
+            "rule_fanogan_decision",
+            "model_type",
+        }
+        self.assertTrue(details_required.issubset(details_header), f"missing {details_required - details_header}")
+
+        compare_header = self.read_header("out/alfresco_fanogan_v1_candidate_compare/compare_with_ae.csv")
+        compare_required = {"strategy", "false_accept", "false_reject", "accuracy", "notes"}
+        self.assertTrue(compare_required.issubset(compare_header), f"missing {compare_required - compare_header}")
+
 
 if __name__ == "__main__":
     unittest.main()
