@@ -13,15 +13,21 @@
   "body_type": "mixed",
   "notes": [
     "Alfresco AE v1 engineering two-stage validity scoring.",
+    "Local score service is for integration smoke and listens on localhost only.",
+    "Not an external network service.",
+    "Not a full platform gateway.",
     "Not GAN / fAnoGAN.",
     "Not native O2OA coverage.",
     "Not a full AFL++ mutation-chain execution."
   ],
   "decision": {
-    "t_low": 1.0,
-    "t_high": 1.0,
+    "t_low": 0.933776,
+    "t_high": 1.623614,
     "enable_second_stage": true,
     "second_stage_type": "ae_v1",
-    "model_meta": "model_stage/models/alfresco_ae_v1_meta.json"
+    "model_meta": "model_stage/models/alfresco_ae_v1_meta.json",
+    "score_service_endpoint": "http://127.0.0.1:18181/score",
+    "score_service_health": "http://127.0.0.1:18181/health",
+    "service_mode": "local_http"
   }
 }

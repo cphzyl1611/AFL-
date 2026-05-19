@@ -1,0 +1,2 @@
+mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,summary_source,execution_scope,metric_semantics
+rule_score,12,0,0.000000,0,0,200,2,0,9,3,9,3,12,0,python_static_loop,alfresco_ae_v1_score_service_min_calibration,Python static-loop Alfresco AE v1 score service validation; not a full AFL++ mutation-chain execution.

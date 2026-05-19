@@ -145,6 +145,43 @@ class SummaryEvidenceTest(unittest.TestCase):
         }
         self.assertTrue(distribution_required.issubset(distribution_header), f"missing {distribution_required - distribution_header}")
 
+    def test_optional_alfresco_ae_v1_service_compare_headers(self) -> None:
+        summary_path = REPO_ROOT / "out/alfresco_ae_v1_service_compare/summary.csv"
+        if not summary_path.exists():
+            self.skipTest("optional Alfresco AE v1 service compare output is not present")
+
+        summary_header = self.read_header("out/alfresco_ae_v1_service_compare/summary.csv")
+        summary_required = {
+            "mode",
+            "nv_total_valid_exec",
+            "nv_err_exec",
+            "nv_err_rate",
+            "body_rule_pass",
+            "body_rule_reject",
+            "body_score_pass",
+            "body_score_reject",
+            "body_score_rpc_ok",
+            "body_score_rpc_fail",
+            "summary_source",
+            "execution_scope",
+        }
+        self.assertTrue(summary_required.issubset(summary_header), f"missing {summary_required - summary_header}")
+
+        details_header = self.read_header("out/alfresco_ae_v1_service_compare/details.csv")
+        details_required = {
+            "scenario",
+            "seed_file",
+            "expected_negative",
+            "rule_pass",
+            "http_code",
+            "score",
+            "score_pass",
+            "decision",
+            "reason",
+            "service_latency_ms",
+        }
+        self.assertTrue(details_required.issubset(details_header), f"missing {details_required - details_header}")
+
 
 if __name__ == "__main__":
     unittest.main()

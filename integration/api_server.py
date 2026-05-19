@@ -33,6 +33,7 @@ SCENARIOS = [
     "alfresco_metadata_update",
     "flowable_doc_create",
     "flowable_doc_update",
+    "alfresco_ae_v1_score_service",
     "o2oa_smoke_optional",
 ]
 
@@ -40,6 +41,7 @@ LOCAL_SUMMARIES = {
     "nv_mab_smoke": Path("out/nv_mab_smoke_summary.csv"),
     "nv_mab_stability": Path("out/nv_mab_stability_summary.csv"),
     "nv_mab_ablation": Path("out/nv_mab_ablation_summary.csv"),
+    "alfresco_ae_v1_score_service": Path("out/alfresco_ae_v1_service_compare/summary.csv"),
 }
 
 SCENARIO_REPORTS = {
@@ -52,6 +54,9 @@ SCENARIO_REPORTS = {
     "nv_mab_ablation": [
         Path("docs/review/NV_MAB轻量稳定性与最小消融验证报告.md"),
     ],
+    "alfresco_ae_v1_score_service": [
+        Path("docs/review/Alfresco_AE_v1_score_service联调报告.md"),
+    ],
 }
 
 KEY_REPORTS = [
@@ -62,6 +67,7 @@ KEY_REPORTS = [
     Path("docs/review/NV_MAB轻量稳定性与最小消融验证报告.md"),
     Path("docs/review/Flowable电子公文替代场景验证报告.md"),
     Path("docs/review/Alfresco元数据更新接口接入验证报告.md"),
+    Path("docs/review/Alfresco_AE_v1_score_service联调报告.md"),
     Path("docs/review/真实服务环境smoke验证报告.md"),
 ]
 
@@ -293,6 +299,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "scenarios": SCENARIOS,
                 "notes": {
                     "o2oa_smoke_optional": "requires NV_TOKEN and authorized local O2OA environment",
+                    "alfresco_ae_v1_score_service": "local score service integration smoke; not a full platform gateway",
                     "lightweight_api": "local evidence query and fixed-command integration wrapper; not a full platform gateway",
                 },
             }

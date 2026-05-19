@@ -1,0 +1,13 @@
+scenario,seed_file,expected_negative,rule_pass,http_code,score,score_pass,decision,reason,service_latency_ms
+metadata_update,seed_bad_0.json,true,false,200,1.167730,false,reject,rule_reject:name_must_be_string_len_1_255,1.425
+metadata_update,seed_border_0.json,false,true,200,0.937674,true,pass,score_within_threshold,2.271
+metadata_update,seed_ok_0.json,false,true,200,1.123614,true,pass,score_within_threshold,1.350
+metadata_update,seed_ok_1.json,false,true,200,1.060269,true,pass,score_within_threshold,3.162
+content_update,seed_bad_0.txt,true,false,200,0.936224,false,reject,rule_reject:expected_negative_marker,1.416
+content_update,seed_border_0.txt,false,true,200,0.752459,true,pass,score_within_threshold,1.946
+content_update,seed_ok_0.txt,false,true,200,0.811793,true,pass,score_within_threshold,1.454
+content_update,seed_ok_1.txt,false,true,200,0.773157,true,pass,score_within_threshold,1.250
+multipart_upload,seed_bad_0.txt,true,false,200,1.096814,false,reject,rule_reject:expected_negative_marker,6.254
+multipart_upload,seed_border_0.txt,false,true,200,0.990246,true,pass,score_within_threshold,2.081
+multipart_upload,seed_ok_0.txt,false,true,200,1.074681,true,pass,score_within_threshold,1.779
+multipart_upload,seed_ok_1.txt,false,true,200,0.966206,true,pass,score_within_threshold,1.704
