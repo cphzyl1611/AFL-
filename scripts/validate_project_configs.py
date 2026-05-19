@@ -44,6 +44,10 @@ MODEL_META_FILES = [
     Path("model_stage/models/alfresco_ae_v1_meta.json"),
 ]
 
+REPORT_FILES = [
+    Path("docs/review/MCP_adapter原型接入报告.md"),
+]
+
 TEXT_SEED_DIRS = [
     Path("in/alfresco_content_update_dataset"),
     Path("in/alfresco_multipart_upload_dataset"),
@@ -205,6 +209,20 @@ def check_model_meta(state: ValidationState, sensitive_paths: list[Path]) -> Non
         state.fail("model_meta", "; ".join(failures[:20]))
     else:
         state.pass_("model_meta", f"count={len(MODEL_META_FILES)}")
+
+
+def check_report_files(state: ValidationState, sensitive_paths: list[Path]) -> None:
+    failures: list[str] = []
+    for rel_path in REPORT_FILES:
+        path = REPO_ROOT / rel_path
+        if not path.is_file():
+            failures.append(f"{rel_path.as_posix()}: missing")
+            continue
+        sensitive_paths.append(path)
+    if failures:
+        state.fail("report_files", "; ".join(failures))
+    else:
+        state.pass_("report_files", f"count={len(REPORT_FILES)}")
 
 
 def mutation_scope_is_valid(value: Any) -> bool:
@@ -440,6 +458,7 @@ def main() -> int:
     check_schemas(state)
     sensitive_paths.extend(REPO_ROOT / schema for schema in SCHEMA_FILES)
     check_model_meta(state, sensitive_paths)
+    check_report_files(state, sensitive_paths)
     check_demo_task(state, sensitive_paths)
     check_platform_profiles(state, sensitive_paths)
     check_validity_rules(state, sensitive_paths)

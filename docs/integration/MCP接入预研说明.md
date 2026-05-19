@@ -24,6 +24,8 @@ MCP 不是普通后端 API 的替代。普通 HTTP API 更适合系统间集成�
 | `query_fuzz_task` | 查询任务状态 |
 | `stop_fuzz_task` | 停止仍在运行的任务 |
 | `get_fuzz_report` | 获取任务关联 summary/report 列表 |
+| `score_alfresco_ae_v1_sample` | 对 Alfresco metadata/content/multipart 样本执行 AE v1 scoring |
+| `query_evidence` | 查询固定白名单 summary evidence |
 
 建议 resources：
 
@@ -83,12 +85,24 @@ MCP 接入必须遵守以下边界：
 
 ## 5. 当前状态
 
-本轮仅做 MCP 接入预研说明，不实现 MCP Server。
+当前已新增 MCP adapter prototype：
 
 当前可交付内容是：
 
 - 本地轻量 API；
 - API 调用说明；
 - MCP 接入路线和安全边界说明。
+- `integration/mcp_adapter.py`；
+- `scripts/smoke_mcp_adapter.py`；
+- `docs/review/MCP_adapter原型接入报告.md`。
 
-当前不能宣称 MCP Server 已经交付，也不能把轻量 API 表述为生产平台网关。
+prototype 白名单工具包括：
+
+- `get_capabilities`；
+- `score_alfresco_ae_v1_sample`；
+- `list_reports`；
+- `query_evidence`。
+
+该 prototype 复用 `AlfrescoAEV1Scorer`，不访问 Alfresco 服务，不开放任意 shell，不开放任意路径读取。
+
+当前仍不能宣称完整 MCP Server 已经交付，也不能把轻量 API 或 MCP adapter prototype 表述为生产平台网关。

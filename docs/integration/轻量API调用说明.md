@@ -225,7 +225,24 @@ curl --noproxy '*' http://127.0.0.1:18081/reports
 - `out/alfresco_ae_v1_threshold_sweep/summary.csv`
 - `out/alfresco_ae_v1_service_compare/summary.csv`
 
-## 12. 安全边界
+## 12. MCP Adapter Prototype
+
+当前已新增 MCP adapter prototype：
+
+```text
+integration/mcp_adapter.py
+```
+
+白名单工具包括：
+
+- `get_capabilities`
+- `score_alfresco_ae_v1_sample`
+- `list_reports`
+- `query_evidence`
+
+该 adapter 复用 `AlfrescoAEV1Scorer`，不访问 Alfresco 服务，不开放任意 shell 或任意路径读取，不等同于完整 MCP Server。
+
+## 13. 安全边界
 
 - API 默认绑定 `127.0.0.1`；
 - 不允许任意 shell 命令执行；
@@ -238,7 +255,7 @@ curl --noproxy '*' http://127.0.0.1:18081/reports
 - O2OA 场景默认不执行，除非后续显式接入授权环境和 token 注入策略；
 - 该 API 不是完整平台级 HTTP/RPC 网关。
 
-## 13. 边界表述
+## 14. 边界表述
 
 可以表述为：
 
