@@ -1,0 +1,28 @@
+{
+  "profile": "alfresco_afl_online_filter_smoke",
+  "platform": "alfresco",
+  "target_type": "local_mock",
+  "scenario": "alfresco_content_update",
+  "validation_scope": "alfresco_content_update_mock_afl_online_filter_smoke",
+  "target_semantics": "document_content_update",
+  "endpoint": "local://targets/alfresco_content_update_online_filter_wrapper.py",
+  "method": "LOCAL_EXEC",
+  "body_type": "text/plain",
+  "seed_dir": "in/alfresco_afl_content_update_smoke",
+  "online_filter": true,
+  "default_mode": "rule_ae",
+  "ae_v1_primary": true,
+  "fanogan_candidate_available": true,
+  "decision": {
+    "enable_second_stage": true,
+    "second_stage_type": "online_filter_prototype",
+    "default_mode": "rule_ae"
+  },
+  "notes": [
+    "Online filter prototype only.",
+    "Not full SE-fAnoGAN-ES.",
+    "Not real Alfresco service.",
+    "AE v1 remains primary.",
+    "fAnoGAN candidate is available but not enabled by default."
+  ]
+}

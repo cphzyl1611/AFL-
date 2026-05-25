@@ -54,6 +54,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco_torch_fAnoGAN阈值重校准与holdout验证报告.md"),
     Path("docs/review/Alfresco代表性AFL++变异链路smoke报告.md"),
     Path("docs/review/Alfresco代表性AFL++变异链路短时稳定性报告.md"),
+    Path("docs/review/Alfresco_SE-fAnoGAN-ES_online_filter原型报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -207,6 +208,31 @@ AFL_MUTATION_CHAIN_STABILITY_SUMMARIES = {
         "summary_source",
         "execution_scope",
         "metric_semantics",
+    },
+}
+
+AFL_ONLINE_FILTER_SUMMARIES = {
+    Path("out/alfresco_afl_online_filter_smoke_latest/summary.csv"): {
+        "mode",
+        "nv_total_valid_exec",
+        "nv_err_exec",
+        "nv_err_rate",
+        "saved_hangs",
+        "saved_crashes",
+        "body_rule_pass",
+        "body_rule_reject",
+        "body_score_pass",
+        "body_score_reject",
+        "body_score_rpc_ok",
+        "body_score_rpc_fail",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
+        "online_filter_mode",
+        "sent_to_target",
+        "filtered_by_rule",
+        "filtered_by_ae",
+        "filtered_by_fanogan",
     },
 }
 
@@ -670,6 +696,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional AFL mutation-chain stability summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in AFL_ONLINE_FILTER_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional AFL online filter summary")
             continue
         header = set(read_csv_header(full))
         missing = required - header
