@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -22,6 +23,10 @@ if str(ROOT) not in sys.path:
 
 from model_stage.alfresco_fanogan_v1_candidate import (  # noqa: E402
     DEFAULT_META_PATH,
+    DEFAULT_WEIGHT_PATH,
+    _make_torch_models,
+    _normalized_vectors,
+    _torch_score_tensor,
     candidate_score,
 )
 from model_stage.alfresco_feature_extractor import (  # noqa: E402
@@ -38,6 +43,7 @@ class AlfrescoFanoganV1CandidateScorer:
             self.meta = json.load(fh)
 
         self.feature_names = list(self.meta["feature_names"])
+        self.model_type = str(self.meta.get("model_type", "gan_style_statistical_candidate"))
         self.mean = [float(value) for value in self.meta["mean"]]
         self.std = [float(value) if abs(float(value)) > 1e-9 else 1.0 for value in self.meta["std"]]
         self.normal_vectors = [
@@ -52,10 +58,47 @@ class AlfrescoFanoganV1CandidateScorer:
             raise ValueError("fAnoGAN candidate meta is missing normal_vectors")
         if not (len(self.feature_names) == len(self.mean) == len(self.std)):
             raise ValueError("fAnoGAN candidate meta has inconsistent feature lengths")
+        self.torch_backend_error = ""
+        self._torch_backend: tuple[Any, Any, Any, Any] | None = None
+        if self.model_type == "torch_fanogan_style_candidate":
+            self._try_load_torch_backend()
+
+    def _try_load_torch_backend(self) -> None:
+        try:
+            torch = importlib.import_module("torch")
+            nn = importlib.import_module("torch.nn")
+            weight_path_value = str(self.meta.get("weight_path") or DEFAULT_WEIGHT_PATH)
+            weight_path = Path(weight_path_value)
+            if not weight_path.is_absolute():
+                weight_path = ROOT / weight_path
+            if not weight_path.is_file():
+                raise FileNotFoundError(weight_path)
+            device = torch.device("cpu")
+            state = torch.load(weight_path, map_location=device)
+            hidden_dim = int(state.get("hidden_dim", self.meta.get("hidden_dim", max(32, len(self.feature_names) * 2))))
+            latent_dim = int(state.get("latent_dim", self.meta.get("latent_dim", 8)))
+            generator, critic, encoder = _make_torch_models(torch, nn, len(self.feature_names), latent_dim, hidden_dim)
+            generator.load_state_dict(state["generator"])
+            critic.load_state_dict(state["critic"])
+            encoder.load_state_dict(state["encoder"])
+            generator.eval()
+            critic.eval()
+            encoder.eval()
+            self._torch_backend = (torch, generator, critic, encoder)
+        except Exception as exc:  # noqa: BLE001 - fallback is intentional for non-torch environments.
+            self.torch_backend_error = str(exc)
+            self._torch_backend = None
 
     def score_vector(self, vector: list[float]) -> float:
         if len(vector) != len(self.mean):
             raise ValueError(f"feature vector length mismatch: {len(vector)} != {len(self.mean)}")
+        if self._torch_backend is not None:
+            torch, generator, critic, encoder = self._torch_backend
+            normalized = _normalized_vectors([vector], self.mean, self.std)
+            x_tensor = torch.tensor(normalized, dtype=torch.float32)
+            with torch.no_grad():
+                score = _torch_score_tensor(torch, generator, critic, encoder, x_tensor)
+            return float(score.detach().cpu().tolist()[0])
         return candidate_score(
             vector,
             self.mean,
@@ -77,7 +120,8 @@ class AlfrescoFanoganV1CandidateScorer:
             "threshold_low": self.threshold_low,
             "threshold_high": self.threshold_high,
             "model_name": self.meta.get("model_name", "alfresco_fanogan_v1_candidate"),
-            "model_type": self.meta.get("model_type", "gan_style_statistical_candidate"),
+            "model_type": self.model_type,
+            "scoring_backend": "torch" if self._torch_backend is not None else "statistical_fallback",
         }
 
     def score_metadata_payload(self, payload: dict) -> dict[str, Any]:

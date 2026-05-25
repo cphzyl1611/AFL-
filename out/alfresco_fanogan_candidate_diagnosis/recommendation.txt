@@ -1,4 +1,4 @@
 recommendation: fanogan_candidate_underperforms_due_to_threshold_strictness
 action: keep_ae_v1_as_primary
-reason: No code inconsistency found. Raising candidate threshold can match or beat rule_ae without false_accept; first such multiplier=2.00, threshold=2.523132.
+reason: No code inconsistency found. Raising candidate threshold can match or beat rule_ae without false_accept; first such multiplier=1.25, threshold=2.408721.
 boundary: diagnostic threshold sensitivity only; not full SE-fAnoGAN-ES; no model promotion

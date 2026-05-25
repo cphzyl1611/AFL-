@@ -50,6 +50,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco_fAnoGAN_v1候选有效性验证报告.md"),
     Path("docs/review/Alfresco扩展样本与fAnoGAN候选二次评估报告.md"),
     Path("docs/review/Alfresco_fAnoGAN候选劣于AE原因诊断报告.md"),
+    Path("docs/review/Alfresco_torch_fAnoGAN候选复评报告.md"),
 ]
 
 TEXT_SEED_DIRS = [

@@ -35,6 +35,9 @@ from model_stage.alfresco_feature_extractor import (  # noqa: E402
 DEFAULT_META_PATH = ROOT / "model_stage" / "models" / "alfresco_fanogan_v1_candidate_meta.json"
 DEFAULT_WEIGHT_PATH = ROOT / "model_stage" / "models" / "alfresco_fanogan_v1_candidate.pt"
 LATENT_DIM = 8
+TORCH_SEED = 20260519
+TORCH_GAN_EPOCHS = 120
+TORCH_ENCODER_EPOCHS = 80
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,91 @@ class CandidateVectorSet:
 
 def torch_available() -> bool:
     return importlib.util.find_spec("torch") is not None
+
+
+def _import_torch_modules() -> tuple[Any, Any, Any]:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+
+    return torch, nn, optim
+
+
+def _make_torch_models(
+    torch_module: Any,
+    nn_module: Any,
+    feature_dim: int,
+    latent_dim: int,
+    hidden_dim: int,
+) -> tuple[Any, Any, Any]:
+    class Generator(nn_module.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.net = nn_module.Sequential(
+                nn_module.Linear(latent_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+                nn_module.Linear(hidden_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+                nn_module.Linear(hidden_dim, feature_dim),
+            )
+
+        def forward(self, z: Any) -> Any:
+            return self.net(z)
+
+    class Critic(nn_module.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.features = nn_module.Sequential(
+                nn_module.Linear(feature_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+                nn_module.Linear(hidden_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+            )
+            self.logit = nn_module.Linear(hidden_dim, 1)
+
+        def forward(self, x: Any, return_features: bool = False) -> Any:
+            hidden = self.features(x)
+            logit = self.logit(hidden)
+            if return_features:
+                return logit, hidden
+            return logit
+
+    class Encoder(nn_module.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.net = nn_module.Sequential(
+                nn_module.Linear(feature_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+                nn_module.Linear(hidden_dim, hidden_dim),
+                nn_module.LeakyReLU(0.2),
+                nn_module.Linear(hidden_dim, latent_dim),
+            )
+
+        def forward(self, x: Any) -> Any:
+            return self.net(x)
+
+    return Generator(), Critic(), Encoder()
+
+
+def _normalized_vectors(vectors: list[list[float]], mean: list[float], std: list[float]) -> list[list[float]]:
+    normalized: list[list[float]] = []
+    for vector in vectors:
+        normalized.append(
+            [
+                (float(value) - float(mu)) / (float(sigma) if abs(float(sigma)) > 1e-9 else 1.0)
+                for value, mu, sigma in zip(vector, mean, std)
+            ]
+        )
+    return normalized
+
+
+def _torch_score_tensor(torch_module: Any, generator: Any, critic: Any, encoder: Any, x_tensor: Any) -> Any:
+    recon = generator(encoder(x_tensor))
+    _, real_features = critic(x_tensor, return_features=True)
+    _, recon_features = critic(recon, return_features=True)
+    residual_loss = torch_module.sqrt(((x_tensor - recon) ** 2).mean(dim=1) + 1e-8)
+    critic_feature_loss = torch_module.sqrt(((real_features - recon_features) ** 2).mean(dim=1) + 1e-8)
+    return 0.75 * residual_loss + 0.25 * critic_feature_loss
 
 
 def feature_vector_for_sample(sample: Any) -> list[float]:
@@ -226,10 +314,152 @@ def build_statistical_candidate_meta() -> dict[str, Any]:
     }
 
 
+def build_torch_candidate_meta(weight_path: Path = DEFAULT_WEIGHT_PATH) -> dict[str, Any]:
+    torch, nn, optim = _import_torch_modules()
+    vector_set = load_valid_training_vectors()
+    base_vectors = vector_set.vectors
+    augmented = augment_vectors(base_vectors)
+    training_cloud = base_vectors + augmented
+    names = feature_names()
+    mean, std = column_stats(training_cloud)
+    normalized = _normalized_vectors(training_cloud, mean, std)
+
+    torch.manual_seed(TORCH_SEED)
+    if hasattr(torch, "cuda") and torch.cuda.is_available():
+        torch.cuda.manual_seed_all(TORCH_SEED)
+    device = torch.device("cuda" if hasattr(torch, "cuda") and torch.cuda.is_available() else "cpu")
+    x_train = torch.tensor(normalized, dtype=torch.float32, device=device)
+
+    feature_dim = len(names)
+    hidden_dim = max(32, feature_dim * 2)
+    generator, critic, encoder = _make_torch_models(torch, nn, feature_dim, LATENT_DIM, hidden_dim)
+    generator.to(device)
+    critic.to(device)
+    encoder.to(device)
+
+    bce = nn.BCEWithLogitsLoss()
+    mse = nn.MSELoss()
+    d_optimizer = optim.Adam(critic.parameters(), lr=0.002)
+    g_optimizer = optim.Adam(generator.parameters(), lr=0.002)
+
+    for _ in range(TORCH_GAN_EPOCHS):
+        batch_size = x_train.shape[0]
+        real = x_train
+        z = torch.randn(batch_size, LATENT_DIM, device=device)
+        fake = generator(z).detach()
+
+        d_optimizer.zero_grad()
+        real_logits = critic(real)
+        fake_logits = critic(fake)
+        d_loss = bce(real_logits, torch.ones_like(real_logits)) + bce(fake_logits, torch.zeros_like(fake_logits))
+        d_loss.backward()
+        d_optimizer.step()
+
+        g_optimizer.zero_grad()
+        z = torch.randn(batch_size, LATENT_DIM, device=device)
+        generated = generator(z)
+        generated_logits = critic(generated)
+        g_loss = bce(generated_logits, torch.ones_like(generated_logits))
+        g_loss.backward()
+        g_optimizer.step()
+
+    for parameter in critic.parameters():
+        parameter.requires_grad_(False)
+    for parameter in generator.parameters():
+        parameter.requires_grad_(False)
+
+    e_optimizer = optim.Adam(encoder.parameters(), lr=0.002)
+    for _ in range(TORCH_ENCODER_EPOCHS):
+        e_optimizer.zero_grad()
+        recon = generator(encoder(x_train))
+        _, real_features = critic(x_train, return_features=True)
+        _, recon_features = critic(recon, return_features=True)
+        e_loss = 0.75 * mse(recon, x_train) + 0.25 * mse(recon_features, real_features)
+        e_loss.backward()
+        e_optimizer.step()
+
+    generator.eval()
+    critic.eval()
+    encoder.eval()
+    with torch.no_grad():
+        train_scores_tensor = _torch_score_tensor(torch, generator, critic, encoder, x_train)
+    train_scores = [float(value) for value in train_scores_tensor.detach().cpu().tolist()]
+    score_mean = sum(train_scores) / len(train_scores)
+    score_std = math.sqrt(sum((score - score_mean) ** 2 for score in train_scores) / len(train_scores))
+    max_score = max(train_scores)
+    score_median = median(train_scores)
+    threshold_low = round(max(score_median, 0.000001), 6)
+    threshold_high = round(max(max_score + max(score_std * 2.0, 0.05), 0.05), 6)
+
+    weight_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "generator": generator.cpu().state_dict(),
+            "critic": critic.cpu().state_dict(),
+            "encoder": encoder.cpu().state_dict(),
+            "feature_dim": feature_dim,
+            "latent_dim": LATENT_DIM,
+            "hidden_dim": hidden_dim,
+            "mean": mean,
+            "std": std,
+            "score_formula": "0.75*sqrt(residual_mse) + 0.25*sqrt(critic_feature_mse)",
+        },
+        weight_path,
+    )
+
+    statistical_meta = build_statistical_candidate_meta()
+    return {
+        **statistical_meta,
+        "model_name": "alfresco_fanogan_v1_candidate",
+        "model_type": "torch_fanogan_style_candidate",
+        "torch_available": True,
+        "torch_version": str(torch.__version__),
+        "cuda_available": bool(hasattr(torch, "cuda") and torch.cuda.is_available()),
+        "device_used": str(device),
+        "feature_names": names,
+        "feature_dim": feature_dim,
+        "latent_dim": LATENT_DIM,
+        "hidden_dim": hidden_dim,
+        "mean": [round(value, 8) for value in mean],
+        "std": [round(value, 8) for value in std],
+        "train_sample_count": len(base_vectors),
+        "augmentation_count": len(augmented),
+        "threshold_low": threshold_low,
+        "threshold_high": threshold_high,
+        "train_score_stats": {
+            "min": round(min(train_scores), 6),
+            "median": round(score_median, 6),
+            "max": round(max_score, 6),
+            "mean": round(score_mean, 6),
+            "std": round(score_std, 6),
+        },
+        "score_formula": "0.75*sqrt(residual_mse) + 0.25*sqrt(critic_feature_mse)",
+        "weight_path": str(weight_path.relative_to(ROOT)),
+        "torch_training": {
+            "gan_epochs": TORCH_GAN_EPOCHS,
+            "encoder_epochs": TORCH_ENCODER_EPOCHS,
+            "seed": TORCH_SEED,
+            "batch_mode": "full_batch_small_seed_set",
+        },
+        "scenario_coverage": vector_set.scenario_coverage,
+        "boundary": [
+            "candidate only",
+            "torch fAnoGAN-style candidate, not full SE-fAnoGAN-ES",
+            "not production GAN model",
+            "not a replacement for Alfresco AE v1 unless extended evidence supports promotion",
+        ],
+        "notes": [
+            "Built with local .venv torch environment.",
+            "Uses existing Alfresco fixed-length feature extractor and valid/border seed vectors.",
+            "Synthetic invalid samples are used for comparison only, not for training.",
+            "Statistical fallback fields are retained in meta for environments without torch.",
+        ],
+    }
+
+
 def build_candidate_meta() -> dict[str, Any]:
-    # Torch is intentionally not required. The current local environment does
-    # not provide it, so the reliable path is the documented statistical
-    # candidate fallback.
+    if torch_available():
+        return build_torch_candidate_meta()
     return build_statistical_candidate_meta()
 
 

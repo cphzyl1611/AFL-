@@ -21,6 +21,10 @@ class AlfrescoFanoganV1CandidateTest(unittest.TestCase):
         self.assertIn(data.get("model_type"), {"torch_fanogan_style_candidate", "gan_style_statistical_candidate"})
         self.assertGreater(data.get("train_sample_count", 0), 0)
         self.assertGreater(data.get("threshold_high", 0), 0)
+        if data.get("model_type") == "torch_fanogan_style_candidate":
+            weight_path = data.get("weight_path")
+            self.assertIsInstance(weight_path, str)
+            self.assertTrue((REPO_ROOT / weight_path).is_file())
 
     def test_scorer_returns_decision_for_content_update(self) -> None:
         scorer = AlfrescoFanoganV1CandidateScorer()

@@ -1,7 +1,7 @@
 {
   "model_name": "alfresco_fanogan_v1_candidate",
-  "model_type": "gan_style_statistical_candidate",
-  "torch_available": false,
+  "model_type": "torch_fanogan_style_candidate",
+  "torch_available": true,
   "feature_names": [
     "scenario_metadata_update",
     "scenario_text_content_update",
@@ -418,16 +418,16 @@
   "entropy_scale": 5.19422846,
   "train_sample_count": 9,
   "augmentation_count": 18,
-  "threshold_low": 0.671197,
-  "threshold_high": 1.261566,
+  "threshold_low": 0.991476,
+  "threshold_high": 1.926977,
   "train_score_stats": {
-    "min": 0.414402,
-    "median": 0.671197,
-    "max": 0.811566,
-    "mean": 0.646658,
-    "std": 0.114358
+    "min": 0.759334,
+    "median": 0.991476,
+    "max": 1.470927,
+    "mean": 1.064094,
+    "std": 0.228025
   },
-  "score_formula": "0.55*rms_z_distance + 0.35*nearest_normal_distance + 0.10*entropy_penalty",
+  "score_formula": "0.75*sqrt(residual_mse) + 0.25*sqrt(critic_feature_mse)",
   "scenario_coverage": {
     "metadata_update": 3,
     "content_update": 3,
@@ -435,13 +435,25 @@
   },
   "boundary": [
     "candidate only",
-    "not full SE-fAnoGAN-ES",
+    "torch fAnoGAN-style candidate, not full SE-fAnoGAN-ES",
     "not production GAN model",
-    "not a replacement for Alfresco AE v1"
+    "not a replacement for Alfresco AE v1 unless extended evidence supports promotion"
   ],
   "notes": [
-    "PyTorch is unavailable in this environment; built dependency-free GAN-style statistical candidate.",
+    "Built with local .venv torch environment.",
     "Uses existing Alfresco fixed-length feature extractor and valid/border seed vectors.",
-    "Synthetic invalid samples are used for comparison only, not for training."
-  ]
+    "Synthetic invalid samples are used for comparison only, not for training.",
+    "Statistical fallback fields are retained in meta for environments without torch."
+  ],
+  "torch_version": "2.11.0+cu130",
+  "cuda_available": false,
+  "device_used": "cpu",
+  "hidden_dim": 64,
+  "weight_path": "model_stage/models/alfresco_fanogan_v1_candidate.pt",
+  "torch_training": {
+    "gan_epochs": 120,
+    "encoder_epochs": 80,
+    "seed": 20260519,
+    "batch_mode": "full_batch_small_seed_set"
+  }
 }
