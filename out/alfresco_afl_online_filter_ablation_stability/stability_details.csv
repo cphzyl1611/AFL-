@@ -1,0 +1,13 @@
+mode,run_id,run_time,execs_done,execs_per_sec,saved_crashes,saved_hangs,nv_total_valid_exec,nv_err_exec,nv_err_rate,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,sent_to_target,filtered_by_rule,filtered_by_ae,filtered_by_fanogan,summary_source,execution_scope
+rule_only,run_01,18,562,29.69,0,0,535,0,0.000000,121,441,121,441,0,0,121,441,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_only,run_02,19,593,31.11,0,0,566,0,0.000000,145,448,145,448,0,0,145,448,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_only,run_03,19,592,31.09,0,0,565,0,0.000000,124,468,124,468,0,0,124,468,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae,run_01,19,594,31.17,0,0,567,0,0.000000,150,444,144,450,150,0,144,444,6,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae,run_02,19,593,31.09,0,0,566,0,0.000000,175,418,174,419,175,0,174,418,1,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae,run_03,19,591,31.03,0,0,564,0,0.000000,135,456,132,459,135,0,132,456,3,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_fanogan,run_01,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_fanogan,run_02,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_fanogan,run_03,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_01,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_02,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_03,0,27,27000.00,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
