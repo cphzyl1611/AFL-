@@ -1,0 +1,31 @@
+{
+  "scenario": "alfresco_content_update_mock",
+  "summary_source": "afl_fuzz",
+  "execution_scope": "alfresco_content_update_mock_afl_mutation_chain_smoke",
+  "metric_semantics": "Representative AFL++ mutation-chain smoke over Alfresco content_update mock semantics; not all scenarios and not real Alfresco service.",
+  "out_dir": "/home/dministrator/AFLplusplus/out/alfresco_afl_content_update_smoke_latest",
+  "fuzzer_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_content_update_smoke_latest/fuzzer_stats",
+  "mock_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_content_update_smoke_latest/mock_stats.jsonl",
+  "summary_csv": "/home/dministrator/AFLplusplus/out/alfresco_afl_content_update_smoke_latest/summary.csv",
+  "fuzzer_stats": {
+    "execs_done": 1192,
+    "execs_per_sec": "61.07",
+    "paths_total": "4",
+    "corpus_count": "4",
+    "saved_crashes": 0,
+    "saved_hangs": 0,
+    "run_time": 19,
+    "edges_found": 0
+  },
+  "mock_stats": {
+    "records": 1193,
+    "body_rule_pass": 284,
+    "body_rule_reject": 909
+  },
+  "boundary": [
+    "representative AFL++ mutation-chain smoke only",
+    "mock target is not real Alfresco service",
+    "not all scenarios are AFL++ mutation-chain covered",
+    "does not change AE v1 primary mechanism"
+  ]
+}

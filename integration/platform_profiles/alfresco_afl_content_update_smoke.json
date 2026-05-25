@@ -1,0 +1,24 @@
+{
+  "profile": "alfresco_afl_content_update_smoke",
+  "platform": "alfresco",
+  "target_type": "local_mock",
+  "scenario": "alfresco_content_update",
+  "validation_scope": "alfresco_content_update_mock_afl_mutation_chain_smoke",
+  "target_semantics": "document_content_update",
+  "endpoint": "local://targets/alfresco_content_update_mock.py",
+  "method": "LOCAL_EXEC",
+  "body_type": "text/plain",
+  "seed_dir": "in/alfresco_afl_content_update_smoke",
+  "mutation_scope": [
+    "boundary"
+  ],
+  "decision": {
+    "enable_second_stage": false
+  },
+  "notes": [
+    "Representative AFL++ mutation-chain smoke over Alfresco content_update mock semantics.",
+    "Does not contact real Alfresco service.",
+    "Not all scenarios and not a full AFL++ mutation-chain coverage claim.",
+    "Does not change AE v1 primary decision mechanism."
+  ]
+}

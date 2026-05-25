@@ -12,6 +12,7 @@
 - score / decision 判定；
 - NV_MAB 反馈变异；
 - Alfresco fAnoGAN v1 candidate 离线对比；
+- 代表性 AFL++ mutation-chain smoke；
 - MCP adapter prototype；
 - `summary.csv`、`details.csv`、`fuzzer_stats`、`plot_data` 等 evidence 输出。
 
@@ -36,6 +37,7 @@
 - Alfresco 二阶段有效性判定：已新增 AE v1 engineering scorer，覆盖三类标准文档接口输入，并完成阈值 sweep、误判分析、本地 score service 联调和轻量 API adapter 接入；
 - Alfresco fAnoGAN v1 candidate：已完成 fallback 与 `.venv` torch fAnoGAN-style 候选评分、扩展样本二次评估、劣势诊断、阈值重校准和 holdout 验证；当前 recommendation 仍为继续以 AE v1 作为主二阶段判定；
 - MCP adapter prototype：已新增白名单工具原型，支持 Alfresco AE v1 scoring、报告列表和固定 evidence 查询；
+- 代表性 AFL++ mutation-chain smoke：已新增 Alfresco `content_update` 本地 mock target 短时 AFL++ smoke，证明至少一条真实 AFL++ 变异执行链路；该 smoke 不访问真实 Alfresco 服务，不代表所有场景完整 AFL++ mutation-chain；
 - 历史保留平台：O2OA，保留为原项目指定场景、历史 smoke 和需求对照；
 - 流程替代平台：Flowable，保留为 `documentProcess` 电子公文替代场景。
 
@@ -55,6 +57,7 @@
 | Alfresco 元数据更新 | 已接入 smoke | JSON body 接口，适配当前 body-only JSON fuzz 框架。 |
 | Alfresco AE v1 二阶段有效性判定 | 已接入本地 score compare、阈值 sweep / 误判分析、本地 score service 和轻量 API adapter | AE-like statistical baseline，覆盖 metadata/content/upload 三类输入；轻量 API endpoint 为 `POST /score/alfresco_ae_v1`；score compare、阈值分析和 service compare evidence 已归档。 |
 | Alfresco fAnoGAN v1 candidate | 已完成 fallback 与 torch 候选对比、扩展样本二次评估、诊断复评、阈值重校准和 holdout 验证 | 当前 `.venv` 复评为 `torch_fanogan_style_candidate`，用于和 AE v1 对比；holdout 上校准后 rule_fanogan 与 rule_ae 均为 `false_accept=0,false_reject=0`，candidate 未优于 AE v1，recommendation 仍为 `keep_ae_v1_as_primary`。 |
+| Alfresco content_update 代表性 AFL++ mutation-chain smoke | 已完成短时真实 AFL++ smoke | 使用本地 mock target，不访问真实 Alfresco；evidence 位于 `out/alfresco_afl_content_update_smoke_latest/summary.csv`、`eval_report.json` 和 `fuzzer_stats`。 |
 | MCP adapter prototype | 已接入原型 | 白名单工具包括 `get_capabilities`、`score_alfresco_ae_v1_sample`、`list_reports`、`query_evidence`；不是完整 MCP Server。 |
 | NV_MAB 反馈变异策略 | 基本完成 | 已完成工程闭环、最小 smoke、轻量稳定性和最小多轮消融验证。 |
 | 测评链路版 DHR | 基本完成 | O2OA AE + GAN online、Flowable AE v2 + `flowable_rule_v1` 支撑二阶段异构判定增强。 |
@@ -154,6 +157,7 @@ python3 -m unittest discover -s tests
 - `docs/review/Alfresco_fAnoGAN候选劣于AE原因诊断报告.md`
 - `docs/review/Alfresco_torch_fAnoGAN候选复评报告.md`
 - `docs/review/Alfresco_torch_fAnoGAN阈值重校准与holdout验证报告.md`
+- `docs/review/Alfresco代表性AFL++变异链路smoke报告.md`
 - `docs/review/v0.3.5最终工程交付状态冻结说明.md`
 - `docs/review/MCP_adapter原型接入报告.md`
 - `docs/review/O2OA到Alfresco主验证平台迁移说明.md`
@@ -173,8 +177,9 @@ python3 -m unittest discover -s tests
 - 完整自动化语义种子生成完成；
 - 长时间稳定性或完整论文级消融完成；
 - Flowable 完整 AFL++ mutation-chain 完成；
+- 所有 Alfresco 场景完整 AFL++ mutation-chain 完成；
 - 完整拟态系统级动态异构冗余完成；
-- 完整 MCP Server 已完成；
+- 已实现完整 MCP Server；
 - 完整平台 HTTP/RPC 网关服务已完成。
 
 ## 10. 后续工作
