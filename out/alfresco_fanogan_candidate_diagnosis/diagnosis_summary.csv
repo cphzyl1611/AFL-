@@ -1,0 +1,12 @@
+check_item,status,detail
+feature_dim_match,PASS,extractor_dim=32 ae_dim=32 fanogan_dim=32 fanogan_names=32
+feature_names_match,PASS,"AE, fAnoGAN candidate, and extractor feature_names are identical"
+manifest_path_binary_ok,PASS,entries=64 metadata=22 content=21 multipart=21 binary_like=6
+scenario_mapping_ok,PASS,"rows=64 scenarios=['content_update', 'metadata_update', 'multipart_upload']"
+rule_fanogan_definition_ok,PASS,rule_fanogan_pass == rule_pass and fanogan_pass
+rule_ae_definition_ok,PASS,rule_ae_pass == rule_pass and ae_pass
+expected_valid_bool_ok,PASS,details expected_valid cells are true/false
+metrics_recomputed_ok,PASS,details recomputation matches summary.csv false_accept/false_reject fields
+false_reject_samples_count,INFO,unique=5 rule_ae=4 rule_fanogan=5
+fanogan_extra_false_reject_count,INFO,fanogan_only_reject=1
+suspected_issue_type,INFO,fanogan_candidate_underperforms_due_to_threshold_strictness

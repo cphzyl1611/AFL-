@@ -49,6 +49,7 @@ REPORT_FILES = [
     Path("docs/review/MCP_adapter原型接入报告.md"),
     Path("docs/review/Alfresco_fAnoGAN_v1候选有效性验证报告.md"),
     Path("docs/review/Alfresco扩展样本与fAnoGAN候选二次评估报告.md"),
+    Path("docs/review/Alfresco_fAnoGAN候选劣于AE原因诊断报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -134,6 +135,14 @@ EXTENDED_CANDIDATE_EVAL_SUMMARIES = {
         "summary_source",
         "execution_scope",
         "metric_semantics",
+    },
+}
+
+FANOGAN_DIAGNOSIS_SUMMARIES = {
+    Path("out/alfresco_fanogan_candidate_diagnosis/diagnosis_summary.csv"): {
+        "check_item",
+        "status",
+        "detail",
     },
 }
 
@@ -553,6 +562,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional extended candidate eval summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in FANOGAN_DIAGNOSIS_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional fAnoGAN diagnosis summary")
             continue
         header = set(read_csv_header(full))
         missing = required - header

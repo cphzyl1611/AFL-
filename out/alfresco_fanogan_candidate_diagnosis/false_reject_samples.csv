@@ -1,0 +1,6 @@
+scenario,file,sample_type,expected_valid,rule_pass,ae_score,fanogan_score,ae_decision,fanogan_decision,rule_ae_decision,rule_fanogan_decision,difference_type
+content_update,content_update/content_border_many_lines.txt,border,true,true,8.017791,7.321540,reject,reject,reject,reject,both_reject
+content_update,content_update/content_border_mixed_language.txt,border,true,true,0.979206,2.264330,pass,reject,pass,reject,fanogan_only_reject
+metadata_update,metadata_update/metadata_border_long_title.json,border,true,true,5.793167,5.050635,reject,reject,reject,reject,both_reject
+multipart_upload,multipart_upload/upload_border_long_filename.txt,border,true,true,2.381578,2.041179,reject,reject,reject,reject,both_reject
+multipart_upload,multipart_upload/upload_border_multiline.txt,border,true,true,5.716241,5.749302,reject,reject,reject,reject,both_reject
