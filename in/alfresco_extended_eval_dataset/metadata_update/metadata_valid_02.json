@@ -1,0 +1,7 @@
+{
+  "name": "official_metadata_valid_02.txt",
+  "properties": {
+    "cm:title": "安全检查问题整改通报",
+    "cm:description": "扩展评估正常元数据样本 02，用于验证标题和说明字段。"
+  }
+}

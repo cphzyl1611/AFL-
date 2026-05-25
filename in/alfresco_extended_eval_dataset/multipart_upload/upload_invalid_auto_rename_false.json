@@ -1,0 +1,8 @@
+{
+  "filename": "upload_invalid_auto_rename_false.txt",
+  "fields": {
+    "nodeType": "cm:content",
+    "autoRename": "false"
+  },
+  "content": "autoRename=false 的 multipart 上传非法样本"
+}

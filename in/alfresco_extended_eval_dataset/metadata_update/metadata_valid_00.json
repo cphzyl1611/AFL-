@@ -1,0 +1,7 @@
+{
+  "name": "official_metadata_valid_00.txt",
+  "properties": {
+    "cm:title": "关于系统联调测试的通知",
+    "cm:description": "扩展评估正常元数据样本 00，用于验证标题和说明字段。"
+  }
+}

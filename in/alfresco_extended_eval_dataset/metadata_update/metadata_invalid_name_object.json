@@ -1,0 +1,9 @@
+{
+  "name": {
+    "bad": "object"
+  },
+  "properties": {
+    "cm:title": "名称类型错误",
+    "cm:description": "非法样本"
+  }
+}

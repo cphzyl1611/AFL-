@@ -1,0 +1,7 @@
+{
+  "name": "official_metadata_valid_01.txt",
+  "properties": {
+    "cm:title": "部门周例会纪要修订稿",
+    "cm:description": "扩展评估正常元数据样本 01，用于验证标题和说明字段。"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "numeric_like_title.txt",
+  "properties": {
+    "cm:title": "20260525",
+    "cm:description": "标题内容类似数字但仍为字符串"
+  }
+}

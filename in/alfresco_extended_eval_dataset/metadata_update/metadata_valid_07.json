@@ -1,0 +1,7 @@
+{
+  "name": "official_metadata_valid_07.txt",
+  "properties": {
+    "cm:title": "运维值班交接说明",
+    "cm:description": "扩展评估正常元数据样本 07，用于验证标题和说明字段。"
+  }
+}

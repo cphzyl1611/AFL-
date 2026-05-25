@@ -1,0 +1,495 @@
+[
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_border_chinese_only.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_border_many_lines.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_border_mixed_language.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_border_one_char.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_border_symbols.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_empty.txt",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "empty_content"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_extreme_long.txt",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "extreme_long"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_high_entropy.bin",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "high_entropy"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_non_utf8.bin",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "non_utf8"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_nul_byte.bin",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "nul_byte"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_invalid_whitespace_only.txt",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "whitespace_only"
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_00.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_01.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_02.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_03.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_04.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_05.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_06.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_07.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_08.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "content_update",
+    "file": "content_update/content_valid_09.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_border_empty_description.json",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_border_long_title.json",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_border_minimal_properties.json",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_border_numeric_like_title.json",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_border_unicode_name.json",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_description_object.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "description_object"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_empty_payload.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "empty_payload"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_extreme_long_name.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "extreme_long_name"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_missing_name.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "missing_name"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_name_object.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "name_object"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_properties_array.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "properties_array"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_invalid_title_array.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "title_array"
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_00.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_01.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_02.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_03.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_04.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_05.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_06.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_07.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_08.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "metadata_update",
+    "file": "metadata_update/metadata_valid_09.json",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_border_long_filename.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": "",
+    "filename": "long_nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_border_multiline.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": "",
+    "filename": "multiline_upload.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_border_one_char.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": "",
+    "filename": "upload_border_one_char.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_border_symbols.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": "",
+    "filename": "symbols_upload.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_border_unicode_filename.txt",
+    "expected_valid": true,
+    "sample_type": "border",
+    "error_type": "",
+    "filename": "公文_Δ_边界.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_auto_rename_false.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "auto_rename_false"
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_binary.bin",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "binary_content",
+    "filename": "upload_invalid_binary.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_empty.txt",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "empty_content",
+    "filename": "upload_invalid_empty.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_missing_node_type.json",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "missing_node_type"
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_nul_byte.bin",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "nul_byte",
+    "filename": "upload_invalid_nul_byte.txt",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_invalid_wrong_extension.exe",
+    "expected_valid": false,
+    "sample_type": "invalid",
+    "error_type": "wrong_extension",
+    "filename": "upload_invalid_wrong_extension.exe",
+    "fields": {
+      "nodeType": "cm:content",
+      "autoRename": "true"
+    }
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_00.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_01.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_02.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_03.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_04.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_05.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_06.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_07.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_08.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  },
+  {
+    "scenario": "multipart_upload",
+    "file": "multipart_upload/upload_valid_09.txt",
+    "expected_valid": true,
+    "sample_type": "valid",
+    "error_type": ""
+  }
+]

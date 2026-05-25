@@ -1,0 +1,7 @@
+{
+  "filename": "upload_invalid_missing_node_type.txt",
+  "fields": {
+    "autoRename": "true"
+  },
+  "content": "缺少 nodeType 的 multipart 上传非法样本"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "bad_description.txt",
+  "properties": {
+    "cm:title": "说明类型错误",
+    "cm:description": {
+      "bad": "object"
+    }
+  }
+}

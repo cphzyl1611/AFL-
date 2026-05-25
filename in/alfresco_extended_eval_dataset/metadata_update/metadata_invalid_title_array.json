@@ -1,0 +1,9 @@
+{
+  "name": "bad_title.txt",
+  "properties": {
+    "cm:title": [
+      "bad"
+    ],
+    "cm:description": "非法样本"
+  }
+}

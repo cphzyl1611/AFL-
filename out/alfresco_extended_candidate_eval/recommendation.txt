@@ -1,0 +1,3 @@
+recommendation: keep_ae_v1_as_primary
+reason: fAnoGAN candidate does not outperform AE v1 on the extended sample set
+boundary: extended offline evaluation only; not full SE-fAnoGAN-ES; not full GAN/fAnoGAN completed

@@ -48,12 +48,15 @@ MODEL_META_FILES = [
 REPORT_FILES = [
     Path("docs/review/MCP_adapter原型接入报告.md"),
     Path("docs/review/Alfresco_fAnoGAN_v1候选有效性验证报告.md"),
+    Path("docs/review/Alfresco扩展样本与fAnoGAN候选二次评估报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
     Path("in/alfresco_content_update_dataset"),
     Path("in/alfresco_multipart_upload_dataset"),
 ]
+
+EXTENDED_EVAL_MANIFEST = Path("in/alfresco_extended_eval_dataset/manifest.json")
 
 NV_MAB_SUMMARIES = {
     Path("out/nv_mab_smoke_summary.csv"): {"case_name", "nv_mab_total_pulls", "arm0_pulls", "arm1_pulls", "arm2_pulls", "expected_pass"},
@@ -104,6 +107,30 @@ FANOGAN_CANDIDATE_SUMMARIES = {
         "false_reject",
         "accuracy",
         "model_type",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
+    },
+}
+
+EXTENDED_CANDIDATE_EVAL_SUMMARIES = {
+    Path("out/alfresco_extended_candidate_eval/summary.csv"): {
+        "total_samples",
+        "expected_valid",
+        "expected_invalid",
+        "rule_only_false_accept",
+        "rule_only_false_reject",
+        "ae_only_false_accept",
+        "ae_only_false_reject",
+        "rule_ae_false_accept",
+        "rule_ae_false_reject",
+        "fanogan_only_false_accept",
+        "fanogan_only_false_reject",
+        "rule_fanogan_false_accept",
+        "rule_fanogan_false_reject",
+        "rule_ae_accuracy",
+        "rule_fanogan_accuracy",
+        "recommendation",
         "summary_source",
         "execution_scope",
         "metric_semantics",
@@ -410,6 +437,58 @@ def check_text_seeds(state: ValidationState, sensitive_paths: list[Path]) -> Non
         state.pass_("text_seeds", f"count={checked}")
 
 
+def check_extended_eval_manifest(state: ValidationState, sensitive_paths: list[Path]) -> None:
+    path = REPO_ROOT / EXTENDED_EVAL_MANIFEST
+    if not path.is_file():
+        state.warn("extended_eval_manifest", f"{EXTENDED_EVAL_MANIFEST.as_posix()}: missing optional extended eval manifest")
+        return
+    try:
+        data = load_json(path)
+    except Exception as exc:  # noqa: BLE001
+        state.fail("extended_eval_manifest", f"{EXTENDED_EVAL_MANIFEST.as_posix()}: {exc}")
+        return
+    if not isinstance(data, list):
+        state.fail("extended_eval_manifest", "top-level value must be list")
+        return
+
+    allowed_scenarios = {"metadata_update", "content_update", "multipart_upload"}
+    allowed_types = {"valid", "border", "invalid"}
+    failures: list[str] = []
+    counts: dict[str, int] = {"metadata_update": 0, "content_update": 0, "multipart_upload": 0}
+    for index, item in enumerate(data):
+        if not isinstance(item, dict):
+            failures.append(f"entry {index}: not object")
+            continue
+        scenario = item.get("scenario")
+        rel_file = item.get("file")
+        expected_valid = item.get("expected_valid")
+        sample_type = item.get("sample_type")
+        if scenario not in allowed_scenarios:
+            failures.append(f"entry {index}: invalid scenario {scenario!r}")
+        else:
+            counts[str(scenario)] += 1
+        if not isinstance(rel_file, str):
+            failures.append(f"entry {index}: file must be string")
+        else:
+            sample_path = path.parent / rel_file
+            if not sample_path.is_file():
+                failures.append(f"entry {index}: missing file {rel_file}")
+            elif sample_path.suffix in {".json", ".txt"}:
+                sensitive_paths.append(sample_path)
+        if not isinstance(expected_valid, bool):
+            failures.append(f"entry {index}: expected_valid must be bool")
+        if sample_type not in allowed_types:
+            failures.append(f"entry {index}: invalid sample_type {sample_type!r}")
+        if expected_valid is False and not item.get("error_type"):
+            failures.append(f"entry {index}: invalid sample missing error_type")
+
+    sensitive_paths.append(path)
+    if failures:
+        state.fail("extended_eval_manifest", "; ".join(failures[:20]))
+    else:
+        state.pass_("extended_eval_manifest", f"count={len(data)} metadata={counts['metadata_update']} content={counts['content_update']} multipart={counts['multipart_upload']}")
+
+
 def read_csv_header(path: Path) -> list[str]:
     with path.open("r", encoding="utf-8-sig", newline="") as fh:
         reader = csv.reader(fh)
@@ -470,6 +549,17 @@ def check_summary_headers(state: ValidationState) -> None:
             failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
         checked += 1
 
+    for path, required in EXTENDED_CANDIDATE_EVAL_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional extended candidate eval summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
     if failures:
         state.fail("summary_headers", "; ".join(failures))
     else:
@@ -501,6 +591,7 @@ def main() -> int:
     check_validity_rules(state, sensitive_paths)
     check_seeds(state, sensitive_paths)
     check_text_seeds(state, sensitive_paths)
+    check_extended_eval_manifest(state, sensitive_paths)
     check_summary_headers(state)
     check_sensitive_scan(state, sensitive_paths)
 
