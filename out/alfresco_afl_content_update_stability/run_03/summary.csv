@@ -1,0 +1,2 @@
+mode,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_hangs,saved_crashes,last_http_code,last_latency_ms,last_ncov_total,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,summary_source,execution_scope,metric_semantics
+afl_mock_smoke,1159,0,0.000000,0,0,0,0,0,285,901,0,0,0,0,afl_fuzz,alfresco_content_update_mock_afl_mutation_chain_smoke,Representative AFL++ mutation-chain smoke over Alfresco content_update mock semantics; not all scenarios and not real Alfresco service.

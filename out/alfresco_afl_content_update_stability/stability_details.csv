@@ -1,0 +1,4 @@
+run_id,run_time,execs_done,execs_per_sec,nv_total_valid_exec,nv_err_exec,nv_err_rate,saved_crashes,saved_hangs,body_rule_pass,body_rule_reject,summary_source,execution_scope
+run_01,19,1188,60.92,1161,0,0.0,0,0,268,920,afl_fuzz,alfresco_content_update_mock_afl_mutation_chain_smoke
+run_02,19,1183,60.58,1156,0,0.0,0,0,309,874,afl_fuzz,alfresco_content_update_mock_afl_mutation_chain_smoke
+run_03,19,1186,60.73,1159,0,0.0,0,0,285,901,afl_fuzz,alfresco_content_update_mock_afl_mutation_chain_smoke

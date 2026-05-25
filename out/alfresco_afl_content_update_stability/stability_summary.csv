@@ -1,0 +1,2 @@
+runs,total_execs_done,total_valid_exec,total_err_exec,mean_nv_err_rate,max_nv_err_rate,min_execs_done,max_execs_done,median_execs_done,iqr_execs_done,saved_crashes_total,saved_hangs_total,stability_score,summary_source,execution_scope,metric_semantics
+3,3557,3476,0,0.000000,0.000000,1183,1188,1186,2,0,0,1.000000,afl_fuzz_stability,alfresco_content_update_mock_afl_mutation_chain_short_stability,"Short stability experiment over representative AFL++ mutation-chain smoke; mock target only, not all scenarios and not real Alfresco service."
