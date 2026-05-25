@@ -1,0 +1,4 @@
+recommendation: keep_ae_v1_as_primary
+chosen_threshold: 12.511790
+reason: calibrated fAnoGAN candidate does not clearly outperform AE v1 on the holdout split
+boundary: holdout validation only; not full SE-fAnoGAN-ES; no automatic replacement of AE v1

@@ -1,0 +1,13 @@
+threshold,false_accept,false_reject,accuracy,selected,reason
+1.926977,0,4,0.866667,false,current_threshold_high
+2.119675,0,4,0.866667,false,threshold_high_x1.10
+2.408721,0,3,0.900000,false,threshold_high_x1.25
+2.890465,0,3,0.900000,false,threshold_high_x1.50
+3.853954,0,3,0.900000,false,threshold_high_x2.00
+4.817443,0,3,0.900000,false,threshold_high_x2.50
+5.233747,0,2,0.933333,false,calibration_score_p80
+5.780931,0,2,0.933333,false,threshold_high_x3.00
+7.113244,0,1,0.966667,false,calibration_score_p85
+12.511790,0,0,1.000000,true,selected lowest false_reject among false_accept=0 candidates; tie-breaker lower threshold
+14.143179,0,0,1.000000,false,calibration_score_p95
+26.069059,0,0,1.000000,false,calibration_score_p97.5

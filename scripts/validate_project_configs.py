@@ -51,6 +51,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco扩展样本与fAnoGAN候选二次评估报告.md"),
     Path("docs/review/Alfresco_fAnoGAN候选劣于AE原因诊断报告.md"),
     Path("docs/review/Alfresco_torch_fAnoGAN候选复评报告.md"),
+    Path("docs/review/Alfresco_torch_fAnoGAN阈值重校准与holdout验证报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -144,6 +145,28 @@ FANOGAN_DIAGNOSIS_SUMMARIES = {
         "check_item",
         "status",
         "detail",
+    },
+}
+
+FANOGAN_HOLDOUT_SUMMARIES = {
+    Path("out/alfresco_fanogan_threshold_holdout_eval/holdout_summary.csv"): {
+        "total_samples",
+        "expected_valid",
+        "expected_invalid",
+        "rule_ae_false_accept",
+        "rule_ae_false_reject",
+        "rule_ae_accuracy",
+        "rule_fanogan_default_false_accept",
+        "rule_fanogan_default_false_reject",
+        "rule_fanogan_default_accuracy",
+        "rule_fanogan_calibrated_false_accept",
+        "rule_fanogan_calibrated_false_reject",
+        "rule_fanogan_calibrated_accuracy",
+        "chosen_threshold",
+        "recommendation",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
     },
 }
 
@@ -574,6 +597,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional fAnoGAN diagnosis summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in FANOGAN_HOLDOUT_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional fAnoGAN holdout summary")
             continue
         header = set(read_csv_header(full))
         missing = required - header
