@@ -24,6 +24,10 @@
 - NV_MAB 工程闭环基本完成，并完成轻量稳定性与最小多轮消融验证；
 - 可进入总项目集成联调。
 
+当前冻结交付版本见：
+
+- `docs/review/v0.3.5最终工程交付状态冻结说明.md`
+
 ## 3. 平台定位
 
 当前平台口径：
@@ -150,6 +154,7 @@ python3 -m unittest discover -s tests
 - `docs/review/Alfresco_fAnoGAN候选劣于AE原因诊断报告.md`
 - `docs/review/Alfresco_torch_fAnoGAN候选复评报告.md`
 - `docs/review/Alfresco_torch_fAnoGAN阈值重校准与holdout验证报告.md`
+- `docs/review/v0.3.5最终工程交付状态冻结说明.md`
 - `docs/review/MCP_adapter原型接入报告.md`
 - `docs/review/O2OA到Alfresco主验证平台迁移说明.md`
 - `docs/review/真实服务环境smoke验证报告.md`
