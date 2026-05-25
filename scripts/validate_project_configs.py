@@ -55,6 +55,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco代表性AFL++变异链路smoke报告.md"),
     Path("docs/review/Alfresco代表性AFL++变异链路短时稳定性报告.md"),
     Path("docs/review/Alfresco_SE-fAnoGAN-ES_online_filter原型报告.md"),
+    Path("docs/review/Alfresco_online_filter四模式消融实验报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -233,6 +234,31 @@ AFL_ONLINE_FILTER_SUMMARIES = {
         "filtered_by_rule",
         "filtered_by_ae",
         "filtered_by_fanogan",
+    },
+}
+
+AFL_ONLINE_FILTER_ABLATION_SUMMARIES = {
+    Path("out/alfresco_afl_online_filter_ablation/ablation_summary.csv"): {
+        "modes",
+        "total_execs_done",
+        "total_valid_exec",
+        "total_err_exec",
+        "max_nv_err_rate",
+        "saved_crashes_total",
+        "saved_hangs_total",
+        "rule_only_sent_to_target",
+        "rule_ae_sent_to_target",
+        "rule_fanogan_sent_to_target",
+        "rule_ae_fanogan_sent_to_target",
+        "rule_only_filtered_by_rule",
+        "rule_ae_filtered_by_ae",
+        "rule_fanogan_filtered_by_fanogan",
+        "rule_ae_fanogan_filtered_by_fanogan",
+        "ae_primary_recommendation",
+        "fanogan_online_observation",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
     },
 }
 
@@ -707,6 +733,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional AFL online filter summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in AFL_ONLINE_FILTER_ABLATION_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional AFL online filter ablation summary")
             continue
         header = set(read_csv_header(full))
         missing = required - header

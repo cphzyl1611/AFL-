@@ -1,0 +1,5 @@
+mode,run_time,execs_done,execs_per_sec,saved_crashes,saved_hangs,nv_total_valid_exec,nv_err_exec,nv_err_rate,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,sent_to_target,filtered_by_rule,filtered_by_ae,filtered_by_fanogan,summary_source,execution_scope
+rule_only,17,550,32.20,0,0,523,0,0.000000,113,437,113,437,0,0,113,437,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae,17,544,31.87,0,0,517,0,0.000000,113,432,111,434,113,0,111,432,2,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_fanogan,0,25,25000.00,0,0,25,0,0.000000,18,7,18,7,18,0,18,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,0,25,25000.00,0,0,25,0,0.000000,18,7,18,7,18,0,18,7,0,0,afl_fuzz_online_filter,alfresco_content_update_mock_afl_online_filter_smoke

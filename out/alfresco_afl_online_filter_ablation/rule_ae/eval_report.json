@@ -1,0 +1,40 @@
+{
+  "summary_source": "afl_fuzz_online_filter",
+  "execution_scope": "alfresco_content_update_mock_afl_online_filter_smoke",
+  "metric_semantics": "Representative AFL++ mutation-chain smoke with SE-fAnoGAN-ES-style online filter prototype; mock target only, not full SE-fAnoGAN-ES and not real Alfresco service.",
+  "out_dir": "out/alfresco_afl_online_filter_ablation/rule_ae",
+  "fuzzer_stats_path": "out/alfresco_afl_online_filter_ablation/rule_ae/fuzzer_stats",
+  "filter_stats_path": "out/alfresco_afl_online_filter_ablation/rule_ae/filter_stats.jsonl",
+  "summary_csv": "out/alfresco_afl_online_filter_ablation/rule_ae/summary.csv",
+  "fuzzer_stats": {
+    "execs_done": 544,
+    "execs_per_sec": "31.87",
+    "paths_total": "4",
+    "corpus_count": "4",
+    "saved_crashes": 0,
+    "saved_hangs": 0,
+    "run_time": 17,
+    "edges_found": 0
+  },
+  "online_filter": {
+    "mode": "rule_ae",
+    "records": 545,
+    "body_rule_pass": 113,
+    "body_rule_reject": 432,
+    "body_score_pass": 111,
+    "body_score_reject": 434,
+    "body_score_rpc_ok": 113,
+    "body_score_rpc_fail": 0,
+    "sent_to_target": 111,
+    "filtered_by_rule": 432,
+    "filtered_by_ae": 2,
+    "filtered_by_fanogan": 0
+  },
+  "boundary": [
+    "SE-fAnoGAN-ES-style online filter prototype only",
+    "not full SE-fAnoGAN-ES",
+    "mock target is not real Alfresco service",
+    "not all scenarios are AFL++ mutation-chain covered",
+    "AE v1 remains primary"
+  ]
+}

@@ -107,7 +107,12 @@ def main() -> int:
     body_rule_reject = sum(1 for item in records if not bool(item.get("rule_pass")))
     body_score_pass = sum(1 for item in records if item.get("final_decision") == "pass")
     body_score_reject = sum(1 for item in records if item.get("final_decision") == "reject")
-    body_score_rpc_ok = sum(1 for item in records if item.get("ae_decision") not in {"not_run", None})
+    body_score_rpc_ok = sum(
+        1
+        for item in records
+        if item.get("ae_decision") not in {"not_run", None}
+        or item.get("fanogan_decision") not in {"not_run", None}
+    )
     body_score_rpc_fail = sum(1 for item in records if str(item.get("reject_reason", "")).endswith("scoring_error"))
     sent_to_target = sum(1 for item in records if bool(item.get("sent_to_target")))
     filtered_by_rule = sum(1 for item in records if str(item.get("reject_reason", "")).startswith("rule_"))

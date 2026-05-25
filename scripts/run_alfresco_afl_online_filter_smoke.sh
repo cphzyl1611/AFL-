@@ -9,6 +9,7 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 DUR="${DUR:-20}"
 ONLINE_FILTER_MODE="${ONLINE_FILTER_MODE:-rule_ae}"
 FANOGAN_ENABLED="${FANOGAN_ENABLED:-0}"
+AFL_EXEC_TIMEOUT_MS="${AFL_EXEC_TIMEOUT_MS:-}"
 
 if [[ ! -x "$ROOT/afl-fuzz" ]]; then
   echo "[ERR] $ROOT/afl-fuzz is missing or not executable. Run: make -j2 afl-fuzz" >&2
@@ -44,9 +45,18 @@ echo "[*] output=$OUT_DIR"
 echo "[*] duration=${DUR}s"
 echo "[*] online_filter_mode=$ONLINE_FILTER_MODE"
 echo "[*] fanogan_enabled=$FANOGAN_ENABLED"
+if [[ -n "$AFL_EXEC_TIMEOUT_MS" ]]; then
+  echo "[*] afl_exec_timeout_ms=$AFL_EXEC_TIMEOUT_MS"
+fi
+
+afl_timeout_args=()
+if [[ -n "$AFL_EXEC_TIMEOUT_MS" ]]; then
+  afl_timeout_args=(-t "$AFL_EXEC_TIMEOUT_MS")
+fi
+unset AFL_EXEC_TIMEOUT_MS
 
 set +e
-timeout "${DUR}s" "$ROOT/afl-fuzz" -n -m none -i "$IN_DIR" -o "$OUT_DIR" -- "$PYTHON_BIN" "$TARGET" @@
+timeout "${DUR}s" "$ROOT/afl-fuzz" -n -m none "${afl_timeout_args[@]}" -i "$IN_DIR" -o "$OUT_DIR" -- "$PYTHON_BIN" "$TARGET" @@
 status=$?
 set -e
 
