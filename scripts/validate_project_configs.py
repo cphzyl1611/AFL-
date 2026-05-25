@@ -57,6 +57,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco_SE-fAnoGAN-ES_online_filter原型报告.md"),
     Path("docs/review/Alfresco_online_filter四模式消融实验报告.md"),
     Path("docs/review/Alfresco_online_filter四模式短时稳定性报告.md"),
+    Path("docs/review/Alfresco_metadata_update_online_filter_smoke报告.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -216,6 +217,29 @@ AFL_MUTATION_CHAIN_STABILITY_SUMMARIES = {
 AFL_ONLINE_FILTER_SUMMARIES = {
     Path("out/alfresco_afl_online_filter_smoke_latest/summary.csv"): {
         "mode",
+        "nv_total_valid_exec",
+        "nv_err_exec",
+        "nv_err_rate",
+        "saved_hangs",
+        "saved_crashes",
+        "body_rule_pass",
+        "body_rule_reject",
+        "body_score_pass",
+        "body_score_reject",
+        "body_score_rpc_ok",
+        "body_score_rpc_fail",
+        "summary_source",
+        "execution_scope",
+        "metric_semantics",
+        "online_filter_mode",
+        "sent_to_target",
+        "filtered_by_rule",
+        "filtered_by_ae",
+        "filtered_by_fanogan",
+    },
+    Path("out/alfresco_afl_metadata_online_filter_smoke_latest/summary.csv"): {
+        "mode",
+        "scenario",
         "nv_total_valid_exec",
         "nv_err_exec",
         "nv_err_rate",

@@ -1,0 +1,47 @@
+{
+  "scenario": "metadata_update",
+  "summary_source": "afl_fuzz_metadata_online_filter",
+  "execution_scope": "alfresco_metadata_update_mock_afl_online_filter_smoke",
+  "metric_semantics": "Representative AFL++ mutation-chain smoke with SE-fAnoGAN-ES-style online filter prototype over Alfresco metadata_update mock semantics; mock target only, not full SE-fAnoGAN-ES and not real Alfresco service.",
+  "out_dir": "/home/dministrator/AFLplusplus/out/alfresco_afl_metadata_online_filter_smoke_latest",
+  "fuzzer_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_metadata_online_filter_smoke_latest/fuzzer_stats",
+  "filter_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_metadata_online_filter_smoke_latest/filter_stats.jsonl",
+  "summary_csv": "/home/dministrator/AFLplusplus/out/alfresco_afl_metadata_online_filter_smoke_latest/summary.csv",
+  "fuzzer_stats": {
+    "execs_done": 597,
+    "execs_per_sec": "31.32",
+    "paths_total": "4",
+    "corpus_count": "4",
+    "saved_crashes": 0,
+    "saved_hangs": 0,
+    "run_time": 19,
+    "edges_found": 0,
+    "nv_total_valid_exec": 570,
+    "nv_err_exec": 0
+  },
+  "online_filter": {
+    "scenario": "metadata_update",
+    "mode": "rule_ae",
+    "records": 597,
+    "body_rule_pass": 46,
+    "body_rule_reject": 551,
+    "body_score_pass": 46,
+    "body_score_reject": 551,
+    "body_score_rpc_ok": 46,
+    "body_score_rpc_fail": 0,
+    "sent_to_target": 46,
+    "filtered_by_rule": 551,
+    "filtered_by_ae": 0,
+    "filtered_by_fanogan": 0
+  },
+  "boundary": [
+    "metadata_update online filter smoke only",
+    "SE-fAnoGAN-ES-style online filter prototype only",
+    "not full SE-fAnoGAN-ES",
+    "not full GAN/fAnoGAN",
+    "mock target is not real Alfresco service",
+    "not all scenarios are AFL++ mutation-chain covered",
+    "AE v1 remains primary",
+    "fAnoGAN candidate has not replaced AE v1"
+  ]
+}
