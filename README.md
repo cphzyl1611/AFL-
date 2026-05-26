@@ -14,7 +14,7 @@
 - Alfresco fAnoGAN v1 candidate 离线对比；
 - 代表性 AFL++ mutation-chain smoke、短时稳定性实验、online filter 原型、metadata_update online filter smoke、metadata_update 四模式消融与四模式短时稳定性实验、content_update 四模式消融与四模式短时稳定性实验；
 - MCP adapter prototype；
-- `summary.csv`、`details.csv`、`fuzzer_stats`、`plot_data` 等 evidence 输出。
+- 正式纳入 Git 的 evidence 主要为 `summary.csv`、`details.csv`、`*_report.json`、`eval_report.json`、`fuzzer_stats` 等；`queue/`、`plot_data`、`cmdline`、`fuzzer_setup`、`target_hash` 等 AFL 内部运行文件不纳入 Git。
 
 ## 2. 当前阶段性结论
 

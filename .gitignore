@@ -24,6 +24,18 @@ docs/final_results/batch_compare_runs*/
 docs/final_results/experiments/
 docs/final_delivery/**/*.pt
 
+# AFL++ runtime internals in generated evidence outputs
+out*/**/queue/
+out*/**/crashes/
+out*/**/hangs/
+out*/**/fastresume*
+out*/**/mock_stats*
+out*/**/filter_stats*
+out*/**/plot_data
+out*/**/cmdline
+out*/**/fuzzer_setup
+out*/**/target_hash
+
 # Ignore embedded submodule worktrees in the public snapshot
 /coresight_mode/coresight-trace/
 /custom_mutators/grammar_mutator/grammar_mutator/
