@@ -1,0 +1,10 @@
+--MBOUNDARY2
+Content-Disposition: form-data; name="file"; filename="notice.txt"
+Content-Type: text/plain
+
+联调通知: multipart upload 本地 mock smoke.
+--MBOUNDARY2
+Content-Disposition: form-data; name="title"
+
+upload smoke
+--MBOUNDARY2--

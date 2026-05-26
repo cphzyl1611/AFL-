@@ -1,0 +1,27 @@
+{
+  "profile": "alfresco_multipart_online_filter_smoke",
+  "platform": "alfresco",
+  "target_type": "local_mock",
+  "scenario": "alfresco_multipart_upload",
+  "validation_scope": "alfresco_multipart_upload_mock_afl_online_filter_smoke",
+  "target_semantics": "document_multipart_upload",
+  "endpoint": "local://targets/alfresco_multipart_upload_online_filter_wrapper.py",
+  "method": "LOCAL_EXEC",
+  "body_type": "multipart/form-data",
+  "seed_dir": "in/alfresco_afl_multipart_upload_smoke",
+  "online_filter": true,
+  "default_mode": "rule_ae",
+  "ae_v1_primary": true,
+  "fanogan_candidate_available": true,
+  "decision": {
+    "enable_second_stage": true,
+    "second_stage_type": "online_filter_prototype",
+    "default_mode": "rule_ae"
+  },
+  "notes": [
+    "multipart_upload online filter smoke only",
+    "not full SE-fAnoGAN-ES",
+    "not real Alfresco service",
+    "AE v1 remains primary"
+  ]
+}

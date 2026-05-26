@@ -1,0 +1,6 @@
+--B
+Content-Disposition: form-data; name="filedata"; filename="a.txt"
+Content-Type: text/plain
+
+x
+--B--

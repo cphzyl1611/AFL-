@@ -1,0 +1,14 @@
+--AFLBOUNDARY
+Content-Disposition: form-data; name="filedata"; filename="doc.txt"
+Content-Type: text/plain
+
+Alfresco multipart upload smoke document.
+--AFLBOUNDARY
+Content-Disposition: form-data; name="nodeType"
+
+cm:content
+--AFLBOUNDARY
+Content-Disposition: form-data; name="autoRename"
+
+true
+--AFLBOUNDARY--
