@@ -1,0 +1,13 @@
+mode,run_id,scenario,run_time,execs_done,execs_per_sec,saved_crashes,saved_hangs,nv_total_valid_exec,nv_err_exec,nv_err_rate,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,sent_to_target,filtered_by_rule,filtered_by_ae,filtered_by_fanogan,summary_source,execution_scope
+rule_only,run_01,metadata_update,19,610,32.06,0,0,583,0,0.000000,38,572,38,572,0,0,38,572,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_only,run_02,metadata_update,19,601,31.53,0,0,574,0,0.000000,58,543,58,543,0,0,58,543,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_only,run_03,metadata_update,19,602,31.56,0,0,575,0,0.000000,49,554,49,554,0,0,49,554,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae,run_01,metadata_update,19,605,31.70,0,0,578,0,0.000000,55,550,55,550,55,0,55,550,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae,run_02,metadata_update,19,603,31.63,0,0,576,0,0.000000,53,550,53,550,53,0,53,550,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae,run_03,metadata_update,19,603,31.62,0,0,576,0,0.000000,48,555,48,555,48,0,48,555,0,0,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_fanogan,run_01,metadata_update,0,26,26000.00,0,0,26,0,0.000000,19,7,0,26,19,0,0,7,0,19,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_fanogan,run_02,metadata_update,0,27,27000.00,0,0,27,0,0.000000,20,7,0,27,20,0,0,7,0,20,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_fanogan,run_03,metadata_update,0,27,27000.00,0,0,27,0,0.000000,20,7,0,27,20,0,0,7,0,20,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_01,metadata_update,0,27,27000.00,0,0,27,0,0.000000,20,7,0,27,20,0,0,7,0,20,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_02,metadata_update,0,27,27000.00,0,0,27,0,0.000000,20,7,0,27,20,0,0,7,0,20,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
+rule_ae_fanogan,run_03,metadata_update,0,27,27000.00,0,0,27,0,0.000000,20,7,0,27,20,0,0,7,0,20,afl_fuzz_metadata_online_filter,alfresco_metadata_update_mock_afl_online_filter_smoke
