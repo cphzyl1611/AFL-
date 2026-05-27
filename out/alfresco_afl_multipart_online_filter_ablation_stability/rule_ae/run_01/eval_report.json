@@ -1,0 +1,49 @@
+{
+  "scenario": "multipart_upload",
+  "summary_source": "afl_fuzz_multipart_online_filter",
+  "execution_scope": "alfresco_multipart_upload_mock_afl_online_filter_smoke",
+  "metric_semantics": "Representative AFL++ mutation-chain smoke with SE-fAnoGAN-ES-style online filter prototype over Alfresco multipart_upload mock semantics; mock target only, not full SE-fAnoGAN-ES and not real Alfresco service.",
+  "out_dir": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation_stability/rule_ae/run_01",
+  "fuzzer_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation_stability/rule_ae/run_01/fuzzer_stats",
+  "filter_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation_stability/rule_ae/run_01/filter_stats.jsonl",
+  "summary_csv": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation_stability/rule_ae/run_01/summary.csv",
+  "fuzzer_stats": {
+    "execs_done": 599,
+    "execs_per_sec": "31.40",
+    "paths_total": "4",
+    "corpus_count": "4",
+    "saved_crashes": 0,
+    "saved_hangs": 0,
+    "run_time": 19,
+    "edges_found": 0,
+    "nv_total_valid_exec": 572,
+    "nv_err_exec": 0
+  },
+  "online_filter": {
+    "scenario": "multipart_upload",
+    "mode": "rule_ae",
+    "records": 599,
+    "body_rule_pass": 93,
+    "body_rule_reject": 506,
+    "body_score_pass": 88,
+    "body_score_reject": 511,
+    "body_score_rpc_ok": 93,
+    "body_score_rpc_fail": 0,
+    "sent_to_target": 88,
+    "filtered_by_rule": 506,
+    "filtered_by_ae": 5,
+    "filtered_by_fanogan": 0,
+    "filename_detected_count": 112,
+    "content_type_detected_count": 101
+  },
+  "boundary": [
+    "multipart_upload online filter smoke only",
+    "SE-fAnoGAN-ES-style online filter prototype only",
+    "not full SE-fAnoGAN-ES",
+    "not full GAN/fAnoGAN",
+    "mock target is not real Alfresco service",
+    "not all scenarios are AFL++ mutation-chain covered",
+    "AE v1 remains primary",
+    "fAnoGAN candidate has not replaced AE v1"
+  ]
+}
