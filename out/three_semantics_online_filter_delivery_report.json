@@ -1,0 +1,124 @@
+{
+  "current_commit": "e8a9ece",
+  "current_tag": "v0.5.2-multipart-online-filter-stability",
+  "delivery_scope": "three local mock document semantics online filter delivery matrix: content_update/text/plain, metadata_update/application-json, multipart_upload/multipart-form-data",
+  "scenarios": [
+    {
+      "scenario": "content_update",
+      "body_type": "text/plain",
+      "smoke_done": true,
+      "ablation_done": true,
+      "stability_done": true,
+      "stability": {
+        "modes": 4,
+        "runs_per_mode": 3,
+        "total_runs": 12,
+        "total_execs_done": 3687,
+        "total_valid_exec": 3525,
+        "total_err_exec": 0,
+        "max_nv_err_rate": "0.000000",
+        "saved_crashes_total": 0,
+        "saved_hangs_total": 0,
+        "scoring_error_total": 0,
+        "overall_stability_score": "1.000000"
+      },
+      "ae_primary_recommendation": "keep_ae_v1_as_primary",
+      "fanogan_observation": "fanogan_online_path_stable_without_scoring_error_but_short_sample_count_keep_ae_v1_primary",
+      "evidence_files": {
+        "smoke_summary": "out/alfresco_afl_online_filter_smoke_latest/summary.csv",
+        "ablation_summary": "out/alfresco_afl_online_filter_ablation/ablation_summary.csv",
+        "stability_summary": "out/alfresco_afl_online_filter_ablation_stability/stability_summary.csv"
+      }
+    },
+    {
+      "scenario": "metadata_update",
+      "body_type": "application/json",
+      "smoke_done": true,
+      "ablation_done": true,
+      "stability_done": true,
+      "stability": {
+        "modes": 4,
+        "runs_per_mode": 3,
+        "total_runs": 12,
+        "total_execs_done": 3785,
+        "total_valid_exec": 3623,
+        "total_err_exec": 0,
+        "max_nv_err_rate": "0.000000",
+        "saved_crashes_total": 0,
+        "saved_hangs_total": 0,
+        "scoring_error_total": 0,
+        "overall_stability_score": "1.000000"
+      },
+      "ae_primary_recommendation": "keep_ae_v1_as_primary",
+      "fanogan_observation": "fanogan_online_path_stable_without_scoring_error_but_inference_cost_is_higher_keep_ae_v1_primary",
+      "evidence_files": {
+        "smoke_summary": "out/alfresco_afl_metadata_online_filter_smoke_latest/summary.csv",
+        "ablation_summary": "out/alfresco_afl_metadata_online_filter_ablation/ablation_summary.csv",
+        "stability_summary": "out/alfresco_afl_metadata_online_filter_ablation_stability/stability_summary.csv"
+      }
+    },
+    {
+      "scenario": "multipart_upload",
+      "body_type": "multipart/form-data",
+      "smoke_done": true,
+      "ablation_done": true,
+      "stability_done": true,
+      "stability": {
+        "modes": 4,
+        "runs_per_mode": 3,
+        "total_runs": 12,
+        "total_execs_done": 3734,
+        "total_valid_exec": 3572,
+        "total_err_exec": 0,
+        "max_nv_err_rate": "0.000000",
+        "saved_crashes_total": 0,
+        "saved_hangs_total": 0,
+        "scoring_error_total": 0,
+        "overall_stability_score": "1.000000"
+      },
+      "ae_primary_recommendation": "keep_ae_v1_as_primary",
+      "fanogan_observation": "fanogan_online_path_stable_without_scoring_error_but_inference_cost_is_higher_keep_ae_v1_primary",
+      "evidence_files": {
+        "smoke_summary": "out/alfresco_afl_multipart_online_filter_smoke_latest/summary.csv",
+        "ablation_summary": "out/alfresco_afl_multipart_online_filter_ablation/ablation_summary.csv",
+        "stability_summary": "out/alfresco_afl_multipart_online_filter_ablation_stability/stability_summary.csv"
+      }
+    }
+  ],
+  "evidence_files": {
+    "delivery_matrix": "out/three_semantics_online_filter_delivery_matrix.csv",
+    "content_update": [
+      "out/alfresco_afl_online_filter_smoke_latest/summary.csv",
+      "out/alfresco_afl_online_filter_ablation/ablation_summary.csv",
+      "out/alfresco_afl_online_filter_ablation_stability/stability_summary.csv"
+    ],
+    "metadata_update": [
+      "out/alfresco_afl_metadata_online_filter_smoke_latest/summary.csv",
+      "out/alfresco_afl_metadata_online_filter_ablation/ablation_summary.csv",
+      "out/alfresco_afl_metadata_online_filter_ablation_stability/stability_summary.csv"
+    ],
+    "multipart_upload": [
+      "out/alfresco_afl_multipart_online_filter_smoke_latest/summary.csv",
+      "out/alfresco_afl_multipart_online_filter_ablation/ablation_summary.csv",
+      "out/alfresco_afl_multipart_online_filter_ablation_stability/stability_summary.csv"
+    ]
+  },
+  "aggregate_conclusion": [
+    "All three local mock document semantics have completed online filter smoke, four-mode ablation, and four-mode short stability experiments.",
+    "All runs represented in stability summaries have saved_crashes_total=0, saved_hangs_total=0, total_err_exec=0, and scoring_error_total=0.",
+    "The fAnoGAN candidate online path is runnable and has no scoring errors across the multi-run short stability evidence.",
+    "The fAnoGAN candidate inference cost remains higher than AE v1, so AE v1 remains the primary second-stage decision mechanism."
+  ],
+  "ae_primary_recommendation": "keep_ae_v1_as_primary",
+  "fanogan_candidate_conclusion": "fAnoGAN candidate is an online-runnable candidate path with no observed scoring errors in the included short stability evidence, but it has not outperformed or replaced AE v1.",
+  "boundary": [
+    "local mock target only",
+    "not real Alfresco service",
+    "not full SE-fAnoGAN-ES",
+    "not full GAN/fAnoGAN",
+    "fAnoGAN candidate does not replace AE v1",
+    "not all scenarios are full AFL++ mutation-chain covered",
+    "not long-duration stability testing",
+    "not system-level DHR completion"
+  ]
+}

@@ -63,6 +63,7 @@ REPORT_FILES = [
     Path("docs/review/Alfresco_multipart_upload_online_filter_smoke报告.md"),
     Path("docs/review/Alfresco_multipart_upload_online_filter四模式消融实验报告.md"),
     Path("docs/review/Alfresco_multipart_upload_online_filter四模式短时稳定性报告.md"),
+    Path("docs/review/v0.6.0三语义online_filter最终冻结候选说明.md"),
 ]
 
 TEXT_SEED_DIRS = [
@@ -447,6 +448,30 @@ AFL_ONLINE_FILTER_ABLATION_STABILITY_SUMMARIES = {
         "summary_source",
         "execution_scope",
         "metric_semantics",
+    },
+}
+
+THREE_SEMANTICS_DELIVERY_SUMMARIES = {
+    Path("out/three_semantics_online_filter_delivery_matrix.csv"): {
+        "scenario",
+        "body_type",
+        "smoke_done",
+        "ablation_done",
+        "stability_done",
+        "modes",
+        "runs_per_mode",
+        "total_runs",
+        "total_execs_done",
+        "total_valid_exec",
+        "total_err_exec",
+        "max_nv_err_rate",
+        "saved_crashes_total",
+        "saved_hangs_total",
+        "scoring_error_total",
+        "overall_stability_score",
+        "ae_primary_recommendation",
+        "fanogan_observation",
+        "boundary",
     },
 }
 
@@ -943,6 +968,17 @@ def check_summary_headers(state: ValidationState) -> None:
         full = REPO_ROOT / path
         if not full.is_file():
             state.warn("summary_headers", f"{path.as_posix()}: missing optional AFL online filter ablation stability summary")
+            continue
+        header = set(read_csv_header(full))
+        missing = required - header
+        if missing:
+            failures.append(f"{path.as_posix()}: missing {sorted(missing)}")
+        checked += 1
+
+    for path, required in THREE_SEMANTICS_DELIVERY_SUMMARIES.items():
+        full = REPO_ROOT / path
+        if not full.is_file():
+            state.warn("summary_headers", f"{path.as_posix()}: missing optional three semantics delivery matrix")
             continue
         header = set(read_csv_header(full))
         missing = required - header
