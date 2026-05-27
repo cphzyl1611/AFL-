@@ -1,0 +1,5 @@
+mode,scenario,run_time,execs_done,execs_per_sec,corpus_count,cycles_done,saved_crashes,saved_hangs,total_tmout,nv_total_valid_exec,nv_err_exec,nv_err_rate,body_rule_pass,body_rule_reject,body_score_pass,body_score_reject,body_score_rpc_ok,body_score_rpc_fail,sent_to_target,filtered_by_rule,filtered_by_ae,filtered_by_fanogan,filename_detected_count,content_type_detected_count,summary_source,execution_scope
+rule_only,multipart_upload,18,598,31.52,4,6,0,0,0,571,0,0.000000,80,518,80,518,0,0,80,518,0,0,98,81,afl_fuzz_multipart_online_filter,alfresco_multipart_upload_mock_afl_online_filter_smoke
+rule_ae,multipart_upload,19,604,31.69,4,6,0,0,0,577,0,0.000000,70,534,64,540,70,0,64,534,6,0,84,73,afl_fuzz_multipart_online_filter,alfresco_multipart_upload_mock_afl_online_filter_smoke
+rule_fanogan,multipart_upload,0,25,25000.00,4,0,0,0,0,25,0,0.000000,18,7,18,7,18,0,18,7,0,0,18,18,afl_fuzz_multipart_online_filter,alfresco_multipart_upload_mock_afl_online_filter_smoke
+rule_ae_fanogan,multipart_upload,0,27,27000.00,4,0,0,0,0,27,0,0.000000,20,7,20,7,20,0,20,7,0,0,20,20,afl_fuzz_multipart_online_filter,alfresco_multipart_upload_mock_afl_online_filter_smoke

@@ -1,0 +1,49 @@
+{
+  "scenario": "multipart_upload",
+  "summary_source": "afl_fuzz_multipart_online_filter",
+  "execution_scope": "alfresco_multipart_upload_mock_afl_online_filter_smoke",
+  "metric_semantics": "Representative AFL++ mutation-chain smoke with SE-fAnoGAN-ES-style online filter prototype over Alfresco multipart_upload mock semantics; mock target only, not full SE-fAnoGAN-ES and not real Alfresco service.",
+  "out_dir": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation/rule_ae",
+  "fuzzer_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation/rule_ae/fuzzer_stats",
+  "filter_stats_path": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation/rule_ae/filter_stats.jsonl",
+  "summary_csv": "/home/dministrator/AFLplusplus/out/alfresco_afl_multipart_online_filter_ablation/rule_ae/summary.csv",
+  "fuzzer_stats": {
+    "execs_done": 604,
+    "execs_per_sec": "31.69",
+    "paths_total": "4",
+    "corpus_count": "4",
+    "saved_crashes": 0,
+    "saved_hangs": 0,
+    "run_time": 19,
+    "edges_found": 0,
+    "nv_total_valid_exec": 577,
+    "nv_err_exec": 0
+  },
+  "online_filter": {
+    "scenario": "multipart_upload",
+    "mode": "rule_ae",
+    "records": 604,
+    "body_rule_pass": 70,
+    "body_rule_reject": 534,
+    "body_score_pass": 64,
+    "body_score_reject": 540,
+    "body_score_rpc_ok": 70,
+    "body_score_rpc_fail": 0,
+    "sent_to_target": 64,
+    "filtered_by_rule": 534,
+    "filtered_by_ae": 6,
+    "filtered_by_fanogan": 0,
+    "filename_detected_count": 84,
+    "content_type_detected_count": 73
+  },
+  "boundary": [
+    "multipart_upload online filter smoke only",
+    "SE-fAnoGAN-ES-style online filter prototype only",
+    "not full SE-fAnoGAN-ES",
+    "not full GAN/fAnoGAN",
+    "mock target is not real Alfresco service",
+    "not all scenarios are AFL++ mutation-chain covered",
+    "AE v1 remains primary",
+    "fAnoGAN candidate has not replaced AE v1"
+  ]
+}
