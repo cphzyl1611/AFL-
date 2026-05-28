@@ -66,6 +66,10 @@ REPORT_FILES = [
     Path("docs/review/v0.6.0三语义online_filter最终冻结候选说明.md"),
     Path("docs/review/模糊测试模块项目要求-v0.6.1对照表.md"),
     Path("docs/review/v0.6.1验收答辩口径说明.md"),
+    Path("docs/review/v0.6.1代码结构与执行链路说明.md"),
+    Path("docs/review/v0.6.2最终验收一页式总结.md"),
+    Path("docs/review/真实Alfresco与本地mock_target差异说明.md"),
+    Path("docs/review/API_MCP原型安全边界说明.md"),
 ]
 
 TEXT_SEED_DIRS = [
