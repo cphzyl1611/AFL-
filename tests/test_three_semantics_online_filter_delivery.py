@@ -43,9 +43,15 @@ class ThreeSemanticsOnlineFilterDeliveryTest(unittest.TestCase):
             self.skipTest("optional three semantics delivery report is not present")
         data = json.loads(report_path.read_text(encoding="utf-8"))
         self.assertIn("current_commit", data)
+        self.assertIn("delivery_tag", data)
+        self.assertIn("delivery_tag_commit", data)
+        self.assertIn("evidence_baseline_commit", data)
         self.assertIn("scenarios", data)
         self.assertIn("boundary", data)
-        self.assertEqual(data["current_commit"], "e8a9ece")
+        self.assertEqual(data["current_commit"], "55104eb")
+        self.assertEqual(data["delivery_tag"], "v0.6.0-three-semantics-online-filter-delivery")
+        self.assertEqual(data["delivery_tag_commit"], "55104eb")
+        self.assertEqual(data["evidence_baseline_commit"], "e8a9ece")
         self.assertEqual(len(data["scenarios"]), 3)
 
 

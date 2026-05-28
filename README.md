@@ -13,7 +13,7 @@
 - NV_MAB 反馈变异；
 - Alfresco fAnoGAN v1 candidate 离线对比；
 - 代表性 AFL++ mutation-chain smoke、短时稳定性实验、online filter 原型、metadata_update online filter smoke、metadata_update 四模式消融与四模式短时稳定性实验、content_update 四模式消融与四模式短时稳定性实验、multipart_upload online filter smoke、四模式消融与四模式短时稳定性实验；
-- 三语义 online filter 总体验收矩阵与 v0.6.0 候选冻结说明；
+- 三语义 online filter 总体验收矩阵、v0.6.0 正式交付 tag 说明和 v0.6.1 验收材料；
 - MCP adapter prototype；
 - 正式纳入 Git 的 evidence 主要为 `summary.csv`、`details.csv`、`*_report.json`、`eval_report.json`、`fuzzer_stats` 等；`queue/`、`plot_data`、`cmdline`、`fuzzer_setup`、`target_hash` 等 AFL 内部运行文件不纳入 Git。
 
@@ -30,6 +30,8 @@
 
 - `docs/review/v0.3.5最终工程交付状态冻结说明.md`
 - `docs/review/v0.6.0三语义online_filter最终冻结候选说明.md`
+- `docs/review/模糊测试模块项目要求-v0.6.1对照表.md`
+- `docs/review/v0.6.1验收答辩口径说明.md`
 
 ## 3. 平台定位
 
@@ -64,7 +66,7 @@
 | SE-fAnoGAN-ES-style online filter prototype | 已完成代表性 AFL++ online filter smoke、四模式消融与四模式短时稳定性实验 | 默认 `rule_ae`，AE v1 在线判定后再执行本地 mock target；四模式消融和 3 轮短时稳定性实验验证了 fAnoGAN candidate 在线路径可运行且无 scoring error，但短时样本量受 torch scorer 成本限制，AE v1 仍为主机制。 |
 | Alfresco metadata_update online filter smoke、四模式消融与短时稳定性 | 已完成短时真实 AFL++ smoke、四模式消融和四模式 3 轮短时稳定性实验 | 使用 application/json 本地 mock target，默认 `rule_ae`，并已验证 `rule_only`、`rule_ae`、`rule_fanogan`、`rule_ae_fanogan`；fAnoGAN candidate 在线路径多轮可运行且无 scoring error，但推理成本较高，AE v1 仍为主机制；evidence 位于 `out/alfresco_afl_metadata_online_filter_smoke_latest/`、`out/alfresco_afl_metadata_online_filter_ablation/` 和 `out/alfresco_afl_metadata_online_filter_ablation_stability/`。 |
 | Alfresco multipart_upload online filter smoke、四模式消融与短时稳定性 | 已完成短时真实 AFL++ smoke、四模式消融和四模式 3 轮短时稳定性实验 | 使用 multipart/form-data 本地 mock target，默认 `rule_ae`、`FANOGAN_ENABLED=0`，并已验证 `rule_only`、`rule_ae`、`rule_fanogan`、`rule_ae_fanogan`；fAnoGAN candidate 在线路径多轮可运行且无 scoring error，但推理成本较高，AE v1 仍为主机制；不访问真实 Alfresco 服务，不等同于长时间稳定性实验；evidence 位于 `out/alfresco_afl_multipart_online_filter_smoke_latest/`、`out/alfresco_afl_multipart_online_filter_ablation/` 和 `out/alfresco_afl_multipart_online_filter_ablation_stability/`。 |
-| 三语义 online filter 总体验收矩阵 | 已完成候选冻结 evidence | 汇总 content_update、metadata_update、multipart_upload 三类本地 mock 文档语义的 smoke、四模式消融和四模式短时稳定性结果；AE v1 仍为主机制，fAnoGAN candidate 未替代 AE v1；evidence 位于 `out/three_semantics_online_filter_delivery_matrix.csv` 和 `out/three_semantics_online_filter_delivery_report.json`。 |
+| 三语义 online filter 总体验收矩阵 | 已完成正式 v0.6.0 交付 evidence，clean clone 复核通过 | 汇总 content_update、metadata_update、multipart_upload 三类本地 mock 文档语义的 smoke、四模式消融和四模式短时稳定性结果；AE v1 仍为主机制，fAnoGAN candidate 未替代 AE v1；evidence 位于 `out/three_semantics_online_filter_delivery_matrix.csv` 和 `out/three_semantics_online_filter_delivery_report.json`。v0.6.1 仅修正文档与交付元数据，不新增实验功能。 |
 | MCP adapter prototype | 已接入原型 | 白名单工具包括 `get_capabilities`、`score_alfresco_ae_v1_sample`、`list_reports`、`query_evidence`；不是完整 MCP Server。 |
 | NV_MAB 反馈变异策略 | 基本完成 | 已完成工程闭环、最小 smoke、轻量稳定性和最小多轮消融验证。 |
 | 测评链路版 DHR | 基本完成 | O2OA AE + GAN online、Flowable AE v2 + `flowable_rule_v1` 支撑二阶段异构判定增强。 |
@@ -176,6 +178,8 @@ python3 -m unittest discover -s tests
 - `docs/review/Alfresco_multipart_upload_online_filter四模式消融实验报告.md`
 - `docs/review/Alfresco_multipart_upload_online_filter四模式短时稳定性报告.md`
 - `docs/review/v0.6.0三语义online_filter最终冻结候选说明.md`
+- `docs/review/模糊测试模块项目要求-v0.6.1对照表.md`
+- `docs/review/v0.6.1验收答辩口径说明.md`
 - `docs/review/v0.3.5最终工程交付状态冻结说明.md`
 - `docs/review/MCP_adapter原型接入报告.md`
 - `docs/review/O2OA到Alfresco主验证平台迁移说明.md`

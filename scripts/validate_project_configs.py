@@ -64,6 +64,8 @@ REPORT_FILES = [
     Path("docs/review/Alfresco_multipart_upload_online_filter四模式消融实验报告.md"),
     Path("docs/review/Alfresco_multipart_upload_online_filter四模式短时稳定性报告.md"),
     Path("docs/review/v0.6.0三语义online_filter最终冻结候选说明.md"),
+    Path("docs/review/模糊测试模块项目要求-v0.6.1对照表.md"),
+    Path("docs/review/v0.6.1验收答辩口径说明.md"),
 ]
 
 TEXT_SEED_DIRS = [
