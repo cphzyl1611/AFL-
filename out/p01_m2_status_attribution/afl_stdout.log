@@ -1,0 +1,64 @@
+[0;36mafl-fuzz++4.36a[0m based on afl by Michal Zalewski and a large online community
+[1;92m[+] [0mAFL++ is maintained by Marc "van Hauser" Heuse, Dominik Maier, Andrea Fioraldi and Heiko "hexcoder" Eißfeldt[0m
+[1;92m[+] [0mAFL++ is open source, get it at https://github.com/AFLplusplus/AFLplusplus[0m
+[1;92m[+] [0mNOTE: AFL++ >= v3 has changed defaults and behaviours - see README.md[0m
+[1;92m[+] [0mRunning with fixed seed: 20260816[0m
+[1;92m[+] [0mNo -M/-S set, autoconfiguring for "-S default"[0m
+[1;94m[*] [0mGetting to work...[0m
+[1;92m[+] [0mUsing exploration-based constant power schedule (EXPLORE)[0m
+[1;92m[+] [0mEnabled testcache with 50 MB[0m
+[1;92m[+] [0mGenerating fuzz data with a length of min=1 max=1048576[0m
+[1;94m[*] [0mChecking core_pattern...[0m
+[1;92m[+] [0mDisabling the UI because AFL_NO_UI is set.[0m
+[1;92m[+] [0mYou have 10 CPU cores and 1 runnable tasks (utilization: 10%).[0m
+[1;92m[+] [0mTry parallel jobs - see /usr/local/share/doc/afl/fuzzing_in_depth.md#c-using-multiple-cores[0m
+[1;94m[*] [0mSetting up output directories...[0m
+[1;94m[*] [0mChecking CPU core loadout...[0m
+[1;92m[+] [0mFound a free CPU core, try binding to #0.[0m
+[1;94m[*] [0mValidating target binary...[0m
+[1;94m[*] [0mScanning '/home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/in'...[0m
+[1;94m[*] [0mCreating hard links for all input files...[0m
+[1;92m[+] [0mLoaded a total of 2 seeds.[0m
+[1;94m[*] [0mNo auto-generated dictionary tokens to reuse.[0m
+[1;94m[*] [0mAttempting dry run with 'id:000000,time:0,execs:0,orig:seed_a'...[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000000,time:0,execs:0,orig:seed_a[0m
+[1;90m    len = 4, map size = 20, exec speed = 999 us, hash = bc61384972c20d46
+[0m[1;94m[*] [0mAttempting dry run with 'id:000001,time:0,execs:0,orig:seed_z'...[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000001,time:0,execs:0,orig:seed_z[0m
+[1;90m    len = 4, map size = 22, exec speed = 999 us, hash = 3befd96d52c1af83
+[0m[1;92m[+] [0mAll test cases processed.[0m
+[1;92m[+] [0mHere are some useful stats:
+
+[1;90m    Test case count : [0m2 favored, 2 variable, 0 ignored, 2 total
+[1;90m       Bitmap range : [0m20 to 22 bits (average: 21.00 bits)
+[1;90m        Exec timing : [0m999 to 999 us (average: 999 us)
+[0m
+[1;94m[*] [0mNo -t option specified, so I'll use an exec timeout of 20 ms.[0m
+[1;92m[+] [0mAll set and ready to roll![0m
+[1;94m[*] [0mEntering queue cycle 1
+[0m
+[1;94m[*] [0mFuzzing test case #0 (2 total, 0 crashes saved[0m, state: started :-), mode=explore, perf_score=100, weight=1, favorite=1, was_fuzzed=0, exec_us=999, hits=0, map=20, ascii=0, run_time=0:00:00:00, cvg=43.48%)...[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000002,src:000000,time:1,execs:26,op:quick,pos:0,+cov[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000003,src:000000,time:51,execs:211,op:havoc,rep:1[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000004,src:000000,time:54,execs:226,op:havoc,rep:2[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000005,src:000000,time:59,execs:241,op:havoc,rep:6[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000006,src:000000,time:65,execs:264,op:havoc,rep:3[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000007,src:000000,time:68,execs:280,op:havoc,rep:6[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000008,src:000000,time:74,execs:306,op:havoc,rep:4[0m
+[1;93m[!] [1;97mWARNING: [0minstability detected during calibration: /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/queue/id:000009,src:000000,time:572,execs:2202,op:havoc,rep:3,+cov[0m
+[?25h[1;91m
+
++++ Testing aborted programmatically +++
+[0m[1;93m[!] [0mTime limit was reached
+[1;94m[*] [0mStatistics: 10 new corpus items found, 57.97% coverage achieved, 0 crashes saved, 0 timeouts saved, total runtime 0 days, 0 hrs, 0 min, 12 sec[0m
+[1;94m[*] [0mWriting /home/dministrator/AFLplusplus-p01/out/p01_m2_status_attribution/afl/default/fastresume.bin ...[0m
+[1;92m[+] [0mfastresume.bin successfully written with 2052 bytes.[0m
+[1;92m[+] [0mWe're done here. Have a nice day!
+[0m
+
+[1;92m[+] [0mEnabled environment variable AFL_NO_UI with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_SKIP_CPUFREQ with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES with value 1[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - new fork server model v1 is up.[0m
+[1;94m[*] [0mTarget map size: 69[0m

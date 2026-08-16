@@ -55,6 +55,14 @@ cat > "$TASK_JSON" <<EOF
 }
 EOF
 
+# afl-fuzz links libpython; point the loader at whichever interpreter it was
+# built against, otherwise the run dies with "error while loading shared
+# libraries" whenever python3-config resolved to a non-system interpreter.
+PY_LIBDIR="$("$PYTHON_BIN" -c 'import sysconfig;print(sysconfig.get_config_var("LIBDIR") or "")' 2>/dev/null || true)"
+if [[ -n "$PY_LIBDIR" ]]; then
+  export LD_LIBRARY_PATH="${PY_LIBDIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
 export AFL_NO_UI=1
 export AFL_SKIP_CPUFREQ=1
 export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1

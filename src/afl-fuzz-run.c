@@ -103,16 +103,18 @@ static inline void nv_covset_init(afl_state_t *afl) {
   memset(afl->nv_covset, 0, afl->nv_cov_cap * sizeof(u64));
 }
 
+/* Returns NV_COVSET_INSERTED / NV_COVSET_EXISTING / NV_COVSET_SATURATED.
+   Probing itself lives in src/afl-fuzz-nv-covset.c so it can be driven to a
+   full table by a unit test. */
 static inline int nv_covset_insert(afl_state_t *afl, u64 h) {
   nv_covset_init(afl);
-  u32 mask = afl->nv_cov_cap - 1;
-  u32 i = (u32)h & mask;
-  while (1) {
-    u64 cur = afl->nv_covset[i];
-    if (!cur) { afl->nv_covset[i] = h; afl->nv_cov_used++; return 1; }
-    if (cur == h) return 0;
-    i = (i + 1) & mask;
+  int r = nv_covset_insert_into(afl->nv_covset, afl->nv_cov_cap,
+                                &afl->nv_cov_used, h);
+  if (unlikely(r == NV_COVSET_SATURATED)) {
+    afl->nv_sec_state_saturated = 1;
+    afl->nv_sec_state_dropped++;
   }
+  return r;
 }
 
 /* One observation of the target's security state, derived from the status
@@ -125,6 +127,7 @@ typedef struct {
   u64 ncov_delta;      /* harness-side coverage proxy, may legitimately be 0 */
   u64 new_states;      /* security states seen for the first time            */
   u64 state_id;        /* fnv1a64("METHOD PATH|CLASS")                       */
+  u64 exec_seq;        /* target execution this observation came from, 0=n/a */
 } nv_state_obs_t;
 
 /* Reads the status document, folds it into the security-state set, credits
@@ -168,6 +171,13 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
   const cJSON *na = cJSON_GetObjectItemCaseSensitive(root, "nall");
   const cJSON *tsj = cJSON_GetObjectItemCaseSensitive(root, "ts_ms");
   const cJSON *bhj = cJSON_GetObjectItemCaseSensitive(root, "body_hash16");
+  const cJSON *esj = cJSON_GetObjectItemCaseSensitive(root, "exec_seq");
+
+  /* Execution identity, when the harness supplies one.  0 means "not
+     reported" and makes the legacy timestamp stamp the fallback. */
+  u64 exec_seq = (cJSON_IsNumber(esj) && esj->valuedouble > 0)
+                     ? (u64)esj->valuedouble
+                     : 0;
 
   u64 ts_ms = cJSON_IsNumber(tsj) ? (u64)tsj->valuedouble : 0;
   u32 body_hash16 = cJSON_IsNumber(bhj) ? (u32)bhj->valuedouble : 0;
@@ -177,11 +187,16 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
 
   afl->nv_http_status_ok++;
 
-  if (stamp == afl->nv_last_status_seq) {
+  /* Consume each execution's document exactly once.  Identity is the
+     execution id when the harness reports one: two distinct executions can
+     legitimately produce byte-identical documents, and dropping the second as
+     a "replay" silently discarded real observations. */
+  if (nv_status_is_fresh(exec_seq, stamp, &afl->nv_last_exec_seq,
+                         &afl->nv_last_status_seq) == NV_STATUS_REPLAY) {
+    afl->nv_sec_state_replays++;
     cJSON_Delete(root);
     return;
   }
-  afl->nv_last_status_seq = stamp;
   afl->nv_status_cnt++;
 
   /* ---- After dedup: Err/Rec accounting ---- */
@@ -211,24 +226,81 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
   const char *cls    = (cJSON_IsString(c) && c->valuestring) ? c->valuestring : "other";
   int timeout = cJSON_IsNumber(to) ? to->valueint : 0;
 
-  /* ---- security state ---- */
-  char key[1024];
-  snprintf(key, sizeof(key), "%s %s|%s", method, pathv, cls);
-  u64 h = nv_fnv1a64(key);
-  int is_new = nv_covset_insert(afl, h);
+  /* ---- security state ----
+     Every component of the key comes from the status document, so fuzzed
+     bytes can reach it.  Fold each onto a finite set first, otherwise a
+     mutated request line mints a fresh state per byte string and the covset
+     saturates on garbage rather than on real behaviour. */
+  const char *cmethod = nv_canon_method(method);
+  const char *ccls    = nv_canon_class(cls);
+  const char *cpath   = nv_canon_path_label(pathv);
 
-  int is_exc = timeout || (strcmp(cls, "5xx") == 0) || (strcmp(cls, "conn_refused") == 0);
+  if (!cpath) {
+
+    /* Structurally fine.  When the task config declares an endpoint
+       allowlist, anything outside it is still fuzzer-invented rather than a
+       real route, so it folds onto one state.  With no config loaded
+       nv_is_allowed_pair() allows everything and the path passes through. */
+    cpath = nv_is_allowed_pair(afl, cmethod, pathv) ? pathv : "unknown_path";
+
+  }
+
+  char key[1024];
+  snprintf(key, sizeof(key), "%s %s|%s", cmethod, cpath, ccls);
+  u64 h = nv_fnv1a64(key);
+  /* A saturated table drops the state.  It must not be reported as new:
+     that would manufacture a reward and a seed credit for a state the set
+     never actually recorded. */
+  int is_new = (nv_covset_insert(afl, h) == NV_COVSET_INSERTED);
+
+  int is_exc = timeout || (strcmp(ccls, "5xx") == 0) ||
+               (strcmp(ccls, "conn_refused") == 0);
 
   obs->has          = 1;
   obs->is_exception = is_exc ? 1 : 0;
   obs->recovered    = recovered ? 1 : 0;
-  obs->is_4xx       = (strcmp(cls, "4xx") == 0) ? 1 : 0;
+  obs->is_4xx       = (strcmp(ccls, "4xx") == 0) ? 1 : 0;
   obs->ncov_delta   = ncov_delta;
   obs->new_states   = is_new ? 1 : 0;
   obs->state_id     = h;
+  obs->exec_seq     = exec_seq;
 
   afl->nv_sec_state_obs++;
   afl->nv_sec_state_delta_last = obs->new_states;
+
+  /* Opt-in audit trail: one line per *consumed* observation, so a reviewer can
+     check which target execution each security state and reward came from.
+     Off unless NV_STATE_TRACE_PATH is set; resolved once. */
+  {
+
+    static const char *tp = NULL;
+    static u8 tp_resolved = 0;
+    if (unlikely(!tp_resolved)) {
+
+      const char *env = getenv("NV_STATE_TRACE_PATH");
+      /* copied, not aliased: see the NV_STATUS_PATH note in common_fuzz_stuff */
+      tp = (env && *env) ? (const char *)ck_strdup((u8 *)env) : NULL;
+      tp_resolved = 1;
+
+    }
+
+    if (unlikely(tp && *tp)) {
+
+      FILE *tf = fopen(tp, "a");
+      if (tf) {
+
+        fprintf(tf,
+                "{\"exec_seq\":%llu,\"state\":\"%s\",\"state_id\":\"%llx\","
+                "\"new\":%u}\n",
+                (unsigned long long)obs->exec_seq, key,
+                (unsigned long long)h, (unsigned)obs->new_states);
+        fclose(tf);
+
+      }
+
+    }
+
+  }
 
   if (is_new) {
 
@@ -2110,6 +2182,33 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
   fault = fuzz_run_target(afl, &afl->fsrv, afl->fsrv.exec_tmout);
 
+  /* Snapshot the security state of *this* execution before anything else can
+     run the target again.  save_if_interesting() calls calibrate_case(), which
+     re-executes the same input several times and overwrites the single status
+     document; reading afterwards scored the mutation against the calibration
+     run instead of its own.  The reward is applied further down, but only ever
+     from this snapshot. */
+  nv_state_obs_t obs;
+  {
+
+    /* Resolved once: this sits on the per-execution hot path.  The value is
+       *copied* rather than caching getenv()'s pointer -- afl-fuzz-one.c calls
+       setenv("NV_CUR_ARM") on every custom-mutator iteration, and POSIX allows
+       that to invalidate a pointer returned by an earlier getenv().  Runtime
+       mutation of NV_STATUS_PATH itself is not supported; the path is fixed
+       for the lifetime of the process. */
+    static const char *sp = NULL;
+    if (unlikely(!sp)) {
+
+      const char *env = getenv("NV_STATUS_PATH");
+      sp = env ? (const char *)ck_strdup((u8 *)env) : "/tmp/nv_http_status.json";
+
+    }
+
+    nv_observe_security_state(afl, sp, &obs);
+
+  }
+
   if (afl->stop_soon) {
     afl->nv_mab.pending_update = 0;
     afl->nv_mab.update_source = 0;
@@ -2150,32 +2249,18 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
   afl->queued_discovered += save_if_interesting(afl, out_buf, len, fault);
 
-  /* Security-state accounting runs after every execution: the seed-scheduling
-     loop must not depend on whether a bandit arm happened to produce this
-     input.  Only the reward hand-off is gated on pending_update. */
-  {
+  /* Hand the snapshot taken above to the bandit.  State accounting already
+     happened for every execution -- the seed-scheduling loop must not depend
+     on whether a bandit arm produced this input -- so only the reward
+     hand-off is gated on pending_update. */
+  if (afl->nv_mab.pending_update) {
 
-    /* resolved once: this sits on the per-execution hot path */
-    static const char *sp = NULL;
-    if (unlikely(!sp)) {
+    nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
+    afl->nv_mab.pending_update = 0;
+    afl->nv_mab.update_source = 0;
 
-      sp = getenv("NV_STATUS_PATH");
-      if (!sp) sp = "/tmp/nv_http_status.json";
-
-    }
-
-    nv_state_obs_t obs;
-    nv_observe_security_state(afl, sp, &obs);
-
-    if (afl->nv_mab.pending_update) {
-
-      nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
-      afl->nv_mab.pending_update = 0;
-      afl->nv_mab.update_source = 0;
-
-      nv_mab_update(&afl->nv_mab, reward_arm, nv_reward_from_obs(&obs));
-
-    }
+    afl->nv_sec_state_reward_src_seq = obs.exec_seq;
+    nv_mab_update(&afl->nv_mab, reward_arm, nv_reward_from_obs(&obs));
 
   }
   if (!(afl->stage_cur % afl->stats_update_freq) ||

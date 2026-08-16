@@ -11,6 +11,9 @@
 
 #include "afl-fuzz.h"
 
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -23,11 +26,75 @@ static inline int nv_arm_enabled(u32 scope_mask, nv_arm_id_t arm) {
   }
 }
 
+/* Trimmed view of an environment variable, or NULL when it carries no value.
+   An empty or all-whitespace variable is treated exactly like an absent one:
+   under the P0.1 precedence rule it is the *validity* of an override that
+   decides, never its mere presence. */
+static const char *nv_env_value(const char *name) {
+
+  const char *v = getenv(name);
+  if (!v) return NULL;
+
+  while (*v && isspace((unsigned char)*v)) ++v;
+  return *v ? v : NULL;
+
+}
+
+static int nv_str_is_terminated(const char *end) {
+
+  if (!end) return 0;
+  while (*end && isspace((unsigned char)*end)) ++end;
+  return *end == 0;
+
+}
+
+/* ---- P0.1 M-5/M-6/M-7: what counts as a *valid* override ----
+   c must be finite and strictly positive.  Zero is not an opt-out: UCB with
+   c = 0 collapses into pure greedy selection, which this project does not
+   support as a mode (see NV_MAB_DEFAULT_C).  Overflow to infinity is rejected
+   too -- it makes every arm's UCB infinite and hands every decision to the
+   first enabled arm. */
+int nv_mab_env_c(double *out) {
+
+  const char *raw = nv_env_value("NV_MAB_C");
+  if (!raw) return 0;
+
+  errno = 0;
+  char  *end = NULL;
+  double v   = strtod(raw, &end);
+
+  if (!nv_str_is_terminated(end) || end == raw) return 0;
+  if (errno == ERANGE || !isfinite(v) || v <= 0.0) return 0;
+
+  if (out) *out = v;
+  return 1;
+
+}
+
+/* min_explore must be at least one sample per arm and small enough that UCB is
+   actually reachable inside a campaign; an overflowed LONG_MAX warm-up means
+   the bandit never adapts at all. */
+int nv_mab_env_min_explore(u64 *out) {
+
+  const char *raw = nv_env_value("NV_MAB_MIN_EXPLORE");
+  if (!raw) return 0;
+
+  errno = 0;
+  char *end = NULL;
+  long  v   = strtol(raw, &end, 10);
+
+  if (!nv_str_is_terminated(end) || end == raw) return 0;
+  if (errno == ERANGE || v < 1 || v > NV_MAB_MAX_MIN_EXPLORE) return 0;
+
+  if (out) *out = (u64)v;
+  return 1;
+
+}
+
 /* Establish the bandit's tunables.  Defaults apply unconditionally so that a
-   run without task.json still explores; NV_MAB_C / NV_MAB_MIN_EXPLORE may
-   override them.  An unparseable or negative coefficient is rejected in
-   favour of the default -- only an explicit "0" disables exploration, and
-   the effective value is reported in fuzzer_stats either way. */
+   run without task.json still explores, then a *valid* environment override
+   wins.  task.json is layered in between by nv_load_task_json(); see
+   NV_MAB_DEFAULT_C for the full precedence rule. */
 void nv_mab_init_defaults(nv_mab_t *mab) {
 
   if (!mab) return;
@@ -35,23 +102,8 @@ void nv_mab_init_defaults(nv_mab_t *mab) {
   mab->c           = NV_MAB_DEFAULT_C;
   mab->min_explore = NV_MAB_DEFAULT_MIN_EXPLORE;
 
-  const char *env_c = getenv("NV_MAB_C");
-  if (env_c && *env_c) {
-
-    char  *end = NULL;
-    double v   = strtod(env_c, &end);
-    if (end && *end == 0 && v >= 0.0) { mab->c = v; }
-
-  }
-
-  const char *env_me = getenv("NV_MAB_MIN_EXPLORE");
-  if (env_me && *env_me) {
-
-    char *end = NULL;
-    long  v   = strtol(env_me, &end, 10);
-    if (end && *end == 0 && v >= 1) { mab->min_explore = (u64)v; }
-
-  }
+  nv_mab_env_c(&mab->c);
+  nv_mab_env_min_explore(&mab->min_explore);
 
   mab->initialized = 1;
 

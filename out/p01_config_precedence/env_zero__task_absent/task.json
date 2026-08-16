@@ -1,0 +1,1 @@
+{"target_type": "http_api", "target_endpoint": "p01_precedence", "seed_source": "seed_file", "seed_location": "/home/dministrator/AFLplusplus-p01/in/p0_o2oa_cms_doc_list", "mutation_scope": ["field_value", "boundary", "structure"], "max_test_cases": 20, "time_budget": 5, "enable_validity": 0}

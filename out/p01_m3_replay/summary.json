@@ -1,0 +1,13 @@
+{
+  "finding": "M-3 replay identity",
+  "target": "test/p01/status_seq_target.c",
+  "mode": "NV_P01_STATIC_STAMP=1 (legacy stamp is constant)",
+  "execution_scope": "p01_deterministic_integration_test",
+  "boundary": "local instrumented target; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "target_executions": 35946,
+  "security_state_observations": 35812,
+  "consumption_ratio": 0.9963,
+  "security_state_replays": "0",
+  "security_state_total": "2",
+  "security_state_reward_src_seq": "0"
+}

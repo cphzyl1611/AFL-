@@ -1,0 +1,18 @@
+{
+  "finding": "M-2 execution-status attribution",
+  "target": "test/p01/status_seq_target.c",
+  "execution_scope": "p01_deterministic_integration_test",
+  "boundary": "local instrumented target; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "security_state_total": "2",
+  "security_state_observations": "42240",
+  "security_state_reward_src_seq": "0",
+  "target_executions": 42374,
+  "target_repeat_executions": 8276,
+  "calibration_bursts": 27,
+  "consumed_observations": 42240,
+  "bursts_where_head_was_consumed": 25,
+  "bursts_where_only_a_reexecution_was_consumed": 0,
+  "example_misattributions": [],
+  "corpus_count": "12",
+  "edges_found": "40"
+}

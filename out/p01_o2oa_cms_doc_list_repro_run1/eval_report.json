@@ -1,0 +1,23 @@
+{
+  "task": {
+    "source": "nv_task_path",
+    "source_note": "Loaded from NV_TASK_PATH; AFL++ task metadata is authoritative.",
+    "nv_task_path": "/home/dministrator/AFLplusplus-p01/out/p01_o2oa_cms_doc_list_repro_run1/task.json",
+    "target_type_name": "http_api",
+    "target_type": 1,
+    "target_endpoint": "p0_deterministic_o2oa_cms_doc_list",
+    "seed_source": "seed_file",
+    "seed_location": "/home/dministrator/AFLplusplus-p01/in/p0_o2oa_cms_doc_list",
+    "mutation_scope": 7,
+    "max_test_cases": 400,
+    "time_budget_sec": 120,
+    "enable_validity": 0
+  },
+  "cov": {"bitmap_cvg": 0.000000, "edges_found": 0},
+  "security_state_cov": {"security_state_total": 10, "security_state_new_total": 10, "security_state_delta_last": 0, "security_state_observations": 384, "security_state_seed_credit": 10, "security_state_capacity": 65536, "security_state_saturated": 0, "security_state_dropped": 0, "security_state_replays": 0, "security_state_reward_src_seq": 391, "state_id": "fnv1a64(METHOD SPACE PATH | RESPONSE_CLASS)", "note": "project security-state coverage; not AFL native edge coverage"},
+  "mab": {"c": 0.050000, "min_explore": 8, "total_pulls": 224, "cold_start_picks": 24, "ucb_picks": 200, "arms": [{"arm": 0, "pulls": 92, "mean_reward": 0.143478, "sum_reward": 13.200000, "pos_cnt": 2}, {"arm": 1, "pulls": 124, "mean_reward": 0.147581, "sum_reward": 18.300000, "pos_cnt": 3}, {"arm": 2, "pulls": 8, "mean_reward": -0.100000, "sum_reward": -0.800000, "pos_cnt": 0}]},
+  "validity": {"valid_cnt": 0, "invalid_cnt": 0, "invalid_rate": 0.000000, "invalid_parse_cnt": 0, "invalid_rule_cnt": 0, "invalid_rpc_fail_cnt": 0},
+  "err": {"err_exec": 16, "err_rate": 0.040000},
+  "rec": {"rec_total": 16, "rec_success": 0, "rec_rate": 0.000000, "rec_avg_ms": 0.000},
+  "exec": {"valid_exec": 400, "total_execs": 428}
+}

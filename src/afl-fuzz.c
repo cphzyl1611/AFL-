@@ -398,15 +398,20 @@ static void nv_load_task_json(afl_state_t *afl, const char *path) {
   cJSON *mc  = cJSON_GetObjectItemCaseSensitive(root, "mab_c");
   cJSON *mme = cJSON_GetObjectItemCaseSensitive(root, "mab_min_explore");
 
-  if (mc && cJSON_IsNumber(mc) && mc->valuedouble >= 0.0 &&
-      !getenv("NV_MAB_C")) {
+  /* task.json sits between the compiled defaults and the environment.  The
+     gate is whether a *valid* override exists, not whether the variable is
+     set: an empty or malformed NV_MAB_C used to silently discard a perfectly
+     good task.json value and fall all the way back to the default. */
+  if (mc && cJSON_IsNumber(mc) && isfinite(mc->valuedouble) &&
+      mc->valuedouble > 0.0 && !nv_mab_env_c(NULL)) {
 
     afl->nv_mab.c = mc->valuedouble;
 
   }
 
   if (mme && cJSON_IsNumber(mme) && mme->valuedouble >= 1.0 &&
-      !getenv("NV_MAB_MIN_EXPLORE")) {
+      mme->valuedouble <= (double)NV_MAB_MAX_MIN_EXPLORE &&
+      !nv_mab_env_min_explore(NULL)) {
 
     afl->nv_mab.min_explore = (u64)mme->valuedouble;
 

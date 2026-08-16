@@ -216,6 +216,29 @@ def http_class(code: int) -> str:
     return "other"
 
 
+def next_exec_seq() -> int:
+    """Strictly increasing id for this execution, shared across forks.
+
+    The fuzzer uses it as the replay identity of a status document (P0.1 M-3).
+    Without it, two executions that produce the same body and the same response
+    inside one millisecond are indistinguishable under the legacy
+    ``ts_ms ^ body_hash16`` stamp and the second is dropped as a replay.
+    """
+    path = STATUS_PATH + ".seq"
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            seq = int(fh.read().strip() or "0")
+    except (OSError, ValueError):
+        seq = 0
+    seq += 1
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(str(seq))
+    except OSError:
+        pass
+    return seq
+
+
 def write_status(method: str, path: str, code: int, body_hash16: int,
                  is_exception: int, recovered: int, recover_ms: int) -> None:
     payload = {
@@ -235,6 +258,7 @@ def write_status(method: str, path: str, code: int, body_hash16: int,
         "ts_ms": int(time.time() * 1000),
         "is_exception": is_exception,
         "recover_ms": recover_ms,
+        "exec_seq": next_exec_seq(),
     }
     tmp = STATUS_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:

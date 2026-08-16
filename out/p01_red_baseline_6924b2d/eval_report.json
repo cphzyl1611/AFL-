@@ -1,0 +1,21 @@
+{
+  "task": {
+    "source": "nv_task_path",
+    "source_note": "Loaded from NV_TASK_PATH; AFL++ task metadata is authoritative.",
+    "nv_task_path": "/tmp/claude-1000/-home-dministrator-AFLplusplus/6718264e-af84-4cf9-90c0-ed8603180e7e/scratchpad/base6924/repo/out/base_red/task.json",
+    "target_type_name": "http_api",
+    "target_type": 1,
+    "target_endpoint": "p0_deterministic_o2oa_cms_doc_list",
+    "seed_source": "seed_file",
+    "seed_location": "/tmp/claude-1000/-home-dministrator-AFLplusplus/6718264e-af84-4cf9-90c0-ed8603180e7e/scratchpad/base6924/repo/in/p0_o2oa_cms_doc_list",
+    "mutation_scope": 7,
+    "max_test_cases": 400,
+    "time_budget_sec": 120,
+    "enable_validity": 0
+  },
+  "cov": {"bitmap_cvg": 0.000000, "edges_found": 0},
+  "validity": {"valid_cnt": 0, "invalid_cnt": 0, "invalid_rate": 0.000000, "invalid_parse_cnt": 0, "invalid_rule_cnt": 0, "invalid_rpc_fail_cnt": 0},
+  "err": {"err_exec": 10, "err_rate": 0.025000},
+  "rec": {"rec_total": 10, "rec_success": 0, "rec_rate": 0.000000, "rec_avg_ms": 0.000},
+  "exec": {"valid_exec": 400, "total_execs": 428}
+}

@@ -1,0 +1,14 @@
+case,task_json,env,expected_c,actual_c,expected_min_explore,actual_min_explore,verdict
+env_absent__task_absent,-,-,0.05,0.05,8,8,PASS
+env_absent__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}",-,0.9,0.9,5,5,PASS
+env_valid__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '0.3', 'NV_MAB_MIN_EXPLORE': '2'}",0.3,0.3,2,2,PASS
+env_empty__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '', 'NV_MAB_MIN_EXPLORE': ''}",0.9,0.9,5,5,PASS
+env_whitespace__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '   ', 'NV_MAB_MIN_EXPLORE': '  '}",0.9,0.9,5,5,PASS
+env_garbage__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': 'abc', 'NV_MAB_MIN_EXPLORE': 'xyz'}",0.9,0.9,5,5,PASS
+env_negative__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '-1', 'NV_MAB_MIN_EXPLORE': '-4'}",0.9,0.9,5,5,PASS
+env_zero__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '0', 'NV_MAB_MIN_EXPLORE': '0'}",0.9,0.9,5,5,PASS
+env_overflow__task_valid,"{'mab_c': 0.9, 'mab_min_explore': 5}","{'NV_MAB_C': '1e400', 'NV_MAB_MIN_EXPLORE': '99999999999999999999'}",0.9,0.9,5,5,PASS
+env_zero__task_absent,-,{'NV_MAB_C': '0'},0.05,0.05,8,8,PASS
+env_overflow__task_absent,-,"{'NV_MAB_C': '1e400', 'NV_MAB_MIN_EXPLORE': '99999999999999999999'}",0.05,0.05,8,8,PASS
+env_absent__task_zero,{'mab_c': 0},-,0.05,0.05,8,8,PASS
+env_absent__task_negative,"{'mab_c': -1, 'mab_min_explore': 0}",-,0.05,0.05,8,8,PASS

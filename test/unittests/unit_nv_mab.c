@@ -182,9 +182,12 @@ static void test_env_c_garbage_falls_back(void) {
 
 }
 
-/* Explicit opt-out is allowed; silent zero is not.  The distinction is what
-   makes the value auditable in fuzzer_stats. */
-static void test_env_c_explicit_zero_is_honoured(void) {
+/* P0.1 M-6.  The header requires c > 0, so a zero coefficient is invalid
+   input, not an opt-out: UCB with c = 0 is pure greedy selection, which is not
+   a supported mode of this project.  It falls back to the default like any
+   other invalid value.  (This replaces the P0-era
+   test_env_c_explicit_zero_is_honoured, whose contract M-6 reverses.) */
+static void test_env_c_zero_falls_back(void) {
 
   nv_mab_t mab;
   memset(&mab, 0, sizeof(mab));
@@ -192,8 +195,89 @@ static void test_env_c_explicit_zero_is_honoured(void) {
   nv_mab_init_defaults(&mab);
   unsetenv("NV_MAB_C");
 
-  expect(mab.c == 0.0, "env_c_explicit_zero_is_honoured",
-         "explicit NV_MAB_C=0 must be honoured, got %g", mab.c);
+  expect(mab.c == NV_MAB_DEFAULT_C, "env_c_zero_falls_back",
+         "NV_MAB_C=0 disables exploration and must fall back to %g, got %g",
+         (double)NV_MAB_DEFAULT_C, mab.c);
+
+}
+
+/* P0.1 M-5.  "Valid" is the qualifier that matters: a variable that merely
+   exists must never suppress a valid task.json value. */
+static void test_env_c_validity_is_reported(void) {
+
+  double v = -1.0;
+  int    ok_absent, ok_empty, ok_space, ok_garbage, ok_zero, ok_neg, ok_valid;
+
+  unsetenv("NV_MAB_C");
+  ok_absent = nv_mab_env_c(&v);
+
+  setenv("NV_MAB_C", "", 1);          ok_empty   = nv_mab_env_c(&v);
+  setenv("NV_MAB_C", "   ", 1);       ok_space   = nv_mab_env_c(&v);
+  setenv("NV_MAB_C", "not-a-num", 1); ok_garbage = nv_mab_env_c(&v);
+  setenv("NV_MAB_C", "0", 1);         ok_zero    = nv_mab_env_c(&v);
+  setenv("NV_MAB_C", "-2", 1);        ok_neg     = nv_mab_env_c(&v);
+
+  v = -1.0;
+  setenv("NV_MAB_C", "0.25", 1);      ok_valid   = nv_mab_env_c(&v);
+  unsetenv("NV_MAB_C");
+
+  expect(!ok_absent && !ok_empty && !ok_space && !ok_garbage && !ok_zero &&
+             !ok_neg && ok_valid && v > 0.2499 && v < 0.2501,
+         "env_c_validity_is_reported",
+         "absent=%d empty=%d space=%d garbage=%d zero=%d neg=%d valid=%d "
+         "value=%g", ok_absent, ok_empty, ok_space, ok_garbage, ok_zero,
+         ok_neg, ok_valid, v);
+
+}
+
+/* P0.1 M-7.  strtod/strtol overflow was unchecked: NV_MAB_C=1e400 produced
+   c = inf (every arm's UCB infinite, first enabled arm always wins) and a huge
+   NV_MAB_MIN_EXPLORE produced LONG_MAX, so UCB was never reached at all. */
+static void test_env_overflow_falls_back(void) {
+
+  nv_mab_t mab;
+  memset(&mab, 0, sizeof(mab));
+  setenv("NV_MAB_C", "1e400", 1);
+  setenv("NV_MAB_MIN_EXPLORE", "99999999999999999999", 1);
+  nv_mab_init_defaults(&mab);
+  unsetenv("NV_MAB_C");
+  unsetenv("NV_MAB_MIN_EXPLORE");
+
+  expect(mab.c == NV_MAB_DEFAULT_C &&
+             mab.min_explore == NV_MAB_DEFAULT_MIN_EXPLORE,
+         "env_overflow_falls_back",
+         "overflowing overrides must fall back to %g/%llu, got %g/%llu",
+         (double)NV_MAB_DEFAULT_C,
+         (unsigned long long)NV_MAB_DEFAULT_MIN_EXPLORE, mab.c,
+         (unsigned long long)mab.min_explore);
+
+}
+
+static void test_env_min_explore_validity_is_reported(void) {
+
+  u64 v = 0;
+  int ok_absent, ok_empty, ok_zero, ok_neg, ok_garbage, ok_huge, ok_valid;
+
+  unsetenv("NV_MAB_MIN_EXPLORE");
+  ok_absent = nv_mab_env_min_explore(&v);
+
+  setenv("NV_MAB_MIN_EXPLORE", "", 1);      ok_empty   = nv_mab_env_min_explore(&v);
+  setenv("NV_MAB_MIN_EXPLORE", "0", 1);     ok_zero    = nv_mab_env_min_explore(&v);
+  setenv("NV_MAB_MIN_EXPLORE", "-3", 1);    ok_neg     = nv_mab_env_min_explore(&v);
+  setenv("NV_MAB_MIN_EXPLORE", "abc", 1);   ok_garbage = nv_mab_env_min_explore(&v);
+  setenv("NV_MAB_MIN_EXPLORE", "99999999999999999999", 1);
+  ok_huge = nv_mab_env_min_explore(&v);
+
+  v = 0;
+  setenv("NV_MAB_MIN_EXPLORE", "12", 1);    ok_valid   = nv_mab_env_min_explore(&v);
+  unsetenv("NV_MAB_MIN_EXPLORE");
+
+  expect(!ok_absent && !ok_empty && !ok_zero && !ok_neg && !ok_garbage &&
+             !ok_huge && ok_valid && v == 12,
+         "env_min_explore_validity_is_reported",
+         "absent=%d empty=%d zero=%d neg=%d garbage=%d huge=%d valid=%d "
+         "value=%llu", ok_absent, ok_empty, ok_zero, ok_neg, ok_garbage,
+         ok_huge, ok_valid, (unsigned long long)v);
 
 }
 
@@ -301,7 +385,10 @@ int main(void) {
   test_env_c_override_applies();
   test_env_c_negative_falls_back();
   test_env_c_garbage_falls_back();
-  test_env_c_explicit_zero_is_honoured();
+  test_env_c_zero_falls_back();
+  test_env_c_validity_is_reported();
+  test_env_overflow_falls_back();
+  test_env_min_explore_validity_is_reported();
   test_env_min_explore_override_applies();
   test_ucb_phase_is_reached();
   test_ucb_follows_updated_mean();

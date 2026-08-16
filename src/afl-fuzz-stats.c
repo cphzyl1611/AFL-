@@ -432,6 +432,11 @@ static void nv_write_eval_report_json(afl_state_t *afl, double bitmap_cvg,
           "\"security_state_delta_last\": %llu, "
           "\"security_state_observations\": %llu, "
           "\"security_state_seed_credit\": %llu, "
+          "\"security_state_capacity\": %u, "
+          "\"security_state_saturated\": %u, "
+          "\"security_state_dropped\": %llu, "
+          "\"security_state_replays\": %llu, "
+          "\"security_state_reward_src_seq\": %llu, "
           "\"state_id\": \"fnv1a64(METHOD SPACE PATH | RESPONSE_CLASS)\", "
           "\"note\": \"project security-state coverage; not AFL native edge "
           "coverage\"},\n",
@@ -439,7 +444,12 @@ static void nv_write_eval_report_json(afl_state_t *afl, double bitmap_cvg,
           (unsigned long long)afl->nv_sec_state_new_total,
           (unsigned long long)afl->nv_sec_state_delta_last,
           (unsigned long long)afl->nv_sec_state_obs,
-          (unsigned long long)afl->nv_sec_state_seed_credit);
+          (unsigned long long)afl->nv_sec_state_seed_credit,
+          afl->nv_cov_cap,
+          (unsigned)afl->nv_sec_state_saturated,
+          (unsigned long long)afl->nv_sec_state_dropped,
+          (unsigned long long)afl->nv_sec_state_replays,
+          (unsigned long long)afl->nv_sec_state_reward_src_seq);
 
   /* mab: enough to prove whether UCB actually ran */
   fprintf(j,
@@ -712,6 +722,15 @@ void write_stats_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
           (unsigned long long)afl->nv_sec_state_obs);
   fprintf(f, "security_state_seed_credit : %llu\n",
           (unsigned long long)afl->nv_sec_state_seed_credit);
+  fprintf(f, "security_state_capacity : %u\n", afl->nv_cov_cap);
+  fprintf(f, "security_state_saturated : %u\n",
+          (unsigned)afl->nv_sec_state_saturated);
+  fprintf(f, "security_state_dropped : %llu\n",
+          (unsigned long long)afl->nv_sec_state_dropped);
+  fprintf(f, "security_state_replays : %llu\n",
+          (unsigned long long)afl->nv_sec_state_replays);
+  fprintf(f, "security_state_reward_src_seq : %llu\n",
+          (unsigned long long)afl->nv_sec_state_reward_src_seq);
 
   fprintf(f, "nv_mab_arm0_pulls  : %llu\n",
           (unsigned long long)afl->nv_mab.arms[0].pulls);

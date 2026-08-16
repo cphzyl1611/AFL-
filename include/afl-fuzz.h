@@ -541,9 +541,26 @@ typedef struct {
 } nv_arm_t;
 
 /* UCB exploration coefficient applied when neither task.json nor NV_MAB_C
-   supplies one.  Must be > 0: a zero coefficient silently collapses UCB into
-   pure greedy selection. */
+   supplies one.  Must be > 0: a zero coefficient collapses UCB into pure
+   greedy selection, which is not a supported mode of this project.
+
+   ---- configuration precedence (P0.1 M-5) ----
+
+       valid NV_MAB_C / NV_MAB_MIN_EXPLORE   (highest)
+             > valid task.json mab_c / mab_min_explore
+                   > the compiled defaults here   (lowest)
+
+   "Valid" is the operative word, and it is checked before precedence is
+   applied.  A variable that merely *exists* never suppresses a lower layer:
+   an empty, whitespace-only, unparseable, out-of-range or overflowing
+   override is discarded exactly as if it had not been set, and the next
+   layer down applies.  The effective values are reported as nv_mab_c and
+   nv_mab_min_explore in fuzzer_stats, so the outcome is always auditable. */
 #define NV_MAB_DEFAULT_C 0.05
+
+/* Upper bound on the warm-up.  Beyond this a run would never reach the UCB
+   branch at all, so such a value is a misconfiguration rather than a choice. */
+#define NV_MAB_MAX_MIN_EXPLORE 1000000
 
 /* Warm-up samples guaranteed to every enabled arm before UCB takes over.
    Sized so that a short acceptance run (a few hundred execs over 3 arms)
@@ -567,8 +584,56 @@ typedef struct {
 } nv_mab_t;
 
 void        nv_mab_init_defaults(nv_mab_t *mab);
+
+/* Return 1 and write *out only when a *valid* environment override exists.
+   Used by nv_load_task_json() so an invalid variable cannot mask task.json. */
+int         nv_mab_env_c(double *out);
+int         nv_mab_env_min_explore(u64 *out);
 nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask);
 void        nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward);
+
+/* ---- security-state coverage set ----
+   Open-addressed, linear-probed, fixed capacity.  The table is never resized,
+   so insertion must report saturation rather than probe forever.  A saturated
+   table drops the state: fuzzing continues, but the state is neither recorded
+   nor counted as new, so it can never manufacture a reward. */
+#define NV_COVSET_EXISTING   0
+#define NV_COVSET_INSERTED   1
+#define NV_COVSET_SATURATED (-1)
+
+int nv_covset_insert_into(u64 *slots, u32 cap, u32 *used, u64 h);
+
+/* ---- security-state key canonicalisation ----
+   A security state is "METHOD PATH|RESPONSE_CLASS".  Every component of that
+   key arrives from the harness/target status document, which means fuzzed
+   bytes can reach it.  Left raw, a single mutated request line would mint a
+   fresh state per byte string and the covset would saturate on garbage.  Each
+   component is therefore folded onto a finite set before hashing. */
+#define NV_STATE_PATH_MAX 200
+
+/* One of the seven known verbs, else "INVALID".  Never NULL. */
+const char *nv_canon_method(const char *m);
+
+/* One of 2xx/3xx/4xx/5xx/conn_refused/timeout, else "other".  Never NULL. */
+const char *nv_canon_class(const char *c);
+
+/* NULL when the path is structurally usable as-is; otherwise a shared label
+   from a fixed pool ("malformed_path"), so arbitrarily many bad paths fold
+   onto a single state. */
+const char *nv_canon_path_label(const char *p);
+
+/* ---- status-document replay identity ----
+   A status document must be consumed exactly once per target execution.  The
+   identity is the execution, not the content: two distinct executions may
+   legitimately produce byte-identical documents (same body, same response,
+   same millisecond) and both must count.  exec_seq carries that identity when
+   the harness supplies it; otherwise the legacy content+timestamp stamp is the
+   fallback so older harnesses keep working. */
+#define NV_STATUS_ACCEPT 1
+#define NV_STATUS_REPLAY 0
+
+int nv_status_is_fresh(u64 exec_seq, u64 legacy_stamp, u64 *last_exec_seq,
+                       u64 *last_stamp);
 
 /* Reward weights for the NV feedback loop.  Discovering a previously unseen
    security state is the primary objective, so it outweighs the individual
@@ -1016,6 +1081,11 @@ typedef struct afl_state {
   u64 nv_sec_state_new_total;   /* cumulative first-time state discoveries   */
   u64 nv_sec_state_delta_last;  /* new states in the most recent observation */
   u64 nv_sec_state_seed_credit; /* times a queue entry was credited for one  */
+  u8  nv_sec_state_saturated;   /* set once the covset ran out of capacity   */
+  u64 nv_sec_state_dropped;     /* states discarded because it was full      */
+  u64 nv_last_exec_seq;         /* execution id of the last consumed status  */
+  u64 nv_sec_state_replays;     /* status documents rejected as already seen */
+  u64 nv_sec_state_reward_src_seq; /* execution that fed the latest reward   */
 
   /* ===== NV target config cache (from NV_TARGET_CONFIG) ===== */
   u8   nv_tcfg_loaded;     /* 0/1 */

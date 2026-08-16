@@ -50,6 +50,12 @@ FIELDS = [
     "security_state_delta_last",
     "security_state_observations",
     "security_state_seed_credit",
+    # P0.1: covset saturation + replay identity telemetry
+    "security_state_capacity",
+    "security_state_saturated",
+    "security_state_dropped",
+    "security_state_replays",
+    "security_state_reward_src_seq",
     "state_log_records",
     "state_log_distinct_states",
     "state_log_minus_observations",
@@ -151,6 +157,12 @@ def main() -> int:
         "security_state_delta_last": stats.get("security_state_delta_last", ""),
         "security_state_observations": stats.get("security_state_observations", ""),
         "security_state_seed_credit": stats.get("security_state_seed_credit", ""),
+        "security_state_capacity": stats.get("security_state_capacity", ""),
+        "security_state_saturated": stats.get("security_state_saturated", ""),
+        "security_state_dropped": stats.get("security_state_dropped", ""),
+        "security_state_replays": stats.get("security_state_replays", ""),
+        "security_state_reward_src_seq": stats.get(
+            "security_state_reward_src_seq", ""),
         "state_log_records": str(records),
         "state_log_distinct_states": str(len(distinct)),
         "state_log_minus_observations": str(
