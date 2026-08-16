@@ -1,0 +1,12 @@
+{
+  "finding": "sequence store restart does not lock replay detection out",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "sidecar_path_pattern": "<NV_STATUS_PATH>.seq",
+  "sidecar_existed_before_restart": true,
+  "exec_seq_before_restart": 2,
+  "exec_seq_after_restart": 1,
+  "exec_seq_after_restart_next": 2,
+  "restart_resets_to_low_value": true,
+  "still_advances_after_restart": true,
+  "c_side_behaviour": "a lower exec_seq resynchronises rather than deadlocking (nv_status_is_fresh)"
+}

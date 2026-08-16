@@ -1,0 +1,32 @@
+{
+  "note": "NV status writers are documents consumed by nv_observe_security_state() via NV_STATUS_PATH. nv_state_probe.py / nv_neuron_probe.py write NV_PROBE_PATH, a different document, and are not status writers. targets/alfresco_*_mock.py and *_online_filter_wrapper.py write their own JSONL and no NV status document.",
+  "writers": [
+    {
+      "writer": "nv_http_harness.py",
+      "platform_scenario": "real HTTP API (O2OA, Alfresco, any CFG)",
+      "launcher": "scripts/run_*.sh, run_*.sh (10 scripts, all identical)",
+      "lifecycle": "per_execution_process",
+      "exec_seq_before": "NO",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    },
+    {
+      "writer": "targets/nv_p0_deterministic_target.py",
+      "platform_scenario": "P0 deterministic integration profiles",
+      "launcher": "scripts/run_p0_mab_feedback_experiment.sh",
+      "lifecycle": "per_execution_process",
+      "exec_seq_before": "YES",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    },
+    {
+      "writer": "test/p01/status_seq_target.c",
+      "platform_scenario": "P0.1 M-2 / M-3 integration tests",
+      "launcher": "tests/test_p01_status_attribution.py, tests/test_p01_replay_identity.py",
+      "lifecycle": "per_execution_process (instrumented C target)",
+      "exec_seq_before": "YES",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    }
+  ]
+}

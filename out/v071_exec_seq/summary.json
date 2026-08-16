@@ -1,0 +1,209 @@
+{
+  "task": "v0.7.1 real HTTP harness exec_seq upgrade",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "writers": [
+    {
+      "writer": "nv_http_harness.py",
+      "platform_scenario": "real HTTP API (O2OA, Alfresco, any CFG)",
+      "launcher": "scripts/run_*.sh, run_*.sh (10 scripts, all identical)",
+      "lifecycle": "per_execution_process",
+      "exec_seq_before": "NO",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    },
+    {
+      "writer": "targets/nv_p0_deterministic_target.py",
+      "platform_scenario": "P0 deterministic integration profiles",
+      "launcher": "scripts/run_p0_mab_feedback_experiment.sh",
+      "lifecycle": "per_execution_process",
+      "exec_seq_before": "YES",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    },
+    {
+      "writer": "test/p01/status_seq_target.c",
+      "platform_scenario": "P0.1 M-2 / M-3 integration tests",
+      "launcher": "tests/test_p01_status_attribution.py, tests/test_p01_replay_identity.py",
+      "lifecycle": "per_execution_process (instrumented C target)",
+      "exec_seq_before": "YES",
+      "exec_seq_after": "YES",
+      "active": "ACTIVE"
+    }
+  ],
+  "identical_requests": {
+    "finding": "identical executions receive distinct execution identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "request_and_response_identical": true,
+    "exec_seq_first": 1,
+    "exec_seq_second": 2,
+    "exec_seq_distinct": true,
+    "legacy_fields_still_present": {
+      "ts_ms": true,
+      "body_hash16": true,
+      "seq": true
+    },
+    "documents": {
+      "first": {
+        "seq": 1,
+        "exec_seq": 1,
+        "method": "POST",
+        "path": "/api/doc/query",
+        "http_code": 200,
+        "class": "2xx",
+        "timeout": 0,
+        "recovered": 0,
+        "latency_ms": 7,
+        "body_hash16": 2174,
+        "ncov_delta": 0,
+        "ncov_total": 9,
+        "nall": 48,
+        "ts_ms": 1786902697398,
+        "is_exception": 0,
+        "recover_ms": 0
+      },
+      "second": {
+        "seq": 1,
+        "exec_seq": 2,
+        "method": "POST",
+        "path": "/api/doc/query",
+        "http_code": 200,
+        "class": "2xx",
+        "timeout": 0,
+        "recovered": 0,
+        "latency_ms": 7,
+        "body_hash16": 2174,
+        "ncov_delta": 0,
+        "ncov_total": 9,
+        "nall": 48,
+        "ts_ms": 1786902697444,
+        "is_exception": 0,
+        "recover_ms": 0
+      }
+    }
+  },
+  "uniqueness": {
+    "finding": "no duplicate execution identity across separate processes",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "executions": 100,
+    "distinct_exec_seq": 100,
+    "distinct_os_pids": 100,
+    "strictly_increasing": true,
+    "first_exec_seq": 1,
+    "last_exec_seq": 100
+  },
+  "restart": {
+    "finding": "sequence store restart does not lock replay detection out",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "sidecar_path_pattern": "<NV_STATUS_PATH>.seq",
+    "sidecar_existed_before_restart": true,
+    "exec_seq_before_restart": 2,
+    "exec_seq_after_restart": 1,
+    "exec_seq_after_restart_next": 2,
+    "restart_resets_to_low_value": true,
+    "still_advances_after_restart": true,
+    "c_side_behaviour": "a lower exec_seq resynchronises rather than deadlocking (nv_status_is_fresh)"
+  },
+  "error_paths": {
+    "finding": "every outcome of a real execution attempt carries an identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "cases": {
+      "2xx": {
+        "class": "2xx",
+        "http_code": 200,
+        "exec_seq": 1,
+        "has_exec_seq": true
+      },
+      "4xx": {
+        "class": "4xx",
+        "http_code": 400,
+        "exec_seq": 2,
+        "has_exec_seq": true
+      },
+      "5xx": {
+        "class": "5xx",
+        "http_code": 500,
+        "exec_seq": 3,
+        "has_exec_seq": true
+      },
+      "conn_refused": {
+        "class": "conn_refused",
+        "http_code": -2,
+        "exec_seq": 4,
+        "has_exec_seq": true
+      },
+      "timeout": {
+        "class": "timeout",
+        "http_code": -1,
+        "exec_seq": 5,
+        "has_exec_seq": true
+      }
+    },
+    "all_have_exec_seq": true,
+    "all_identities_distinct": true
+  },
+  "validity_reject": {
+    "finding": "a validity-rejected testcase mints no execution identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "exec_seq_before_rejected_case": 1,
+    "exec_seq_after_rejected_case": 1,
+    "identity_unchanged": true,
+    "server_hits_during_rejected_case": 0,
+    "reason": "the validity layer returns before write_status(), which is where the identity is allocated"
+  },
+  "replay_consumer": {
+    "finding": "the C replay consumer accepts the real harness identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "consumer": "nv_status_is_fresh() from src/afl-fuzz-nv-covset.c",
+    "sequence": [
+      "execution#1",
+      "execution#2 (identical)",
+      "re-read of #2"
+    ],
+    "verdicts": [
+      "ACCEPT",
+      "ACCEPT",
+      "REPLAY"
+    ],
+    "expected": [
+      "ACCEPT",
+      "ACCEPT",
+      "REPLAY"
+    ],
+    "matches_expected": true,
+    "raw": [
+      "ACCEPT exec_seq=1 stamp=9de0bb3809f identity=exec_seq",
+      "ACCEPT exec_seq=2 stamp=9de0bb380ce identity=exec_seq",
+      "REPLAY exec_seq=2 stamp=9de0bb380ce identity=exec_seq"
+    ]
+  },
+  "o2oa": {
+    "finding": "o2oa request shape carries execution identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "launcher": "afl-fuzz -n ... -- python3 nv_http_harness.py",
+    "method": "PUT",
+    "path": "/x_cms_assemble_control/jaxrs/document/filter/list/1/size/5",
+    "class": "2xx",
+    "exec_seq_first": 1,
+    "exec_seq_second": 2,
+    "exec_seq_distinct": true,
+    "not_claimed": [
+      "real o2oa full fuzzing campaign",
+      "real-service cross-platform migration VERIFIED"
+    ]
+  },
+  "alfresco": {
+    "finding": "alfresco request shape carries execution identity",
+    "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+    "launcher": "afl-fuzz -n ... -- python3 nv_http_harness.py",
+    "method": "PUT",
+    "path": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/n1",
+    "class": "2xx",
+    "exec_seq_first": 1,
+    "exec_seq_second": 2,
+    "exec_seq_distinct": true,
+    "not_claimed": [
+      "real alfresco full fuzzing campaign",
+      "real-service cross-platform migration VERIFIED"
+    ]
+  }
+}

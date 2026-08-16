@@ -1,0 +1,9 @@
+{
+  "finding": "a validity-rejected testcase mints no execution identity",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "exec_seq_before_rejected_case": 1,
+  "exec_seq_after_rejected_case": 1,
+  "identity_unchanged": true,
+  "server_hits_during_rejected_case": 0,
+  "reason": "the validity layer returns before write_status(), which is where the identity is allocated"
+}

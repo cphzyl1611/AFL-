@@ -1,0 +1,15 @@
+{
+  "finding": "o2oa request shape carries execution identity",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "launcher": "afl-fuzz -n ... -- python3 nv_http_harness.py",
+  "method": "PUT",
+  "path": "/x_cms_assemble_control/jaxrs/document/filter/list/1/size/5",
+  "class": "2xx",
+  "exec_seq_first": 1,
+  "exec_seq_second": 2,
+  "exec_seq_distinct": true,
+  "not_claimed": [
+    "real o2oa full fuzzing campaign",
+    "real-service cross-platform migration VERIFIED"
+  ]
+}

@@ -1,0 +1,4 @@
+writer,platform_scenario,launcher,lifecycle,exec_seq_before,exec_seq_after,active
+"nv_http_harness.py","real HTTP API (O2OA, Alfresco, any CFG)","scripts/run_*.sh, run_*.sh (10 scripts, all identical)","per_execution_process","NO","YES","ACTIVE"
+"targets/nv_p0_deterministic_target.py","P0 deterministic integration profiles","scripts/run_p0_mab_feedback_experiment.sh","per_execution_process","YES","YES","ACTIVE"
+"test/p01/status_seq_target.c","P0.1 M-2 / M-3 integration tests","tests/test_p01_status_attribution.py, tests/test_p01_replay_identity.py","per_execution_process (instrumented C target)","YES","YES","ACTIVE"

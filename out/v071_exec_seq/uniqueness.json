@@ -1,0 +1,10 @@
+{
+  "finding": "no duplicate execution identity across separate processes",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "executions": 100,
+  "distinct_exec_seq": 100,
+  "distinct_os_pids": 100,
+  "strictly_increasing": true,
+  "first_exec_seq": 1,
+  "last_exec_seq": 100
+}

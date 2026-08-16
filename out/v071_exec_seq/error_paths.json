@@ -1,0 +1,38 @@
+{
+  "finding": "every outcome of a real execution attempt carries an identity",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "cases": {
+    "2xx": {
+      "class": "2xx",
+      "http_code": 200,
+      "exec_seq": 1,
+      "has_exec_seq": true
+    },
+    "4xx": {
+      "class": "4xx",
+      "http_code": 400,
+      "exec_seq": 2,
+      "has_exec_seq": true
+    },
+    "5xx": {
+      "class": "5xx",
+      "http_code": 500,
+      "exec_seq": 3,
+      "has_exec_seq": true
+    },
+    "conn_refused": {
+      "class": "conn_refused",
+      "http_code": -2,
+      "exec_seq": 4,
+      "has_exec_seq": true
+    },
+    "timeout": {
+      "class": "timeout",
+      "http_code": -1,
+      "exec_seq": 5,
+      "has_exec_seq": true
+    }
+  },
+  "all_have_exec_seq": true,
+  "all_identities_distinct": true
+}

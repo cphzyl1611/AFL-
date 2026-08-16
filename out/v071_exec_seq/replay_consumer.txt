@@ -1,0 +1,5 @@
+# production nv_status_is_fresh() over real harness output
+# order: execution#1, execution#2 (identical), re-read of #2
+ACCEPT exec_seq=1 stamp=9de0bb3809f identity=exec_seq
+ACCEPT exec_seq=2 stamp=9de0bb380ce identity=exec_seq
+REPLAY exec_seq=2 stamp=9de0bb380ce identity=exec_seq

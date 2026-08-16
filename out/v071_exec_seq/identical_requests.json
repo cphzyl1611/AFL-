@@ -1,0 +1,51 @@
+{
+  "finding": "identical executions receive distinct execution identity",
+  "boundary": "local deterministic HTTP server on 127.0.0.1; real nv_http_harness.py; not a platform experiment; not a real O2OA/Alfresco/Flowable service",
+  "request_and_response_identical": true,
+  "exec_seq_first": 1,
+  "exec_seq_second": 2,
+  "exec_seq_distinct": true,
+  "legacy_fields_still_present": {
+    "ts_ms": true,
+    "body_hash16": true,
+    "seq": true
+  },
+  "documents": {
+    "first": {
+      "seq": 1,
+      "exec_seq": 1,
+      "method": "POST",
+      "path": "/api/doc/query",
+      "http_code": 200,
+      "class": "2xx",
+      "timeout": 0,
+      "recovered": 0,
+      "latency_ms": 7,
+      "body_hash16": 2174,
+      "ncov_delta": 0,
+      "ncov_total": 9,
+      "nall": 48,
+      "ts_ms": 1786902697398,
+      "is_exception": 0,
+      "recover_ms": 0
+    },
+    "second": {
+      "seq": 1,
+      "exec_seq": 2,
+      "method": "POST",
+      "path": "/api/doc/query",
+      "http_code": 200,
+      "class": "2xx",
+      "timeout": 0,
+      "recovered": 0,
+      "latency_ms": 7,
+      "body_hash16": 2174,
+      "ncov_delta": 0,
+      "ncov_total": 9,
+      "nall": 48,
+      "ts_ms": 1786902697444,
+      "is_exception": 0,
+      "recover_ms": 0
+    }
+  }
+}

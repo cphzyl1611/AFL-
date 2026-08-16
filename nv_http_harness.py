@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, json, urllib.request, urllib.error,time,os,zlib
+import fcntl
 from nv_state_probe import update_state
 from urllib.parse import urlparse
 from nv_body_valid import body_validate
@@ -128,6 +129,77 @@ ALLOWED_PATHS = {
   "/api/doc/query",
 }
 
+def seq_sidecar_path() -> str:
+    """Where this status namespace keeps its execution counter.
+
+    One sidecar per NV_STATUS_PATH, so instances with separate status paths
+    (see fuzz_gui.py, which gives every instance its own) never share a
+    counter.
+    """
+    return STATUS_PATH + ".seq"
+
+
+def next_exec_seq() -> int:
+    """Allocate the execution identity for this target execution.
+
+    AFL++ runs this harness as ``-- python3 nv_http_harness.py``: a *fresh
+    process per execution*, with no persistent-mode loop.  A module-level
+    counter therefore restarts at 1 every time and cannot identify an
+    execution -- which is exactly what the legacy ``SEQ`` field does.  The
+    counter has to outlive the process, so it lives in a sidecar file next to
+    the status document.
+
+    Allocation is read-increment-persist under an exclusive ``flock`` so two
+    harness processes sharing one status namespace can never be handed the
+    same id.  The lock is held on the sidecar itself, so no extra lock file
+    appears next to the evidence.
+
+    Returns 0 if the counter cannot be maintained (unwritable directory).  The
+    C consumer reads 0 as "not reported" and falls back to the legacy
+    ``ts_ms ^ body_hash16`` stamp, so a degraded environment loses execution
+    identity rather than the whole observation.
+    """
+    try:
+        fd = os.open(seq_sidecar_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    except OSError:
+        return 0
+
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            raw = os.read(fd, 64).decode("utf-8", errors="ignore").strip()
+        except OSError:
+            raw = ""
+
+        try:
+            current = int(raw or "0")
+        except ValueError:
+            current = 0
+        if current < 0:
+            current = 0
+
+        nxt = current + 1
+        os.lseek(fd, 0, os.SEEK_SET)
+        os.ftruncate(fd, 0)
+        os.write(fd, str(nxt).encode("ascii"))
+        os.fsync(fd)
+        return nxt
+    except OSError:
+        return 0
+    finally:
+        # Neither unlock nor close may raise out of here: this sits on the
+        # execution path of every request, and losing the identity is a
+        # fallback, not a reason to fail the execution.
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:
+            pass
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
 def write_status(method, path, http_code, timeout=False, recovered=False, latency_ms=0,
                  body_hash16=0, ncov_delta=0, ncov_total=0, nall=0,
                  is_exception=0, recover_ms=0):
@@ -150,7 +222,16 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
     # build payload first (st must exist before using it)
     SEQ += 1
     st = {
+        # Legacy per-process counter.  Kept for historical evidence and older
+        # consumers; it is always 1 because the process is per-execution.
+        # exec_seq below is the real execution identity.
         "seq": SEQ,
+        # One identity per target execution, allocated here so that every
+        # outcome that reaches this function -- 2xx/3xx/4xx/5xx, timeout,
+        # conn_refused, request exception -- carries one, and exactly one.
+        # Testcases rejected by the validity layer return before reaching
+        # write_status(), so they never mint an execution identity.
+        "exec_seq": next_exec_seq(),
         "method": method,
         "path": path,
         "http_code": code,
