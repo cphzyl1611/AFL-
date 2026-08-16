@@ -1,0 +1,22 @@
+{
+  "task": {
+    "source": "nv_task_path",
+    "source_note": "Loaded from NV_TASK_PATH; AFL++ task metadata is authoritative.",
+    "nv_task_path": "out/p0_red_probe/task.json",
+    "target_type_name": "http_api",
+    "target_type": 1,
+    "target_endpoint": "p0_deterministic_o2oa_cms_doc_list",
+    "seed_source": "seed_file",
+    "seed_location": "/home/dministrator/AFLplusplus-p0/in/p0_o2oa_cms_doc_list",
+    "mutation_scope": 7,
+    "max_test_cases": 400,
+    "time_budget_sec": 120,
+    "enable_validity": 0
+  },
+  "cov": {"bitmap_cvg": 0.000000, "edges_found": 0},
+  "mab": {"c": 0.050000, "min_explore": 8, "total_pulls": 201, "cold_start_picks": 24, "ucb_picks": 178, "arms": [{"arm": 0, "pulls": 41, "mean_reward": -0.053659, "sum_reward": -2.200000, "pos_cnt": 1}, {"arm": 1, "pulls": 13, "mean_reward": -0.069231, "sum_reward": -0.900000, "pos_cnt": 1}, {"arm": 2, "pulls": 147, "mean_reward": -0.044898, "sum_reward": -6.600000, "pos_cnt": 4}]},
+  "validity": {"valid_cnt": 0, "invalid_cnt": 0, "invalid_rate": 0.000000, "invalid_parse_cnt": 0, "invalid_rule_cnt": 0, "invalid_rpc_fail_cnt": 0},
+  "err": {"err_exec": 0, "err_rate": 0.000000},
+  "rec": {"rec_total": 0, "rec_success": 0, "rec_rate": 0.000000, "rec_avg_ms": 0.000},
+  "exec": {"valid_exec": 400, "total_execs": 428}
+}

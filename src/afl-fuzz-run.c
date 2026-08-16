@@ -115,29 +115,49 @@ static inline int nv_covset_insert(afl_state_t *afl, u64 h) {
   }
 }
 
-static double nv_http_reward(afl_state_t *afl, const char *path) {
+/* One observation of the target's security state, derived from the status
+   document the harness/target writes after every execution. */
+typedef struct {
+  u8  has;             /* a fresh (non-replayed) status document was parsed  */
+  u8  is_exception;    /* timeout / 5xx / conn_refused                       */
+  u8  recovered;
+  u8  is_4xx;
+  u64 ncov_delta;      /* harness-side coverage proxy, may legitimately be 0 */
+  u64 new_states;      /* security states seen for the first time            */
+  u64 state_id;        /* fnv1a64("METHOD PATH|CLASS")                       */
+} nv_state_obs_t;
+
+/* Reads the status document, folds it into the security-state set, credits
+   the current queue entry when a new state shows up, and hands the caller a
+   plain observation.  Reward computation is deliberately kept out of here so
+   that state accounting happens on every execution, not only on the ones a
+   bandit arm produced. */
+static void nv_observe_security_state(afl_state_t *afl, const char *path,
+                                      nv_state_obs_t *obs) {
+
+  memset(obs, 0, sizeof(*obs));
 
   FILE *fp = fopen(path, "rb");
-  if (!fp) { afl->nv_http_status_fail++; return 0.0; }
+  if (!fp) { afl->nv_http_status_fail++; return; }
 
   fseek(fp, 0, SEEK_END);
   long sz = ftell(fp);
   fseek(fp, 0, SEEK_SET);
-  if (sz <= 0 || sz > 65536) { afl->nv_http_status_fail++; fclose(fp); return 0.0; }
+  if (sz <= 0 || sz > 65536) { afl->nv_http_status_fail++; fclose(fp); return; }
 
   char *buf = ck_alloc(sz + 1);
   if (fread(buf, 1, sz, fp) != (size_t)sz) {
     ck_free(buf);
     fclose(fp);
     afl->nv_http_status_fail++;
-    return 0.0;
+    return;
   }
   buf[sz] = 0;
   fclose(fp);
 
   cJSON *root = cJSON_Parse(buf);
   ck_free(buf);
-  if (!root) { afl->nv_http_status_fail++; return 0.0; }
+  if (!root) { afl->nv_http_status_fail++; return; }
 
   /* ---- Parse fields ---- */
   const cJSON *m  = cJSON_GetObjectItemCaseSensitive(root, "method");
@@ -159,7 +179,7 @@ static double nv_http_reward(afl_state_t *afl, const char *path) {
 
   if (stamp == afl->nv_last_status_seq) {
     cJSON_Delete(root);
-    return 0.0;
+    return;
   }
   afl->nv_last_status_seq = stamp;
   afl->nv_status_cnt++;
@@ -191,6 +211,7 @@ static double nv_http_reward(afl_state_t *afl, const char *path) {
   const char *cls    = (cJSON_IsString(c) && c->valuestring) ? c->valuestring : "other";
   int timeout = cJSON_IsNumber(to) ? to->valueint : 0;
 
+  /* ---- security state ---- */
   char key[1024];
   snprintf(key, sizeof(key), "%s %s|%s", method, pathv, cls);
   u64 h = nv_fnv1a64(key);
@@ -198,91 +219,54 @@ static double nv_http_reward(afl_state_t *afl, const char *path) {
 
   int is_exc = timeout || (strcmp(cls, "5xx") == 0) || (strcmp(cls, "conn_refused") == 0);
 
-  double reward = 0.0;
-  reward += 1000.0 * (double)ncov_delta;
-  reward += is_exc ? 5.0 : 0.0;
-  reward += recovered ? 2.0 : 0.0;
-  reward += is_new ? 0.2 : 0.0;
-  if (strcmp(cls, "4xx") == 0) reward -= 0.1;
+  obs->has          = 1;
+  obs->is_exception = is_exc ? 1 : 0;
+  obs->recovered    = recovered ? 1 : 0;
+  obs->is_4xx       = (strcmp(cls, "4xx") == 0) ? 1 : 0;
+  obs->ncov_delta   = ncov_delta;
+  obs->new_states   = is_new ? 1 : 0;
+  obs->state_id     = h;
+
+  afl->nv_sec_state_obs++;
+  afl->nv_sec_state_delta_last = obs->new_states;
+
+  if (is_new) {
+
+    afl->nv_sec_state_new_total++;
+
+    /* Closed loop A: credit the seed that reached this state so that
+       select_next_queue_entry() can favour it. */
+    if (afl->queue_cur) {
+
+      afl->queue_cur->ss_cov_cnt++;
+      afl->nv_sec_state_seed_credit++;
+
+    }
+
+  }
 
   cJSON_Delete(root);
+
+}
+
+/* Closed loop B: turn one observation into a bandit reward. */
+static double nv_reward_from_obs(const nv_state_obs_t *obs) {
+
+  if (!obs->has) return 0.0;
+
+  double reward = 0.0;
+  reward += NV_REWARD_HARNESS_NCOV * (double)obs->ncov_delta;
+  reward += NV_REWARD_NEW_SECURITY_STATE * (double)obs->new_states;
+  reward += obs->is_exception ? NV_REWARD_EXCEPTION : 0.0;
+  reward += obs->recovered ? NV_REWARD_RECOVERED : 0.0;
+  if (obs->is_4xx) reward -= NV_REWARD_4XX_PENALTY;
+
   return reward;
 
 }
 
-static inline int nv_arm_enabled(u32 scope_mask, nv_arm_id_t arm) {
-  switch (arm) {
-    case NV_ARM_FIELD_VALUE: return (scope_mask & 0x1) != 0;
-    case NV_ARM_BOUNDARY:    return (scope_mask & 0x2) != 0;
-    case NV_ARM_STRUCTURE:   return (scope_mask & 0x4) != 0;
-    default: return 0;
-  }
-}
-
-nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask) {
-
-  /* respect task scope; fallback: if mask==0 enable all */
-  if (!scope_mask) scope_mask = 0x7;
-
-  /* cold start: try each enabled arm at least once */
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-    if (nv_arm_enabled(scope_mask, a) && mab->arms[a].pulls == 0) return a;
-  }
-
-  /* ensure minimum exploration for each enabled arm */
-  const u64 MIN_EXPLORE = 200;  /* 可调：200/500/1000 */
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-    if (nv_arm_enabled(scope_mask, a) && mab->arms[a].pulls < MIN_EXPLORE) {
-      return a;
-    }
-  }
-
-  /* if still no pulls (shouldn't happen), pick first enabled */
-  if (mab->total_pulls == 0) {
-    for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a)
-      if (nv_arm_enabled(scope_mask, a)) return a;
-    return NV_ARM_FIELD_VALUE;
-  }
-
-  /* UCB */
-  double best_ucb = -1e100;
-  nv_arm_id_t best = NV_ARM_FIELD_VALUE;
-
-  /* avoid ln(0) */
-  double ln_total = log((double)mab->total_pulls + 1.0);
-
-  for (nv_arm_id_t a = 0; a < NV_ARM_MAX; ++a) {
-
-    if (!nv_arm_enabled(scope_mask, a)) continue;
-
-    u64 pulls = mab->arms[a].pulls;
-    if (pulls == 0) return a;
-
-    double mean = mab->arms[a].mean_reward;
-    double ucb = mean + mab->c * sqrt(ln_total / (double)pulls);
-
-    if (ucb > best_ucb) { best_ucb = ucb; best = a; }
-
-  }
-
-  return best;
-
-}
-
-void nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward) {
-
-  if (arm < 0 || arm >= NV_ARM_MAX) return;
-
-  mab->total_pulls++;
-  mab->arms[arm].pulls++;
-  mab->arms[arm].sum_reward += reward;
-  if (reward > 0) mab->arms[arm].pos_cnt++;
-  /* incremental mean update */
-  double mean = mab->arms[arm].mean_reward;
-  double n = (double)mab->arms[arm].pulls;
-  mab->arms[arm].mean_reward = mean + (reward - mean) / n;
-
-}
+/* nv_arm_enabled / nv_mab_pick / nv_mab_update now live in
+   src/afl-fuzz-nv-mab.c so they can be unit tested in isolation. */
 
 /* --- NV 2.5: harness status json --- */
 typedef struct {
@@ -2166,16 +2150,32 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
   afl->queued_discovered += save_if_interesting(afl, out_buf, len, fault);
 
-  if (afl->nv_mab.pending_update) {
+  /* Security-state accounting runs after every execution: the seed-scheduling
+     loop must not depend on whether a bandit arm happened to produce this
+     input.  Only the reward hand-off is gated on pending_update. */
+  {
 
-    nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
-    afl->nv_mab.pending_update = 0;
-    afl->nv_mab.update_source = 0;
+    /* resolved once: this sits on the per-execution hot path */
+    static const char *sp = NULL;
+    if (unlikely(!sp)) {
 
-    const char *sp = getenv("NV_STATUS_PATH");
-    if (!sp) sp = "/tmp/nv_http_status.json";
-    double reward = nv_http_reward(afl, sp);
-    nv_mab_update(&afl->nv_mab, reward_arm, reward);
+      sp = getenv("NV_STATUS_PATH");
+      if (!sp) sp = "/tmp/nv_http_status.json";
+
+    }
+
+    nv_state_obs_t obs;
+    nv_observe_security_state(afl, sp, &obs);
+
+    if (afl->nv_mab.pending_update) {
+
+      nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
+      afl->nv_mab.pending_update = 0;
+      afl->nv_mab.update_source = 0;
+
+      nv_mab_update(&afl->nv_mab, reward_arm, nv_reward_from_obs(&obs));
+
+    }
 
   }
   if (!(afl->stage_cur % afl->stats_update_freq) ||

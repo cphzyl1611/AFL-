@@ -540,6 +540,17 @@ typedef struct {
   double sum_reward;  /* cumulative reward */
 } nv_arm_t;
 
+/* UCB exploration coefficient applied when neither task.json nor NV_MAB_C
+   supplies one.  Must be > 0: a zero coefficient silently collapses UCB into
+   pure greedy selection. */
+#define NV_MAB_DEFAULT_C 0.05
+
+/* Warm-up samples guaranteed to every enabled arm before UCB takes over.
+   Sized so that a short acceptance run (a few hundred execs over 3 arms)
+   spends only its first NV_ARM_MAX * NV_MAB_DEFAULT_MIN_EXPLORE decisions
+   warming up and reaches the UCB branch well inside the budget. */
+#define NV_MAB_DEFAULT_MIN_EXPLORE 8
+
 typedef struct {
   nv_arm_t arms[NV_ARM_MAX];
   u64 total_pulls;
@@ -549,10 +560,25 @@ typedef struct {
   nv_arm_id_t pending_arm;
   u8 pending_update;    /* set only when an NV arm generated current input */
   u8 update_source;     /* 0=none, 1=custom_json_mutator */
+  u64 min_explore;      /* warm-up samples per enabled arm */
+  u64 cold_start_picks; /* decisions served by the warm-up branch */
+  u64 ucb_picks;        /* decisions served by the UCB branch */
+  u8  initialized;      /* guards against a silently zero-initialised bandit */
 } nv_mab_t;
 
+void        nv_mab_init_defaults(nv_mab_t *mab);
 nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask);
 void        nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward);
+
+/* Reward weights for the NV feedback loop.  Discovering a previously unseen
+   security state is the primary objective, so it outweighs the individual
+   response-class signals.  NV_REWARD_HARNESS_NCOV keeps the historical weight
+   of the harness-reported coverage delta. */
+#define NV_REWARD_HARNESS_NCOV        1000.0
+#define NV_REWARD_NEW_SECURITY_STATE    10.0
+#define NV_REWARD_EXCEPTION              5.0
+#define NV_REWARD_RECOVERED              2.0
+#define NV_REWARD_4XX_PENALTY            0.1
 
 typedef struct afl_state {
   u64 nv_valid_cnt;
@@ -981,6 +1007,16 @@ typedef struct afl_state {
   u64 nv_rec_cnt;
   u64 nv_rec_ms_sum;
   u64 nv_status_cnt;
+
+  /* ===== security-state coverage =====
+     A security state is identified by "METHOD PATH|RESPONSE_CLASS" as
+     reported by the harness/target.  This is the project's Cov signal; it is
+     deliberately independent of AFL's native edge bitmap. */
+  u64 nv_sec_state_obs;         /* executions that yielded a parsed state    */
+  u64 nv_sec_state_new_total;   /* cumulative first-time state discoveries   */
+  u64 nv_sec_state_delta_last;  /* new states in the most recent observation */
+  u64 nv_sec_state_seed_credit; /* times a queue entry was credited for one  */
+
   /* ===== NV target config cache (from NV_TARGET_CONFIG) ===== */
   u8   nv_tcfg_loaded;     /* 0/1 */
   u32  nv_allow_cnt;       /* number of allowed endpoint pairs */
@@ -1416,6 +1452,7 @@ double get_runnable_processes(void);
 void   nuke_resume_dir(afl_state_t *);
 int    check_main_node_exists(afl_state_t *);
 u32    select_next_queue_entry(afl_state_t *afl);
+double ss_calc_prob(struct queue_entry *q);
 void   create_alias_table(afl_state_t *afl);
 void   setup_dirs_fds(afl_state_t *);
 void   setup_cmdline_file(afl_state_t *, char **);

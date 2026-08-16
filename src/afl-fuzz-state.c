@@ -79,6 +79,10 @@ void afl_state_init(afl_state_t *afl, uint32_t map_size) {
   and out_size are NULL/0 by default. */
   memset(afl, 0, sizeof(afl_state_t));
 
+  /* The NV bandit must be usable even when no task.json is supplied, so its
+     tunables are established here rather than only in nv_load_task_json(). */
+  nv_mab_init_defaults(&afl->nv_mab);
+
   afl->shm.map_size = map_size ? map_size : MAP_SIZE;
 
   afl->smallest_favored = -1;

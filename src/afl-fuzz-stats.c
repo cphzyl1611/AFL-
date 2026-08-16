@@ -424,6 +424,49 @@ static void nv_write_eval_report_json(afl_state_t *afl, double bitmap_cvg,
   fprintf(j, "  \"cov\": {\"bitmap_cvg\": %.6f, \"edges_found\": %u},\n",
           bitmap_cvg, edges_found);
 
+  /* security-state coverage: the project's Cov signal.  Deliberately
+     reported next to, and separately from, the AFL edge bitmap above. */
+  fprintf(j,
+          "  \"security_state_cov\": {\"security_state_total\": %u, "
+          "\"security_state_new_total\": %llu, "
+          "\"security_state_delta_last\": %llu, "
+          "\"security_state_observations\": %llu, "
+          "\"security_state_seed_credit\": %llu, "
+          "\"state_id\": \"fnv1a64(METHOD SPACE PATH | RESPONSE_CLASS)\", "
+          "\"note\": \"project security-state coverage; not AFL native edge "
+          "coverage\"},\n",
+          afl->nv_cov_used,
+          (unsigned long long)afl->nv_sec_state_new_total,
+          (unsigned long long)afl->nv_sec_state_delta_last,
+          (unsigned long long)afl->nv_sec_state_obs,
+          (unsigned long long)afl->nv_sec_state_seed_credit);
+
+  /* mab: enough to prove whether UCB actually ran */
+  fprintf(j,
+          "  \"mab\": {\"c\": %.6f, \"min_explore\": %llu, "
+          "\"total_pulls\": %llu, \"cold_start_picks\": %llu, "
+          "\"ucb_picks\": %llu, \"arms\": [",
+          afl->nv_mab.c,
+          (unsigned long long)afl->nv_mab.min_explore,
+          (unsigned long long)afl->nv_mab.total_pulls,
+          (unsigned long long)afl->nv_mab.cold_start_picks,
+          (unsigned long long)afl->nv_mab.ucb_picks);
+
+  for (int a = 0; a < NV_ARM_MAX; ++a) {
+
+    fprintf(j,
+            "%s{\"arm\": %d, \"pulls\": %llu, \"mean_reward\": %.6f, "
+            "\"sum_reward\": %.6f, \"pos_cnt\": %llu}",
+            a ? ", " : "", a,
+            (unsigned long long)afl->nv_mab.arms[a].pulls,
+            afl->nv_mab.arms[a].mean_reward,
+            afl->nv_mab.arms[a].sum_reward,
+            (unsigned long long)afl->nv_mab.arms[a].pos_cnt);
+
+  }
+
+  fputs("]},\n", j);
+
   /* validity */
   fprintf(j,
           "  \"validity\": {\"valid_cnt\": %llu, \"invalid_cnt\": %llu, "
@@ -651,6 +694,24 @@ void write_stats_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
   fprintf(f, "nv_mab_pending_arm : %u\n", (unsigned)afl->nv_mab.pending_arm);
   fprintf(f, "nv_mab_pending     : %u\n", (unsigned)afl->nv_mab.pending_update);
   fprintf(f, "nv_mab_update_src  : %u\n", (unsigned)afl->nv_mab.update_source);
+  fprintf(f, "nv_mab_c           : %.10e\n", afl->nv_mab.c);
+  fprintf(f, "nv_mab_min_explore : %llu\n",
+          (unsigned long long)afl->nv_mab.min_explore);
+  fprintf(f, "nv_mab_cold_start_picks : %llu\n",
+          (unsigned long long)afl->nv_mab.cold_start_picks);
+  fprintf(f, "nv_mab_ucb_picks   : %llu\n",
+          (unsigned long long)afl->nv_mab.ucb_picks);
+
+  /* ---- security-state coverage (project Cov, not AFL edge coverage) ---- */
+  fprintf(f, "security_state_total : %u\n", afl->nv_cov_used);
+  fprintf(f, "security_state_new_total : %llu\n",
+          (unsigned long long)afl->nv_sec_state_new_total);
+  fprintf(f, "security_state_delta_last : %llu\n",
+          (unsigned long long)afl->nv_sec_state_delta_last);
+  fprintf(f, "security_state_observations : %llu\n",
+          (unsigned long long)afl->nv_sec_state_obs);
+  fprintf(f, "security_state_seed_credit : %llu\n",
+          (unsigned long long)afl->nv_sec_state_seed_credit);
 
   fprintf(f, "nv_mab_arm0_pulls  : %llu\n",
           (unsigned long long)afl->nv_mab.arms[0].pulls);

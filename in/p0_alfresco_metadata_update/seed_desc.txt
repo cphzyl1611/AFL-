@@ -1,0 +1,4 @@
+PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/meta
+Content-Type: application/json
+
+{"name": "notice.txt", "properties": {"cm:description": "仅描述"}}

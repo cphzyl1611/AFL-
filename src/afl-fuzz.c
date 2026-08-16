@@ -389,7 +389,31 @@ static void nv_load_task_json(afl_state_t *afl, const char *path) {
   /* after afl->nv_task.mutation_scope = nv_parse_scope(ms); */
   afl->nv_mab.enabled_mask = afl->nv_task.mutation_scope;
   afl->nv_mab.total_pulls = 0;
-  afl->nv_mab.c = 0.05;               /* MVP: constant */
+
+  /* Re-apply defaults + env, then let task.json refine them.  Env keeps
+     precedence so an experiment can sweep the coefficient without editing
+     the task file. */
+  nv_mab_init_defaults(&afl->nv_mab);
+
+  cJSON *mc  = cJSON_GetObjectItemCaseSensitive(root, "mab_c");
+  cJSON *mme = cJSON_GetObjectItemCaseSensitive(root, "mab_min_explore");
+
+  if (mc && cJSON_IsNumber(mc) && mc->valuedouble >= 0.0 &&
+      !getenv("NV_MAB_C")) {
+
+    afl->nv_mab.c = mc->valuedouble;
+
+  }
+
+  if (mme && cJSON_IsNumber(mme) && mme->valuedouble >= 1.0 &&
+      !getenv("NV_MAB_MIN_EXPLORE")) {
+
+    afl->nv_mab.min_explore = (u64)mme->valuedouble;
+
+  }
+
+  afl->nv_mab.cold_start_picks = 0;
+  afl->nv_mab.ucb_picks = 0;
   afl->nv_mab.last_arm = NV_ARM_FIELD_VALUE;
   afl->nv_mab.pending_arm = NV_ARM_FIELD_VALUE;
   afl->nv_mab.pending_update = 0;

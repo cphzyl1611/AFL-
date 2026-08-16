@@ -43,21 +43,10 @@ void run_afl_custom_queue_new_entry(afl_state_t *afl, struct queue_entry *q,
 
 #endif
 
+/* ss_calc_prob() now lives in src/afl-fuzz-nv-sched.c so it can be unit
+   tested in isolation. */
+
 /* select next queue entry based on alias algo - fast! */
-static inline double ss_calc_prob(struct queue_entry *q) {
-
-  const double eps = 0.01;     /* minimum probability floor */
-  const double alpha = 0.7;    /* suppress over-selected seeds */
-
-  /* (cov+1) / (sel+1)^alpha */
-  double num = (double)(q->ss_cov_cnt + 1ULL);
-  double den = pow((double)(q->ss_selected_cnt + 1ULL), alpha);
-  double score = num / den;
-
-  return (score < eps) ? eps : score;
-
-}
-
 inline u32 select_next_queue_entry(afl_state_t *afl) {
 
   if (!afl->queued_items) return 0;

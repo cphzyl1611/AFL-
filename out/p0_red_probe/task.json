@@ -1,0 +1,10 @@
+{
+  "target_type": "http_api",
+  "target_endpoint": "p0_deterministic_o2oa_cms_doc_list",
+  "seed_source": "seed_file",
+  "seed_location": "/home/dministrator/AFLplusplus-p0/in/p0_o2oa_cms_doc_list",
+  "mutation_scope": ["field_value", "boundary", "structure"],
+  "max_test_cases": 400,
+  "time_budget": 120,
+  "enable_validity": 0
+}

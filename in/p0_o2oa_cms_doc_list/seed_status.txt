@@ -1,0 +1,4 @@
+PUT /x_cms_assemble_control/jaxrs/document/filter/list
+Content-Type: application/json
+
+{"docStatusList": ["draft", "published"], "categoryIdList": ["cat_b"], "key": ""}
