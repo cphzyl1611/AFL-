@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, json, urllib.request, urllib.error,time,os,zlib
+import base64
 import fcntl
 from nv_state_probe import update_state
 from urllib.parse import urlparse
@@ -86,19 +87,80 @@ def get_named_endpoint(cfg, endpoint_name: str):
             return method, path
     raise RuntimeError(f"endpoint not found: {endpoint_name}")
 
+AUTH_ALLOWED_KEYS = {
+    # "none" assembles no credential at all, so the bearer-shaped keys that
+    # tracked configs still carry beside it (header/prefix/token_env) name
+    # nothing that is ever read.  They stay accepted for backward
+    # compatibility; every other key -- credential-like or merely unknown --
+    # is still rejected by the same strict schema check.
+    "none": frozenset({"type", "header", "prefix", "token_env"}),
+    "basic": frozenset({"type", "header", "username_env", "password_env"}),
+    "bearer": frozenset({"type", "header", "token_env", "prefix"}),
+    "raw_token": frozenset({"type", "header", "token_env", "also_cookie"}),
+}
+
+
+def _require_runtime_credential(var_name: str) -> str:
+    """Read one credential part from the environment, or abort.
+
+    Fail-closed by construction: there is no default and no fallback, and the
+    abort message names only the variable -- never its value.
+    """
+    value = os.getenv(var_name)
+    if value is None or not value.strip():
+        raise RuntimeError(
+            f"{var_name} must be supplied through the runtime environment "
+            f"(missing, empty or whitespace-only); no fallback credential exists"
+        )
+    return value
+
+
+def _normalized_auth(auth: dict, atype: str) -> dict:
+    normalized = {str(key).casefold(): value for key, value in auth.items()}
+    allowed = AUTH_ALLOWED_KEYS.get(atype)
+    if allowed is None:
+        raise RuntimeError(f"unsupported auth type: {atype}")
+    unknown = sorted(set(normalized) - allowed)
+    if unknown:
+        raise RuntimeError(
+            "auth config contains unknown or credential-like keys: "
+            + ", ".join(unknown)
+        )
+    return normalized
+
+
+def _basic_auth_header(auth: dict) -> str:
+    """Assemble a Basic credential in-process from environment values only."""
+    user_env = str(auth["username_env"]).strip()
+    pass_env = str(auth["password_env"]).strip()
+    if not user_env or not pass_env:
+        raise RuntimeError(
+            "basic auth config must declare username_env and password_env"
+        )
+    user = _require_runtime_credential(user_env)
+    password = _require_runtime_credential(pass_env)
+    blob = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
+    return "Basic " + blob
+
+
 def apply_auth_headers(cfg, headers: dict) -> dict:
     auth = cfg.get("auth", {})
     if not isinstance(auth, dict):
         return headers
 
-    atype = str(auth.get("type", "none")).lower().strip()
+    auth_keys = {str(key).casefold(): value for key, value in auth.items()}
+    atype = str(auth_keys.get("type", "none")).lower().strip()
+    auth = _normalized_auth(auth_keys, atype)
     if atype == "none":
         return headers
 
-    token_env = str(auth.get("token_env", "NV_TOKEN")).strip() or "NV_TOKEN"
-    token = os.getenv(token_env, "").strip()
-    if not token:
+    if atype == "basic":
+        hname = str(auth.get("header", "Authorization")).strip() or "Authorization"
+        headers[hname] = _basic_auth_header(auth)
         return headers
+
+    token_env = str(auth.get("token_env", "NV_TOKEN")).strip() or "NV_TOKEN"
+    token = _require_runtime_credential(token_env).strip()
 
     if atype == "bearer":
         hname = str(auth.get("header", "Authorization")).strip() or "Authorization"

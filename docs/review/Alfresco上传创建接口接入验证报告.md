@@ -69,7 +69,7 @@ validity/alfresco_multipart_upload_rules.json
 先确认 Alfresco root API 可访问：
 
 ```bash
-curl -i -u admin:admin \
+curl -i -u "${ALFRESCO_USER}:${ALFRESCO_PASS}" \
   "http://localhost:8080/alfresco/api/-default-/public/alfresco/versions/1/nodes/-root-" \
   -m 20
 ```
@@ -78,8 +78,8 @@ curl -i -u admin:admin \
 
 ```bash
 ALFRESCO_BASE=http://localhost:8080 \
-ALFRESCO_USER=admin \
-ALFRESCO_PASS=admin \
+ALFRESCO_USER="${ALFRESCO_USER:?set ALFRESCO_USER in the runtime environment}" \
+ALFRESCO_PASS="${ALFRESCO_PASS:?set ALFRESCO_PASS in the runtime environment}" \
 IN_DIR=in/alfresco_multipart_upload_dataset \
 OUT_DIR=out/alfresco_multipart_upload_manual_latest \
 python3 scripts/run_alfresco_multipart_upload_compare.py

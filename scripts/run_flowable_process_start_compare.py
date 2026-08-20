@@ -18,8 +18,17 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FLOWABLE_BASE = os.getenv("FLOWABLE_BASE", "http://127.0.0.1:8080").rstrip("/")
 FLOWABLE_PATH = os.getenv("FLOWABLE_PATH", "/flowable-rest/service/runtime/process-instances")
-FLOWABLE_USER = os.getenv("FLOWABLE_USER", "rest-admin")
-FLOWABLE_PASS = os.getenv("FLOWABLE_PASS", "test")
+
+
+def require_runtime_secret(name: str) -> str:
+    value = os.getenv(name)
+    if not value or not value.strip():
+        raise RuntimeError(f"{name} must be supplied through the runtime environment")
+    return value
+
+
+FLOWABLE_USER = require_runtime_secret("FLOWABLE_USER")
+FLOWABLE_PASS = require_runtime_secret("FLOWABLE_PASS")
 
 NV_BODY_SCORE_ENDPOINT = os.getenv("NV_BODY_SCORE_ENDPOINT", "unix:///tmp/nv_valid_flowable.sock")
 NV_BODY_SCORE_THRESHOLD = float(os.getenv("NV_BODY_SCORE_THRESHOLD", "1.0"))

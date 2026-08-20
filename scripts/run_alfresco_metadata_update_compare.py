@@ -22,8 +22,17 @@ OUT_DIR = Path(os.getenv("OUT_DIR", str(ROOT / "out" / "alfresco_metadata_update
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ALFRESCO_BASE = os.getenv("ALFRESCO_BASE", "http://127.0.0.1:8080").rstrip("/")
-ALFRESCO_USER = os.getenv("ALFRESCO_USER", "admin")
-ALFRESCO_PASS = os.getenv("ALFRESCO_PASS", "admin")
+
+
+def require_runtime_secret(name: str) -> str:
+    value = os.getenv(name)
+    if not value or not value.strip():
+        raise RuntimeError(f"{name} must be supplied through the runtime environment")
+    return value
+
+
+ALFRESCO_USER = require_runtime_secret("ALFRESCO_USER")
+ALFRESCO_PASS = require_runtime_secret("ALFRESCO_PASS")
 
 NV_BODY_SCORE_ENDPOINT = os.getenv("NV_BODY_SCORE_ENDPOINT", "").strip()
 NV_DECISION_PROFILE_PATH = os.getenv(

@@ -61,8 +61,8 @@ validity/alfresco_content_update_rules.json
 python3 -m py_compile scripts/run_alfresco_content_update_compare.py
 
 ALFRESCO_BASE=http://127.0.0.1:8080 \
-ALFRESCO_USER=admin \
-ALFRESCO_PASS=admin \
+ALFRESCO_USER="${ALFRESCO_USER:?set ALFRESCO_USER in the runtime environment}" \
+ALFRESCO_PASS="${ALFRESCO_PASS:?set ALFRESCO_PASS in the runtime environment}" \
 IN_DIR=in/alfresco_content_update_dataset \
 OUT_DIR=out/alfresco_content_update_manual_latest \
 python3 scripts/run_alfresco_content_update_compare.py

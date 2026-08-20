@@ -25,8 +25,17 @@ OUT_DIR = Path(os.getenv("OUT_DIR", str(ROOT / "out" / "alfresco_content_update_
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ALFRESCO_BASE = os.getenv("ALFRESCO_BASE", "http://127.0.0.1:8080").rstrip("/")
-ALFRESCO_USER = os.getenv("ALFRESCO_USER", "admin")
-ALFRESCO_PASS = os.getenv("ALFRESCO_PASS", "admin")
+
+
+def require_runtime_secret(name: str) -> str:
+    value = os.getenv(name)
+    if not value or not value.strip():
+        raise RuntimeError(f"{name} must be supplied through the runtime environment")
+    return value
+
+
+ALFRESCO_USER = require_runtime_secret("ALFRESCO_USER")
+ALFRESCO_PASS = require_runtime_secret("ALFRESCO_PASS")
 
 SUMMARY_SOURCE = "python_static_loop"
 EXECUTION_SCOPE = "alfresco_content_update_min_calibration"

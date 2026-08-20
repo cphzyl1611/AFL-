@@ -3,8 +3,8 @@
   "health": "/flowable-rest/service/management/engine",
   "auth": {
     "type": "basic",
-    "username": "rest-admin",
-    "password": "test"
+    "username_env": "FLOWABLE_USER",
+    "password_env": "FLOWABLE_PASS"
   },
   "body_only_mode": 1,
   "default_endpoint": "process_start",

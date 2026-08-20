@@ -134,16 +134,23 @@ class PlatformChainTest(unittest.TestCase):
 
         It is covered by construction: any config driven through this harness
         gets execution identity.  This does not add a Flowable AFL++ chain.
+
+        Its Basic credential is env-only and fail-closed; see
+        tests/test_flowable_credential_contract.py.
         """
         cfg = redirect(REPO_ROOT / "flowable_query.json",
                        self.server.base, self.tmp / "flowable.json")
         body = json.dumps({"processDefinitionKey": "documentProcess"}).encode()
 
+        # The config is env-only fail-closed now: supply throwaway runtime
+        # credentials for the local server, never a committed literal.
         first, second = self._two_executions(
             cfg, body,
             NV_ENDPOINT_NAME="process_start",
             NV_BODY_RULES=str(REPO_ROOT / "validity"
                               / "flowable_doc_create_rules.json"),
+            FLOWABLE_USER="audit-local-user",
+            FLOWABLE_PASS="audit-local-" + "credential",
         )
         self._assert_chain_has_identity(first, second, "flowable")
 
