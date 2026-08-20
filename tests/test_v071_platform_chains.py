@@ -93,31 +93,31 @@ class PlatformChainTest(unittest.TestCase):
                         f"unexpected O2OA path: {first['path']}")
 
     def test_alfresco_metadata_update_chain_has_exec_seq(self):
-        """The Alfresco metadata_update request shape.
+        """The committed Alfresco metadata_update config, driven end to end.
 
-        The repository commits no Alfresco HTTP target config -- the committed
-        Alfresco AFL work uses mock/wrapper targets that write no NV status
-        document at all.  A real Alfresco HTTP run is driven by
-        scripts/run_main_baseline_rule_generic.sh with CFG pointed at an
-        Alfresco config, which launches this same harness.  This test builds
-        that config from the committed Alfresco seed shape and rules.
+        The repository now commits targets/alfresco_metadata_update.json.  It
+        carries a node-id *placeholder* rather than a concrete UUID, so this
+        test does what the Level-C launcher does at runtime -- substitute the
+        node id and redirect ``base`` -- and asserts the resulting chain
+        produces execution identity.  Its Basic credential is env-only and
+        fail-closed, so throwaway runtime values are supplied here; see
+        tests/test_alfresco_levelc_metadata.py for the containment contract.
+
+        Nothing here talks to a real Alfresco, and this is not a fuzzing run.
         """
+        node_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+        template = REPO_ROOT / "targets" / "alfresco_metadata_update.json"
+        rendered = template.read_text(encoding="utf-8").replace(
+            "__ALFRESCO_NODE_ID__", node_id, 1)
+        self.assertNotIn("__ALFRESCO_NODE_ID__", rendered)
+
+        cfg = json.loads(rendered)
+        cfg["base"] = self.server.base
         cfg_path = self.tmp / "alfresco.json"
         with open(cfg_path, "w", encoding="utf-8") as fh:
-            json.dump({
-                "target_type": "http_api",
-                "base": self.server.base,
-                "health": "/health",
-                "body_only_mode": 1,
-                "default_endpoint": "metadata_update",
-                "endpoints": [{
-                    "name": "metadata_update",
-                    "method": "PUT",
-                    "path": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/n1",
-                }],
-            }, fh)
+            json.dump(cfg, fh)
 
-        seed = REPO_ROOT / "in" / "alfresco_afl_metadata_update_smoke" / "seed_ok_0.json"
+        seed = REPO_ROOT / "in" / "alfresco_afl_metadata_update_smoke" / "seed_ok_1.json"
         body = seed.read_bytes()
 
         first, second = self._two_executions(
@@ -125,9 +125,13 @@ class PlatformChainTest(unittest.TestCase):
             NV_ENDPOINT_NAME="metadata_update",
             NV_BODY_RULES=str(REPO_ROOT / "validity"
                               / "alfresco_metadata_update_rules.json"),
+            ALFRESCO_USER="audit-local-user",
+            ALFRESCO_PASS="audit-local-" + "credential",
         )
         self._assert_chain_has_identity(first, second, "alfresco")
         self.assertEqual(first["method"], "PUT")
+        self.assertTrue(first["path"].endswith("/nodes/" + node_id),
+                        f"unexpected Alfresco node path: {first['path']}")
 
     def test_flowable_config_inherits_the_upgrade_if_it_is_ever_used(self):
         """flowable_query.json is harness-schema but no launcher references it.
