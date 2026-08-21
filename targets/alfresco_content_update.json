@@ -1,0 +1,21 @@
+{
+  "platform": "alfresco",
+  "target_type": "http_api",
+  "base": "http://127.0.0.1:8080",
+  "health": "/alfresco/service/api/server",
+  "auth": {
+    "type": "basic",
+    "username_env": "ALFRESCO_USER",
+    "password_env": "ALFRESCO_PASS"
+  },
+  "body_only_mode": 0,
+  "default_endpoint": "content_update",
+  "endpoints": [
+    {
+      "name": "content_update",
+      "method": "PUT",
+      "path": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/__ALFRESCO_NODE_ID__/content"
+    }
+  ],
+  "biz_fields": ["statusCode", "errorKey", "code", "message"]
+}
