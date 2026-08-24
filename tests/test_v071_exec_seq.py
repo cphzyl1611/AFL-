@@ -286,14 +286,15 @@ class UniquenessAcrossProcessesTest(ExecSeqTestBase):
 
 class RestartTest(ExecSeqTestBase):
 
-    def test_restart_of_the_sequence_store_does_not_lock_the_fuzzer_out(self):
-        """Losing the sequence store must not deadlock replay detection.
+    def test_restart_of_the_sequence_store_restarts_and_advances_allocator(self):
+        """A lost sidecar restarts allocation but does not repeat one id.
 
-        The C consumer treats a *lower* exec_seq as a restarted counter and
-        resynchronises, so the harness is allowed to restart from a low value.
-        What it must never do is keep returning one identical value.
+        The C consumer treats values at or below its high-water mark as stale,
+        so deleting this sidecar while that consumer remains alive interrupts
+        fresh observations until the allocator passes the old high-water mark.
         """
-        run_harness(self.status, self.config, SEED)
+        for _ in range(3):
+            run_harness(self.status, self.config, SEED)
         before = read_status(self.status)["exec_seq"]
 
         for sidecar in self.tmp.glob("nv_http_status.json*"):
@@ -310,8 +311,8 @@ class RestartTest(ExecSeqTestBase):
             after_restart, after_next,
             "after a restart the harness kept reissuing one identity",
         )
+        self.assertLess(after_restart, before)
         self.assertGreater(after_next, after_restart)
-        self.assertIsNotNone(before)
 
 
 # --------------------------------------------------------------------------

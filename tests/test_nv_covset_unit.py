@@ -46,8 +46,9 @@ CASES = [
     "same_execution_consumed_twice_is_a_replay",
     "identical_content_from_a_new_execution_is_accepted",
     "legacy_stamp_fallback_still_works",
-    "restarted_execution_counter_resynchronises",
-    "resync_still_rejects_duplicates",
+    "stale_sequence_is_replay_and_preserves_high_water_mark",
+    "newer_sequence_after_stale_is_accepted",
+    "accepted_sequence_replay_is_rejected",
 ]
 
 

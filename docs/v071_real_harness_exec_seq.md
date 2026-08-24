@@ -63,11 +63,12 @@ The counter is persistent, so it keeps rising across executions and across
 harness processes. If the sidecar is deleted or lost, allocation restarts from
 1.
 
-That is safe by construction on the C side: `nv_status_is_fresh()` treats a
-*lower* `exec_seq` as a restarted counter and resynchronises, rather than
-locking the fuzzer out of every future observation. Only an *equal* id is a
-replay. A restart therefore costs nothing beyond the one observation that
-happens to collide, and cannot deadlock.
+The C consumer retains a monotonic high-water mark: `nv_status_is_fresh()`
+treats a *lower or equal* `exec_seq` as replay-only. Deleting the sidecar while
+that consumer remains alive therefore interrupts fresh observations until the
+new counter exceeds the old high-water mark. The sidecar is part of the status
+namespace's execution-identity state and must be preserved for uninterrupted
+observation.
 
 ## 4. Concurrency assumption
 
@@ -109,9 +110,12 @@ document that the replay consumer never reads; they are not status writers.
 
 ## 6. C-side compatibility
 
-The C replay logic is **unchanged** in this round. `nv_status_is_fresh()`,
-`nv_observe_security_state()` and the reward path are byte-identical to
-v0.7.0.
+The current C replay contract is a monotonic high-water mark.
+`nv_status_is_fresh()` treats a lower or equal nonzero `exec_seq` as replay-only
+without moving the retained identity backwards; only a strictly newer value is
+accepted. Consequently, as described in section 3, losing the sequence sidecar
+while the consumer remains alive interrupts fresh observations until the
+allocator exceeds that retained high-water mark.
 
 Compatibility is verified by running the production consumer over documents the
 real harness actually wrote (`test/v071/status_consumer_probe.c`, which links

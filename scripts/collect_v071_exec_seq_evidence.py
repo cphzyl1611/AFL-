@@ -179,7 +179,7 @@ def restart(out: Path, server: LocalServer, tmp: Path) -> dict:
     after_next = read_status(status)["exec_seq"]
 
     record = {
-        "finding": "sequence store restart does not lock replay detection out",
+        "finding": "sequence store restart produces stale lower identities",
         "boundary": BOUNDARY,
         "sidecar_path_pattern": "<NV_STATUS_PATH>.seq",
         "sidecar_existed_before_restart": sidecar_existed,
@@ -188,8 +188,8 @@ def restart(out: Path, server: LocalServer, tmp: Path) -> dict:
         "exec_seq_after_restart_next": after_next,
         "restart_resets_to_low_value": after < before,
         "still_advances_after_restart": after_next > after,
-        "c_side_behaviour": "a lower exec_seq resynchronises rather than "
-                            "deadlocking (nv_status_is_fresh)",
+        "c_side_behaviour": "a lower or equal exec_seq is replay-only; fresh "
+                            "observations resume after the old high-water mark",
     }
     jdump(out / "restart.json", record)
     return record

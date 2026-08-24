@@ -179,9 +179,11 @@ both must count. When a harness does not report `exec_seq`, the legacy
 `ts_ms ^ (body_hash16 << 32)` stamp is used as a fallback; it cannot
 distinguish such executions, which is why `exec_seq` exists.
 
-A *lower* `exec_seq` than the last one is treated as a restarted counter and
-resynchronises rather than locking the fuzzer out of all future observations.
-An *equal* one is a replay.
+A *lower or equal* `exec_seq` than the last accepted one is replay-only. The
+consumer retains its monotonic high-water mark, so stale documents cannot move
+identity backwards and become fresh observations later. If the sequence
+sidecar is lost while the consumer remains alive, fresh observations resume
+only after the new counter exceeds the retained high-water mark.
 
 ---
 

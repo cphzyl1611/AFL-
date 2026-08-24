@@ -93,11 +93,10 @@ int nv_status_is_fresh(u64 exec_seq, u64 legacy_stamp, u64 *last_exec_seq,
 
   if (exec_seq) {
 
-    /* Re-reading the same execution's document is the replay we guard
-       against.  A *lower* id means the counter restarted -- a new target
-       process family -- so resynchronise instead of locking the fuzzer out of
-       every future observation. */
-    if (exec_seq == *last_exec_seq) return NV_STATUS_REPLAY;
+    /* exec_seq is a monotonic identity within one status namespace.  Equal
+       ids are duplicate reads and lower ids are stale documents; neither may
+       become a second fresh observation or move the high-water mark back. */
+    if (exec_seq <= *last_exec_seq) return NV_STATUS_REPLAY;
 
     *last_exec_seq = exec_seq;
     return NV_STATUS_ACCEPT;

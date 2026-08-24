@@ -221,20 +221,24 @@ int main(void) {
            "legacy_stamp_fallback_still_works",
            "expected ACCEPT/REPLAY/ACCEPT, got %d/%d/%d", c1, c2, c3);
 
-    /* Test C2: a restarted counter must not lock the fuzzer out forever. */
+    /* Test C2: exec_seq is a monotonic identity.  A lower value after a
+       higher one is stale evidence, not a counter-restart signal. */
     u64 l3 = 5000, s3 = 0;
     int d1 = nv_status_is_fresh(1, 0x1, &l3, &s3);
-    int d2 = nv_status_is_fresh(2, 0x2, &l3, &s3);
-    expect(d1 == NV_STATUS_ACCEPT && d2 == NV_STATUS_ACCEPT && l3 == 2,
-           "restarted_execution_counter_resynchronises",
-           "a counter reset must resync, not deadlock: got %d/%d last=%llu",
-           d1, d2, (unsigned long long)l3);
+    expect(d1 == NV_STATUS_REPLAY && l3 == 5000,
+           "stale_sequence_is_replay_and_preserves_high_water_mark",
+           "expected REPLAY and last=5000, got %d and last=%llu", d1,
+           (unsigned long long)l3);
 
-    /* An execution id never regresses silently into acceptance of a stale
-       re-read of the *same* id after a resync. */
-    int d3 = nv_status_is_fresh(2, 0x2, &l3, &s3);
-    expect(d3 == NV_STATUS_REPLAY, "resync_still_rejects_duplicates",
-           "expected REPLAY after resync, got %d", d3);
+    int d2 = nv_status_is_fresh(5001, 0x2, &l3, &s3);
+    expect(d2 == NV_STATUS_ACCEPT && l3 == 5001,
+           "newer_sequence_after_stale_is_accepted",
+           "expected ACCEPT and last=5001, got %d and last=%llu", d2,
+           (unsigned long long)l3);
+
+    int d3 = nv_status_is_fresh(5001, 0x2, &l3, &s3);
+    expect(d3 == NV_STATUS_REPLAY, "accepted_sequence_replay_is_rejected",
+           "expected REPLAY, got %d", d3);
 
   }
 
