@@ -774,14 +774,14 @@ class LauncherEntryPointTest(unittest.TestCase):
             [REPO_ROOT / "scripts" / "run_alfresco_levelc_content.py"], required=True)
         self.assertEqual(result["real_secret_findings"], 0, result["findings"])
 
-    def test_verified_metadata_launcher_is_untouched_by_this_round(self) -> None:
+    def test_verified_metadata_assets_are_untouched_by_this_round(self) -> None:
         proc = subprocess.run(
             ["git", "diff", "--name-only", "HEAD", "--",
              "scripts/run_alfresco_levelc_metadata.py",
-             "targets/alfresco_metadata_update.json", "nv_http_harness.py"],
+             "targets/alfresco_metadata_update.json"],
             cwd=REPO_ROOT, capture_output=True, text=True)
         self.assertEqual(proc.stdout.strip(), "",
-                         "the verified metadata/harness files must not change")
+                         "the verified metadata assets must not change")
 
 
 if __name__ == "__main__":

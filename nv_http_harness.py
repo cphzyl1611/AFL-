@@ -5,6 +5,7 @@ import fcntl
 from nv_state_probe import update_state
 from urllib.parse import urlparse
 from nv_body_valid import body_validate
+from nv_http_body_adapter import HttpBodyAdapterError, extract_http_body
 STATUS_PATH = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
 
 DEFAULT_CFG = {
@@ -502,6 +503,11 @@ def normalize_json_body_or_none(data: bytes):
 
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
+def has_http_request_line(data: bytes) -> bool:
+    request_line = data.split(b"\n", 1)[0].removesuffix(b"\r")
+    request_parts = request_line.split()
+    return len(request_parts) >= 2 and request_parts[1].startswith(b"/")
+
 def main():
     data = sys.stdin.buffer.read()
 
@@ -550,9 +556,17 @@ def main():
             except Exception:
                 score_threshold = None
 
+        validation_body = data
+        if has_http_request_line(data):
+            try:
+                validation_body = extract_http_body(data)
+            except HttpBodyAdapterError:
+                bump_body_valid_stat("body_rule_reject")
+                return 0
+
         vr = body_validate(
             endpoint_name=endpoint_name,
-            raw_body=data,
+            raw_body=validation_body,
             rules_path=rules_path,
             score_endpoint=score_endpoint,
             score_threshold=score_threshold,
