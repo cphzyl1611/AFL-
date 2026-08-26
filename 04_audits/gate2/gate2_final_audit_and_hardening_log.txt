@@ -1,0 +1,421 @@
+GATE-2 INDEPENDENT READ-ONLY AUDIT
+
+Auditor session: independent. Nothing was modified, committed, merged, pushed, tagged, rotated, or fuzzed. No credential value is reproduced anywhere below; all probes used synthetic values.
+
+---
+
+PHASE 0 — READ-ONLY GIT BASELINE
+
+┌────────────────────────────────────────────────────────┬─────────────────────────────────┬─────────┐
+│                        Worktree                        │             Branch              │  HEAD   │
+├─────────────────────────────────────────────────────────────┼─────────┤
+│ /home/dministrator/AFLplusplus                         │ public-release                  │ c6817ce │
+│                                                             │ 4       │
+├────────────────────────────────────────────────────────┼─────────────────────────────────┼─────────┤
+│ /home/dministrator/AFLplusplus-alfresco-gate2-hardenin │ feature/alfresco-gate2-hardenin │ c6817ce │
+│ g                                                      │ g                               │ 4       │
+└────────────────────────────────────────────────────────┴─────────────────────────────────┴─────────┘
+
+public-release              c6817ce46bb
+origin/public-release       c6817ce46b0120da95ba55869b6b298e18e4cf8b
+feature/alfresco-gate2-hardening
+                            c6817ce46bb
+v0.7.1-real-http-exec-seq   674ee6f3 (annotated) -> peels to c6817ce46b01...
+                                                                                                        ┌─────────────────────────────────────────────────────────────────────────┐
+│               Result                │                             Value                              │├─────────────────────────────────────────────────────────────────────────┤
+│ PUBLIC_RELEASE_REF_UNCHANGED        │ YES                                                            │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ ORIGIN_PUBLIC_RELEASE_REF_UNCHANGED │ YES                                                            │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ TAG_UNCHANGED                       │ YES (annotated tag peels to c6817ce)                           │├─────────────────────────────────────────────────────────────────────────┤
+│                                     │ YES (16 modified tracked + _delivery/,                         ││ PUBLIC_RELEASE_WORKTREE_DIRTY       md, scripts/secret_scan.py,         │
+│                                     │ tests/test_secret_scan.py untracked)                           │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤│ HARDENING_WORKTREE_ISOLATED                                             │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤│ BASELINE_CONFLICT                                                       │
+└─────────────────────────────────────┴────────────────────────────────────────────────────────────────┘
+Isolation was checked by content, not just by path: all 16 dirty files shared between the two worktrees are byte-identical (sha256 compared file by file). No history rewrite — reflog top entry in the hardening worktree is reset: moving to HEAD dated 2026-08-19, and no ref moved during this session.
+
+One state observation you should know about (not a blocker on this branch): the public-release worktree carries a partial copy of the hardeninr scripts, templates, and docs, but not flowable_query.json, not nv_http_harness.py, and not tests/test_flowable_credential_contract.py. So in that worktree the compare scripts now demand FLOWABLE_USER/FLOWABLE_PASS from the environment while the config beside them still holds the inleside them is the un-hardened version.
+
+---
+
+PHASE 0 — READ-ONLY GIT BASELINE
+
+┌────────────────────────────────────────────────────────┬─────────────────────────────────┬─────────┐
+│                        Worktree         Branch              │  HEAD   │
+ardenin │ feature/alfresco-gate2-hardenin │ c6817ce │
+│ g                                                      │ g                               │ 4       │
+└────────────────────────────────────────────────────────┴─────────────────────────────────┴─────────┘
+
+public-release              c6817ce46b0120da95ba55869b6b298e18e4cf8b
+origin/public-release       c6817ce46b0120da95ba55869b6b298e18e4cf8b
+feature/alfresco-gate2-hardening
+                            c6817ce46b0120da95ba55869b6b298e18e4cf8b
+v0.7.1-real-http-exec-seq   674ee6f3 (annotated) -> peels to c6817ce46b01...
+
+┌─────────────────────────────────────┬────────────────────────────────────────────────────────────────┐
+│               Result                │                             Value                              │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ PUBLIC_RELEASE_REF_UNCHANGED        │ YES                                                            │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ ORIGIN_PUBLIC_RELEASE_REF_UNCHANGED                                     │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ TAG_UNCHANGED                       │ YES (annotated tag peels to c6817ce)                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                     _delivery/,                         │
+│ PUBLIC_RELEASE_WORKTREE_DIRTY       │ docs/review/secret_scanner.md, scripts/secret_scan.py,         │
+│                                     │ tests/test_secret_scan.py untracked)                           │
+├─────────────────────────────────────┼────────────────────────────────────────────────────────────────┤
+│ HARDENING_WORKTREE_ISOLATED                                             │. No history rewrite — reflog top entry in the hardening worktree is reset: moving to HEAD dated 2026-08-19, and no ref moved during this session.
+
+One state observation you should know about (not a blocker on this branch): the public-release worktree carries a partial copy of the hardening. It has the sanitized runner scripts, templates, and docs, but not flowable_query.json, not nv_http_harness.py, and not tests/test_flowable_credential_contract.py. So in
+that worktree the compare scripts now _PASS from the environment while theconfig beside them still holds the inline literal and the harness beside them is the un-hardened version. Half-applied, and it will run a 181-test suite rather than 197.
+
+---
+ery one falls inside the declared scope:
+
+┌───────────────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│           Scope           │                                  Files                                   │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ secret scanner            │ scripts/secret_scan.py (new, 403 lines)                                  │
+├───────────────────────────┼─────────────────────────────────────────────┤
+│ scanner tests             │ tests/test_secret_scan.py (new, 32 tests)                                │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ HTTP auth validation      │ nv_http_                                    │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Flowable credential       │ flowable_query.json (inline pair → username_env/password_env)            │
+│ config                    │                                                                          │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ credential helper /       │ 6 × scripts/run_*_compare.py, 5 × runner/templates/*.json, 2 ×           │
+│ caller cleanup            │ delivery                                    │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ Flowable auth tests       │ tests/test_flowable_credential_contract.py (new, 16 tests),              │
+│                           │ tests/te7)                                  │
+├───────────────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ sanitized review/evidence │ 3 docs, docs/review/secret_scanner.md,                                   │
+│                           │ docs/review/gate2_final_hardening/ (9 files)                             │
+└───────────────────────────┴─────────────────────────────────────────────┘
+ite:
+
+- 733 lines; baseline blob 676 lines; --numstat = 61 4, in 2 hunks only (the import base64 line and the auth block).
+- Line endings: baseline was 676/676 CRLF; working file is 733/733 CRLF; all 61 added lines carry CR. No line-ending rewrite.
+- --ignore-all-space produces the identespace churn.
+- No change outside apply_auth_headers and its new helpers. Request building, status writing, exec-seq, and validity paths are untouched.
+
+---
+
+PHASE 2 — RUNTIME SECRET ALLOWLIST
+
+runtime_secret_values() reads PROJECT_RUNTIME_SECRET_ENV_NAMES, a frozenset of exactly the five expected
+names. Independently probed with synth
+
+PASS  A  allowed vars collected (5/5)
+PASS  B  19 unrelated credential-shape
+         (API_KEY, MY_API_KEY, GITHUB_T_ACCESS_KEY,
+          CI_TOKEN, PASSWORD, SECRET, AUTHORIZATION, CREDENTIALS, PGPASSWORD,
+          NPM_TOKEN, ALFRESCO_PASSWORD, FLOWABLE_TOKEN, NV_TOKEN_OLD, PWD,
+          OLDPWD, ACCESS_TOKEN, AUTH_TOKEN)
+PASS  B2 mixed env of 24 names -> only
+
+ALFRESCO_PASSWORD and NV_TOKEN_OLD are the decisive cases — a suffix rule would have caught both; the allowlist correctly does not.
+
+F (values never in findings/evidence/errors): structurally guaranteed — Finding carries only path, line, category, classification, reason, and SkippedFile only path, reason. The matched value is bound to _value
+in scan_file and discarded. Confirmed es) and Phase 3.
+
+Broad environment pattern matching does not remain. SECRET_SCANNER_RUNTIME_SECRET_ALLOWLIST verifies.
+
+▎ Documentation defect (no code impact.md still describes the superseded rule
+
+---
+
+PHASE 3 — CANONICAL SERIALIZATION / FAIL-CLOSED
+
+Canonical serialization
+
+One json.dumps exists in the entire module (line 320, inside canonical_serialize). Complete production path:
+
+scan_paths -> report dict
+  -> guarded_report_bytes -> canonical_serialize (the only json.dumps)
+                          -> assert_no_secrets
+  -> args.report.write_bytes(serialized_output)     [file sink, line 397]
+  -> _emit_report_bytes(serialized_output)          [stdout sink, line 345/348]
+
+Both sinks receive the same bytes object. There is no second serialization path. Proven through the real
+CLI as a subprocess (true stdout fd, tss mocks:
+
+┌───────────────────────┬─────┬────────────────────┬──────────────────┬───────┐
+│         case          │ rc  │ stdout6] │ equal │
+├───────────────────────┼─────┼────────────────────┼──────────────────┼───────┤
+│ ascii secret loaded   │ 0   │ f1614b0344a95e0d   │ f1614b0344a95e0d │ yes   │
+├───────────────────────┼─────┼────────────────────┼──────────────────┼───────┤
+│ unicode secret loaded │ 0   │ f1614b0d │ yes   │
+
+
+Fail-closed guard
+
+The report's only value-bearing channel is a recorded path (finding path or skip path). Both channels were exercised, ASCII and Unicode, via subprocess:
+
+2.finding-path.ascii    rc=1  stdout=0 bytes  report NOT created  SecretSerializationError  stderr clean
+2.finding-path.unicode  rc=1  stdout=0 bytes  report NOT created  SecretSerializationError  stderr clean
+2.skip-path.ascii       rc=1  stdout=0ecretSerializationError  stderr clean
+2.skip-path.unicode     rc=1  stdout=0 bytes  report NOT created  SecretSerializationError  stderr clean
+4.whitespace-padded secret still guarded                          PASS
+
+Exception text is a fixed string and discloses nothing; the traceback carries no value. Unicode is handled correctly because ensure_ascii=False keeps non-ASCII secrets as their raw UTF-8 bytes, which the guard
+compares against.
+
+Finding — guard bypass on JSON-escapable characters
+
+That same ensure_ascii=False design isrt_no_secrets compares the raw UTF-8bytes of the secret against the JSON-escaped serialization. When the secret contains a character JSON must escape, the two representations differ and the guard does not fire:
+
+secret contains a double quote; loaded a scanned path
+
+Reproduced for ", \, tab, and newline. In each case both sinks emitted, and the value is trivially recovered by JSON-decoding the report.
+
+Scope and severity, stated fairly: the only way a runtime secret reaches the report at all is by being a substring of a scanned filesystem path, so real-world exploitability against this repository is
+negligible, and the guard is defense-i guarantee that findings never carryvalues. But the claim under audit is specifically fail-closed, and the guard does not hold closed for the whole input space it accepts.
+
+SECRET_SCANNER_FAIL_CLOSED = PARTIALLY
+
+
+63 independent probes through the public scan_file() entry point, across .json, .conf, .yaml, .py, .c, .js. 63/63 PASS.
+
+group: A — ${VAR}, $VAR, %VAR%, <REDACTED>, REDACTED, None, null, empty — in password/token context,
+across
+4 file types
+probes: 32
+result: all correctly not findings
+────────────────────────────────────────
+group: B — test, admin, hunter2 in password/passwd context, quoted and config-unquoted
+probes: 12
+result: all correctly remain findings, category PASSWORD/PASSWD
+────────────────────────────────────────
+group: C — TOKEN == NULL, token == NULULL, token <= n, password is None,token
+ = None, password = None, char *token = strtok(...), os.getenv, os.environ[], process.env
+probes: 12
+result: all correctly not false positives
+──────────────────────────────────────
+group: D — logger suppression
+probes: 4
+result: alfresco.repo.admin and alfresco.repo.admin.Foo suppressed; password: "admin" still a finding;
+password: "alfresco.repo.other" still rrow and value-specific, not a blanket
+
+
+▎ Narrow observation: _is_placeholder treats any value containing the substrings your, audit-local, or local-evidence as a placeholder. It is used both to suppress findings and to drop values from the runtime-secret guard list. A real credential containing your would be silently dropped from both. Benign for this repository; it is a broader rule than the rest of the module's precision-by-literal design.
+
+---
+
+PHASE 5 — FLOWABLE AUTH CONTRACT
+
+No Flowable platform integration, no nd auth containment only. 56/56 PASS.
+oken secret token
+       Secret Token authorization Authorization USERNAME password user Pass
+5.4  inline-only basic creds (lower and UPPER) -> abort                     PASS
+5.5  missing/blank username_env or password_env, unexpected key -> abort    PASS
+5.6  bearer   token missing / empty / whitespace-only -> abort              PASS
+5.6  raw_token token missing / empty / whitespace-only -> abort             PASS
+5.6  no unauthenticated pass-through f         PASS
+5.6  bearer and raw_token happy paths still set header (+cookie)            PASS
+5.7  unsupported auth type -> abort                                         PASS
+5.8  no synthetic value in any of 5 captured error messages                 PASS
+
+Every one of the 14 alternate keys you asked me to probe (USERNAME, PASSWORD, user, pass, passwd, pwd,
+credential, credentials, api_key, apik secret, token) is strictly rejected,not silently ignored — the preferred behavior. _normalized_auth casefolds keys first, so uppercase and mixed-case variants reject identically.
+
+CURRENT_TRACKED_KNOWN_CREDENTIAL_LITERAL_PRESENT = NO in the hardening worktree, confirmed by two
+independent methods: the scanner (2797nd a separate non-scanner regex sweepfor 10 credential literal shapes. That sweep produced 13 raw hits, every one resolved as benign:
+
+hit: rest-admin × 4 — flowable_models/document_process.bpmn20.xml:13, 3 ×
+in/flowable_doc_create_dataset/seed_*.
+ credential.
+
+Two minor robustness notes (both still fail closed, neither a blocker):
+- _basic_auth_header validates blank username_env/password_env but indexes them directly, so a config that omits the key raises KeyError rather than the intended RuntimeError with its explanatory message.
+- apply_auth_headers returns headers unchanged when cfg["auth"] is a non-dict (e.g. the string "basic"),
+  which silently disables auth. Pre-ex
+
+┌────────────────────────────────┬─────────────────────────────────────────────────────────────────────┐
+│             Result             │                                Value                                │
+├────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ FLOWABLE_ENV_ONLY_FAIL_CLOSED  │ IND                                    │
+
+Regression found — nv_target.json now aborts
+
+_normalized_auth is called before the if atype == "none": return headers short-circuit, and the none allowlist is frozenset({"type"}). nv_target.json (tracked) declares:
+
+{ "type": "none", "header": "Authorizatoken_env": "NV_TOKEN" }
+
+Side-by-side against git show HEAD:nv_http_harness.py:
+
+BASELINE c6817ce : OK -> headers=[]
+
+This config is the default NV_TARGET_CONFIG for run_ablation_v2.sh:104 (tracked) and nv_seedgen.py:57 (tracked), and nv_http_harness.py:610 calls apply_auth_headers on every execution — so that ablation path aborts on every run. All three other configs with an auth block (flowable_query.json, targets/example_platform.json, targets/o2oa_query.json) are accepted. The regression is in-scope (it is the auth-validation change), it fails closed rather than leaking, and it is not covered by the 197-test
+suite.
+
+---
+
+PHASE 6 — SECRET SCAN / SKIP RECONCILIATION
+
+Runtime credential env was confirmed unset for all five allowlisted names before scanning, so no live secret entered the guard. Every scope reproduced exactly:
+
+scope: tracked
+discovered: 2797
+scanned: 2767
+skipped: 30
+findings: 0
+real: 0
+status: INCOMPLETE
+
+skipped: 0
+findings: 0
+real: 0
+status: PASS
+implementer claim: matches
+──────────────────────────────────────
+scope: untracked
+discovered: 4
+scanned: 4
+
+findings: 0
+real: 0
+status: PASS
+implementer claim: matches
+────────────────────────────────────────
+scope: evidence (gate2_final_hardening
+discovered: 9
+scanned: 9
+skipped: 0
+findings: 0
+real: 0
+status: PASS
+implementer claim: matches
+──────────────────────────────────────
+ew evidence files
+────────────────────────────────────────
+scope: out/
+discovered: 319
+scanned: 319
+skipped: 0
+findings: 0
+real: 0
+status: PASS
+implementer claim: matches
+
+───────────────────────────────────────────────────┐
+│     reason     │ coun │                                   files                                    │
+│                │  t   │                                                                            │
+├────────────────┼──────┼────────────────────────────────────────────────────────────────────────────┤
+│                │      │ 6 × PyTorch .pt (zip), 1 × .docx (zip), 9 ×                                │
+│ binary_or_nul  │ 29   │ PNG/BMP/GIF/ICO/JP2/JPEG/JXR/TIFF/WebP images, 1 × MP4, 1 × PCAP, 4 × .bin │
+│                │      │  NUL fuzz se                                  │
+├────────────────┼──────┼────────────────────────────────────────────────────────────────────────────┤
+│ non_utf8_binar │ 1    │ in/alfresco_extended_eval_dataset/content_update/content_invalid_non_utf8. │
+│ y              │      │ bin (6 bytesxture)                            │
+└────────────────┴──────┴────────────────────────────────────────────────────────────────────────────┘
+
+All 30 are tracked. Zero were skipped for oversized, read_error, or stat_error — no skip reason indicates a failure to inspect something that could have held text.
+
+Classification alone is not closure, so: strings -n 4 over every file, plusfull ZIP-member extraction for the .docx and the six .pt torch archives, then ran the scanner's own line rules over every extracted unit at maximum sensitivity (allow_unquoted=True), plus a case-insensitive
+keyword sweep for 13 credential marker
+
+skipped files independently inspected
+text units extracted (strings + zip)  : 166   (136 zip members)
+scanner-rule findings in skipped scope: 0
+keyword hits                          : 0
+
+┌────────────────────────────────────┬───────────────────┐
+
+
+PHASE 7 — FULL REGRESSION
+
+Ran 197 tests in 52.368s
+OK
+
+static − runtime = 0, EXACT_SET_MATCH = True. No setUpClass collapse can hide inside an exact id-level match.
+- Verbose-line accounting: 197 lines ending ... ok, 0 lines matching FAIL|ERROR|skipped|expected failure|unexpected success.
+
+The intended hardening tests really executed: test_secret_scan 32 + test_flowable_credential_contract 16 =
+48 focused tests, confirming the 48/48
+
+┌─────────────────────────────┬────────────────────────────────────────────────────────────┐
+│           Result            │                               │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ STATIC_TEST_METHOD_COUNT    │ 197                                                        │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ EXECUTED_TEST_COUNT         │ 197                                                        │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ FAILURES                    │ 0                             │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ ERRORS                      │ 0                                                          │
+├─────────────────────────────┼───────────────────────────────┤
+│ SKIPS                       │ 0                             │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ FULL_REGRESSION_STATUS      │ PASS                                                       │
+├─────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ HARDENING_CAUSED_REGRESSION │ YES — , uncaught by the suite │
+ changeset, and the binary's mtime (2026-08-19 17:08:40) postdates every tracked C/H source (16:58:02). The binary ties cleanly to the c6817ce source baseline. No rebuild required.
+
+---
+
+PHASE 8 — EVIDENCE HYGIENE
+
+Read only. 9 evidence files plus docs/review/secret_scanner.md. Scanner: 9/9 scanned, 0 skipped, 0 findings. Independent non-scanner regex sweep for 7 leak shapes:
+
+┌────────────────────────────┬──────────────────────────────────┐
+───────────────────────────────────────────┤
+│ PASSWORD_VALUE_LEAK        │ 0 → NO                                                        │
+├────────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ SCANNER_REPORT_SECRET_LEAK │ 0 → NO (secret_scan_summary.json is counts and statuses only) │
+├────────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ user:pass shaped literal   │ 0                                                             │
+├────────────────────────────┼──────────────────────────────────┤
+│ known old literals         │ 0                                                             │
+└────────────────────────────┴───────────────────────────────────────────────────────────────┘
+
+Five base64-shaped matches were run dohe 40-hex c6817ce… SHA in
+
+PHASE 9 — FINAL CLASSIFICATION
+
+┌──────────────────────────────────────────────────┬───────────────────────────────────────────────────┐
+│                       Item                       │                  Classification                   │
+├──────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+│ SECRET_SCANNER_RUNTIME_SECRET_ALLOWLVERIFIED                            │
+├──────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+│ SECRET_SCANNER_CANONICAL_SERIALIZATION           │ INDEPENDENTLY VERIFIED                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│ SECRET_SCANNER_FALSE_POSITIVE_RULES              │ INDEPENDENTLY VERIFIED                            │
+├──────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+│                                                  │ PARTIALLY VERIFIED — holds for all ordinary       │
+│ SECRET_SCANNER_FAIL_CLOSED                       │ secrets; bypassed by secrets containing a         │
+│                                                  │ JSON-escapable character                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│ SECRET_SCANNER_SKIP_ACCOUNTING                   │ INDEPENDENTLY VERIFIED — 30/30 classified,        │
+│                                                  │ contents inspected, UNKNOWN = 0                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│ FLOWABLE_ENV_ONLY_FAIL_CLOSED                    │ INDEPENDENTLY VERIFIED                            ├─────────────────────────────────────────────────────────────────────────┤
+│ FLOWABLE_NON_BASIC_FAIL_CLOSED                   │ INDEPENDENTLY VERIFIED                            │
+├──────────────────────────────────────────────────┼───────────────────────────────────────────────────┤
+│ FLOWABLE_CREDENTIAL_ROTATION                     │ NOT VERIFIED — not a demonstrated exposure; not   │
+│                                                  │ gating per policy                                 │
+├──────────────────────────────────────────────────┼───────────────────────────────────────────────────│ CURRENT_TRACKED_KNOWN_CREDENTIAL_LITworktree) — see carry-forward note  │
+─────────────────────────┤
+│ NEW_ALFRESCO_CREDENTIAL_RUNTIME_AUTH        │ INDEPENDENTLY VERIFIED (200) │
+├─────────────────────────────────────────────┼──────────────────────────────┤
+│ GATE1_SCIENTIFIC_CALIBRATION                │ INDEPENDENTLY VERIFIED       │
+├─────────────────────────────────────────────┼──────────────────────────────┤
+│ ALFRESCO_LEVEL_C                            │ NOT_YET_COMPLETE             │
+├─────────────────────────────────────────────┼──────────────────────────────┤
+│ REAL_ALFRESCO_FULL_FUZZ_RUN                 │ NO                           │
+├─────────────────────────────────────────────┼──────────────────────────────┤                         │ REAL_SERVICE_CROSS_PLATFORM_MIGRATIO          │
+─────────────────────────┤
+│ FLOWABLE_FULL_AFL_CHAIN                     │ NOT_INTEGRATED               │
+└─────────────────────────────────────────────┴──────────────────────────────┘
+
+▎ Scope note on the credential literal. NO is correct for the hardening working tree, which is what Gate-2 evaluates. It is not true of the committed baseline: c6817ce — and therefore public-release, origin/public-release, and the v0.7.1-real-http-exec-seq tag — still contains the inline Flowable pair in flowable_query.json, because the hardening is intentionally uncommitted. That is expected given the instructions, and I did not act on it, but the removal is not yet reflected in any published ref.    
+ard compares raw UTF-8 secret bytes against a JSON-escaped serialization. A secret containing ", \, tab, or newline passes the guard and reaches both stdout and the report file in recoverable form. Reproduced four times through the real CLI.
+2. The hardening introduced a functional regression. nv_target.json — tracked, and the default target config for the tracked run_ablation_v2.sh and nv_seedgen.py — now raises RuntimeError on every execution, because _normalized_auth runs before the type: "none" short-circuit and the none allowlist admits only type. Confirmed side by side against the baseline harness. The 197-test suite does not cover it.
+                                                                                                       Both defects live inside the hardeninghy this is BLOCKED_HARDENING ratherthan BLOCKED_MULTIPLE. Neither is an active credential exposure — the first is defense-in-depth behind a structural guarantee, the second fails closed. Flowable credential rotation being NOT VERIFIED did not contribute to this verdict, per your ie exposure was demonstrated.
+
+Stopping here as instructed. Nothing was fixed, no Level C work begun, no fuzzing started, and no commit, merge, push, tag, or history rewrite occurred — final ref check confirms all four refs still at c6817ce46b0120da95ba55869b6b298e18e4cf8b and no file in either worktree written during this session.
+
+Audit scratch artifacts (probe scripts and the six scan reports) are in the session scratchpad, outsideboth worktrees. Say the word if you want this written up as a shareable artifact page.

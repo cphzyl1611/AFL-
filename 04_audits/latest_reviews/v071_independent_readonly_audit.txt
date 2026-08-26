@@ -1,0 +1,176 @@
+
+Full report published: ⧉ https://claude.ai/code/artifact/29d2a211-f9d8-4a0f-8367-c8a1d32eac7a
+
+---
+A. Final Verdict
+
+V071_RELEASE_PASS
+
+All eight blocker conditions were tested and none reproduced. No source, test, evidence, doc, or git state was modified; nothing was merged, pushed, or tagged.
+
+B. Git
+
+FINAL_V071_SHA                          = c6817ce46b0120da95ba55869b6b298e18e4cf8b
+FINAL_V071_SHA_VALID                    = YES
+FAST_FORWARD_TO_PUBLIC_RELEASE_POSSIBLE = YES
+V071_SCOPE_CLEAN                        = YES
+
+C_REPLAY_RUNTIME_CHANGED = NO    NC_MAB_CHANGED = NO    AE_CHANGED = NO
+FANOGAN_CHANGED          = NO    FLOWABLE_CHAIN_CHANGED = NO
+
+--disambiguate returns exactly one object. Single parent is a51ad6bb, and public-release HEAD is a51ad6bb → pure fast-forward. Diff is 19 files, +1966/−0. Filtering out out/ docs/ tests/ test/ scripts/ leaves exactly one file: nv_http_harness.py.
+
+git diff --check exits 2, but every hit is CRLF: the base file is already fully CRLF (595 CR/595 LF), the candidate stays consistent (676/676), no .gitattributes. Not whitespace damage.
+
+C. Writer / Launcher Inventory
+
+Rebuilt from source, not from the shipped matrix.
+
+PRODUCTION_HTTP_STATUS_WRITERS   = [nv_http_harness.py]
+DETERMINISTIC_STATUS_WRITERS     = [targets/nv_p0_deterministic_target.py]
+TEST_ONLY_STATUS_WRITERS         = [test/p01/status_seq_target.c, tests/test_v071_exec_seq.py]
+MANUAL_DIAGNOSTIC_WRITER         = [verify_2_5_strict.py]        <-- not in shipped matrix
+FALSE_POSITIVE_WRITERS_EXCLUDED  = [nv_state_probe.py, nv_neuron_probe.py,
+                                    targets/alfresco_*_mock.py, *_online_filter_wrapper.py,
+                                    src/afl-fuzz-run.c (consumer), harness CTX_PATH write]
+
+HTTP_LAUNCHER_COUNT           = 10
+SHARED_HTTP_HARNESS_CONFIRMED = YES
+HTTP_HARNESS_LIFECYCLE        = PER_EXECUTION_PROCESS
+
+On nv_state_probe.py: source says NV_PROBE_PATH (default /tmp/nv_probe.json) and NV_STATE_DB. It contains zero references to NV_STATUS_PATH. CLAUDE.md line 79 is wrong; the v0.7.1 doc is right.
+
+Lifecycle verified two ways: main() does sys.stdin.buffer.read() once, no __AFL_LOOP, no server loop, sys.exit(main()) — and measured, 100 executions → 100 distinct PIDs (19401→1, 19403→2, 19405→3, …).
+
+D. Allocator
+
+SEQ_ALLOCATOR_READ_MODIFY_WRITE_ATOMIC = YES
+SEQ_ALLOCATOR_DUPLICATE_RISK           = NONE
+SEQ_ALLOCATOR_FAILURE_SAFE             = YES
+
+SERIAL_100_EXEC_UNIQUE = YES
+  100 executions · 100 PIDs · 100 exec_seq · 100 unique · min 1 · max 100 · 0 duplicates
+
+CONCURRENT_ALLOCATIONS = 48 processes (and a 12800-allocation hammer)
+CONCURRENT_SEQ_UNIQUE  = YES
+
+Order is open(O_RDWR|O_CREAT) → flock(LOCK_EX) → read → parse → lseek(0) → ftruncate(0) → write → fsync → unlock in finally. No O_TRUNC, so the old value is never lost before the read; the lock encloses the whole RMW; the lock is on the sidecar inode every competitor opens by the same path.
+
+Serial 100 runs are not sufficient proof, so I ran three independent concurrency measurements:
+
+PROCESS_COUNT     = 64        (x 200 allocations each)
+SEQ_COUNT         = 12800
+UNIQUE_SEQ_COUNT  = 12800
+DUPLICATES        = 0
+
+The multiset was exactly {1…12800} — 0 duplicates, 0 gaps, 0 zeros, 460 alloc/s under randomised-start contention. A 48-process one-shot run and 48 concurrent full real harness processes sharing one NV_STATUS_PATH both agreed (sidecar landed at exactly 48).
+
+E. Lifecycle / Failure
+
+PROCESS_RESTART_CONTINUES_SEQUENCE        = YES   (1,2,3,4,5 across 5 distinct PIDs)
+SEQUENCE_NAMESPACE_RESET_CONSUMER_RECOVERS = YES  (6,7 → wipe → 1,2; consumer resyncs)
+SIDECAR_FAILURE_DEGRADES_TO_LEGACY        = YES
+SIDECAR_FAILURE_CRASHES_HARNESS           = NO
+STATUS_WRITE_ATOMIC                       = YES
+TORN_STATUS_DOCUMENTS                     = 0
+VALIDITY_REJECT_CONSUMES_SEQ              = NO
+HTTP_ATTEMPT_ALWAYS_HAS_SEQ               = YES
+
+No terminology error to report — the doc says the sequence restarts if the sidecar is lost, not on process restart, and that matches measurement.
+
+Degradation measured with a read-only .seq: exec_seq=0, exit 0, valid status JSON, ts_ms and body_hash16 present, sidecar untouched. Malformed contents (garbage, empty, -5, 3.7, trailing junk, NUL bytes) all recover to 1 without crashing.
+
+Torn-document numbers: serial writers 60 updates/4 readers/17,799 reads → 0; concurrent writers 96 updates/24-at-a-time/6 readers/30,196 reads → 0 parse failures, 0 malformed shapes, 0 missing exec_seq.
+
+Validity: 5 rejected bodies advanced the counter by exactly 0; the next valid body got exec_seq=2. Every HTTP outcome carried one — measured 200,200,404,500,conn_refused → 1,2,3,4,5.
+
+Allocation timing is better than your worst case. The seq is allocated inside write_status(), which runs after the response/error is in hand — not before the attempt. The ambiguous "allocated, then the HTTP library failed to initialise" case cannot arise.
+
+F. C Consumer
+
+C_CONSUMER_EXEC_SEQ_PATH_CONFIRMED = YES
+CONSUMER_TEST_USES_PRODUCTION_LOGIC = YES
+LEGACY_FALLBACK_PRESERVED           = YES
+FRESH_CONSUMER_CHAIN_PASS           = YES
+
+Production path, not a probe: src/afl-fuzz-run.c:174 extracts exec_seq → :178 gates on valuedouble > 0 → :194 calls nv_status_is_fresh() at src/afl-fuzz-nv-covset.c:89. The probe links the real function — only JSON extraction is transcribed (permitted glue; see MIN-5). Confirmed independently with my own probe calling the same production function.
+
+G. Platform Classification
+
+O2OA_SHARED_HTTP_HARNESS_UPGRADED           = YES
+
+COMMITTED_ALFRESCO_REAL_HTTP_CONFIG         = NO
+ALFRESCO_SHARED_HARNESS_EXEC_SEQ            = YES   (Level A)
+ALFRESCO_REQUEST_SHAPE_EXEC_SEQ             = YES   (Level B)
+ALFRESCO_COMMITTED_REAL_HTTP_CHAIN_EXEC_SEQ = NO    (Level C)
+
+FLOWABLE_ACTIVE_HTTP_HARNESS                = NOT_INTEGRATED
+
+O2OA used the committed targets/o2oa_query.json with only base redirected — committed endpoint cms_doc_list, committed route PUT /x_cms_assemble_control/jaxrs/document/filter/list/1/size/5, committed body template → exec_seq 1 and 2, identical body_hash16=51323, identical class.
+
+targets/ holds only o2oa_query.json and example_platform.json as harness-schema HTTP configs. The 431 tracked Alfresco assets are mock targets, online-filter wrappers, seeds and reports — none is an HTTP target config and none writes an NV status document. Level B was measured with the committed seed in/alfresco_afl_metadata_update_smoke/seed_ok_0.json.
+
+H. Upgrade Scope
+
+SHARED_PRODUCTION_HTTP_HARNESS_REPLAY_UPGRADE            = COMPLETE
+O2OA_CURRENT_HTTP_PATH_REPLAY_UPGRADE                    = COMPLETE
+ALFRESCO_CURRENT_COMMITTED_REAL_HTTP_PATH_REPLAY_UPGRADE = NOT_PRESENT
+FLOWABLE_CURRENT_HTTP_PATH_REPLAY_UPGRADE                = NOT_PRESENT
+
+REAL_HARNESS_REPLAY_UPGRADE = COMPLETE
+
+Definition, strictly: this field means the repository's shared production HTTP harness implementation (nv_http_harness.py) now reports a real per-execution identity. It does not mean the O2OA + Alfresco + Flowable real-platform chains are all complete.
+
+I. Compatibility / Evidence
+
+STATUS_SCHEMA_BACKWARD_COMPATIBLE = YES
+V071_EVIDENCE_TRACKED             = YES
+V071_EVIDENCE_REGENERABLE         = YES
+V071_EVIDENCE_CURATED             = YES
+
+Provenance is the strongest single result here: re-running the collector produced all 10 JSON files matching key-for-key, with exactly the 3 runtime-bearing files differing in exactly their runtime values (committed ts_ms=1786902697398 vs regenerated 1786952667039). That divergence is the proof the evidence was executed, not hand-assembled. No .seq, .lock, queue, cache, __pycache__, fastresume, or plot_data committed.
+
+J. Clean Clone
+
+CLEAN_CLONE_FULL_BUILD      = PASS   (full `make`, exit 0)
+PROJECT_CONFIG_VALIDATION   = PASS   (exit 0; 3 WARN, 0 FAIL)
+TEST_COUNT = 149    FAILURES = 0    ERRORS = 0    SKIPS = 0
+FULL_TEST_SUITE             = PASS   (bare `OK`, 51.8s)
+TEST_SUITE_NON_DESTRUCTIVE  = YES    (git status byte-identical before/after, both empty)
+
+The 3 WARNs are all "missing optional historical summary" on pre-existing out/ dirs. LLVM/LTO/gcc-plugin modes were skipped for missing toolchains — environment, not candidate.
+
+K. Existing boundaries
+
+REAL_O2OA_FULL_FUZZ_RUN = NO          REAL_ALFRESCO_FULL_FUZZ_RUN = NO
+REAL_SERVICE_CROSS_PLATFORM_MIGRATION = PARTIALLY_VERIFIED
+FLOWABLE_FULL_AFL_CHAIN = NO          AE_V1_PRIMARY = YES
+FANOGAN_CANDIDATE_ONLY = YES          FULL_SE_FANOGAN_ES = NO
+
+L. Findings
+
+RELEASE_BLOCKER: none. MAJOR: none.
+
+- MINOR MIN-1 — docs/v071_real_harness_exec_seq.md §5 heads its table "NV status writers, complete" but omits verify_2_5_strict.py and tests/test_v071_exec_seq.py. Neither affects correctness (the diagnostic writes no exec_seq and degrades to legacy exactly as intended), but the completeness claim is overstated.
+- MINOR MIN-2 — CLAUDE.md misattributes nv_state_probe.py as an $NV_STATUS_PATH writer. Pre-existing, outside the diff.
+- MINOR MIN-3 — Allocator clamps current < 0 but has no upper clamp (os.read(fd, 64)). A corrupted 40-digit sidecar yields exec_seq=1e40; measured, that and u64-max both resolve to exec_seq=0 and fall back safely — but the namespace then stays on legacy fallback permanently until cleaned. Requires external corruption; hardening only.
+- MINOR MIN-4 — With the whole status directory unwritable, write_status() raises PermissionError and the harness exits 1 with a traceback. Unchanged v0.7.0 behaviour, not caused by the allocator.
+- MINOR MIN-5 — The probe re-types JSON extraction from nv_observe_security_state(); a future extraction change there wouldn't be caught.
+- INFO INF-1 — The legacy seq field has zero consumers repo-wide (only the write). Sitting one line above exec_seq and permanently 1, it invites misreading. Documentation observation; keep the field.
+- INFO INF-2 — Fixed .tmp staging name shared per namespace; measured 0 torn in 30,196 reads.
+- INFO INF-3 — exec_seq > 2^53 loses precision in (u64)valuedouble (2^53+1 reads back as 2^53). Needs ~9×10¹⁵ executions.
+- INFO INF-4 — Worth knowing operationally: urllib honours http_proxy, and this machine's no_proxy uses 127.*, a glob urllib doesn't match. My first run had every local request answered 502 and recorded as 5xx. Allocation stayed correct, but a campaign run in a proxied shell would record fabricated 5xx behaviour.
+
+M. Final Merge Decision
+
+1. Fast-forward to public-release? — Yes. Single parent is a51ad6bb, which is the current public-release head.
+2. Runtime code change before merge? — No. No blocker or major; all minors are docs, pre-existing behaviour, or hardening against corrupted scratch state.
+3. Regenerate evidence before merge? — No. It regenerates from the tracked collector and matches key-for-key.
+4. Create a v0.7.1 tag? — Yes, subject to your decision. Consider folding MIN-1 into the release notes.
+5. Tag SHA — c6817ce46b0120da95ba55869b6b298e18e4cf8b, exactly.
+6. Most accurate phrasing: "The repository's shared production HTTP harness (nv_http_harness.py) now reports a real per-execution identity, so two indistinguishable executions are no longer collapsed into one observation. This covers the O2OA committed HTTP path. It does not constitute a completed real-platform chain for Alfresco or Flowable."
+7. Alfresco stands at Level B of three. A and B verified by measurement; C (committed config + launcher + seeds + rules + target definition) does not exist.
+8. Flowable — NOT_INTEGRATED. Schema-compatible, would inherit the upgrade, but no launcher references it.
+9. Next phase — yes, Alfresco real-platform integration, not Flowable. Nothing from that work was started.
+
+Stopping here as instructed — no merge, no push, no tag. One caveat on my own coverage: INF-4 means my first measurement pass ran through a proxy; I re-ran everything proxy-free, and all numbers above come from the clean runs.

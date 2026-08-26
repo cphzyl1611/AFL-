@@ -1,0 +1,283 @@
+Audit complete. All sections pass. Evidence: /tmp/<audit-dir-masked>/.
+
+---
+
+LEVEL-C CONTENT — INDEPENDENT CLEAN-CHECKOUT AUDIT
+
+Git identity
+
+┌───────────────────┬─────────────────────────────────────────────────────────────────────┐
+│                   │                                                                     │
+├───────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ CHECKPOINT_SHA    │ <COMMIT_NEW_FULL>                                                   │
+├───────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ CHECKPOINT_PARENT │ <COMMIT_BASE_1_FULL> ✅ required match                              │
+├───────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ TREE_OID          │ <TREE_SHA_NEW>                                                      │
+├───────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ COMMIT_SUBJECT    │ checkpoint: Alfresco Level-C content path self-tested               │
+├───────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ BRANCH_SOURCE     │ origin/feature/alfresco-level-c-content-http (checked out detached)│
+└───────────────────┴─────────────────────────────────────────────────────────────────────┘
+
+SHA obtained directly from Git, not from the implementer report.
+
+A. Clean-checkout isolation
+
+git clone --no-hardlinks → /tmp/<audit-dir-masked>/repo, detached at the checkpoint.
+
+DETACHED_HEAD = YES         ALTERNATES_PRESENT = NO
+status --porcelain               = 0 lines
+status --porcelain --ignored     = 0 lines    ← nothing copied from the implementation
+                                               worktree: no afl-* binaries, no __pycache__
+Committed diff vs parent — exactly 3 paths, no other:
+A  scripts/run_alfresco_levelc_content.py
+A  targets/alfresco_content_update.json
+A  tests/test_alfresco_levelc_content.py     3 files, +1235
+
+B. Config contract — 20/20 OK
+
+Audited from the committed blob. Valid JSON · 1 endpoint · PUT · path ends /content · exactly 1 __ALFRESCO_NODE_ID__ · 0 concrete UUIDs · body_only_mode = 0 · auth.type=basic · ALFRESCO_USER/ALFRESCO_PASS · no literal username/password · no Authorization value · no Basic/Bearer material · no cm:name/cm:title/cm:description/cm:versionable/majorVersion · no node-creation behaviour (POST, /children, nodeType, body_templates all absent).
+
+CONFIG_CONTRACT = PASS
+
+C. Scanner identity reconciliation
+
+Determined directly from the checkpoint tree — not both; only one exists:
+
+COMMITTED_SCANNERS       = scripts/secret_scan.py        (only match)
+                           scripts/config_scan.py        ABSENT
+TEST_REFERENCED_SCANNER  = scripts.secret_scan
+                           (from scripts.secret_scan import scan_paths)
+                           test_alfresco_levelc_content.py:76, :771
+                           test_alfresco_levelc_metadata.py:158
+AUDITED_ACTIVE_SCANNER   = scripts/secret_scan.py
+config_scan has zero references anywhere in the committed tree. Related committed files are tests/test_secret_scan.py (its unit tests) and docs/review/secret_scanner.md (its documentation) — supporting files, not a second scanner. The historical config_scan.py name is documentation drift with no artifact at this checkpoint.
+
+D. Focused offline tests (credentials unset)
+
+┌─────────────────────────────────────┬─────────────┬───────┬───────┬────────┐
+│                Suite                │   Result    │ Skips │ Fails │ Errors │
+├─────────────────────────────────────┼─────────────┼───────┼───────┼────────┤
+│ tests.test_alfresco_levelc_content  │ Ran 79 — OK │ 0     │ 0     │ 0      │
+├─────────────────────────────────────┼─────────────┼───────┼───────┼────────┤
+│ tests.test_alfresco_levelc_metadata │ Ran 56 — OK │ 0     │ 0     │ 0      │
+├─────────────────────────────────────┼─────────────┼───────┼───────┼────────┤
+│ tests.test_v071_platform_chains     │ Ran 4 — OK  │ 0     │ 0     │ 0      │
+└─────────────────────────────────────┴─────────────┴───────┴───────┴────────┘
+
+E. Full test inventory (independently computed)
+
+MODULES                     = 41
+STATIC_TEST_METHOD_COUNT    = 361   (AST, local base classes resolved transitively)
+TESTLOADER_DISCOVERED_COUNT = 361
+EXECUTED_TEST_COUNT         = 361   (recorded by a custom TestResult, not log-parsed)
+static △ discovered = ∅     discovered △ executed = ∅
+ALL_THREE_ID_SETS_EQUAL = true
+failures = 0  errors = 0  skips = 0  expected_failures = 0  unexpected_successes = 0
+afl-fuzz was built in the scratch clone to reach zero skips (three setUpClass guards otherwise skip 12 tests). The scratch tracked tree stayed clean afterwards (status = 0 lines, tree still <TREE_SHA_NEW>).
+
+F. Fail-closed env contract — network hard-blocked
+
+socket.socket and socket.create_connection patched to raise, so an abort cannot be confused with a silent request:
+
+┌────────────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│                Case                │                           Result                            │
+├────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ all-absent / user-only / pass-only │ LevelCAbort, network_touched NO, credential_reflected False │
+├────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ empty-user / empty-pass            │ same                                                        │
+├────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ whitespace-user / whitespace-pass  │ same                                                        │
+├────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+│ both-present (control)             │ returns 2-tuple                                             │
+└────────────────────────────────────┴─────────────────────────────────────────────────────────────┘
+
+FAIL_CLOSED_CONTRACT = PASS — 7/7, no credential text in exception, stdout or stderr.
+
+G. Proxy isolation
+
+Host hazard is live: http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY all SET, and no_proxy uses the 127.* glob urllib ignores.
+
+child harness env: all 6 proxy vars removed, leftover = []
+child no_proxy / NO_PROXY = 127.0.0.1,localhost    127.* glob eliminated = True
+build_direct_opener uses ProxyHandler({}) = True
+Behavioural proof under a hostile proxy pointing at a dead port:
+
+┌─────────────────────────┬────────────────────────────────┐
+│         Opener          │             Result             │
+├─────────────────────────┼────────────────────────────────┤
+│ default (env-honouring) │ BLOCKED — URLError             │
+├─────────────────────────┼────────────────────────────────┤
+│ build_direct_opener()   │ 401 — reached the real service │
+└─────────────────────────┴────────────────────────────────┘
+
+Loopback traffic cannot be forced through the ambient proxy on the launcher's path.
+
+H. Dynamic resource resolution
+
+unauthenticated root probe = 401     authenticated root probe = 200
+containers: alfresco (Up 47h healthy), postgres, proxy — all healthy
+folder = <NODE_ID_FOLDER>   (NV_AFL_REAL_PLATFORM_CALIBRATION, unique match)
+file   = <NODE_ID_FILE>     (is_uuid = true)
+created_folder = false   created_file = false   -> ZERO nodes created
+rendered config: outside_repo = true, placeholder_survived = false
+Raw UUID exists only in the runtime scratch config; redacted everywhere in this report.
+
+I. Independent 3-run content smoke
+
+Three distinct audit payloads (NV_LEVELC_CONTENT_AUDIT_1/2/3), deliberately different from the implementer's, so provenance is provable.
+
+┌─────────────────────────┬─────────────────┬─────────────────┬─────────────────┐
+│                         │     Round 1     │     Round 2     │     Round 3     │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ method / HTTP / class   │ PUT / 200 / 2xx │ PUT / 200 / 2xx │ PUT / 200 / 2xx │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ harness returncode      │ 0               │ 0               │ 0               │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ harness stderr bytes    │ 0               │ 0               │ 0               │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ status JSON valid       │ ✅               │ ✅               │ ✅               │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ exec_seq                │ 1               │ 2               │ 3               │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ latency_ms              │ 84              │ 70              │ 68              │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ expected / observed len │ 181 / 181       │ 1005 / 1005     │ 41 / 41         │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ length match            │ ✅               │ ✅               │ ✅               │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ SHA-256 match           │ ✅ <HASH_P1>…   │ ✅ <HASH_P2>…   │ ✅ <HASH_P3>…   │
+├─────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ bytes exact             │ ✅               │ ✅               │ ✅               │
+└─────────────────────────┴─────────────────┴─────────────────┴─────────────────┘
+
+exec_seq = [1,2,3] — all positive, distinct, strictly increasing. Read-back is an independent authenticated GET …/content returning raw
+
+J. Overwrite semantics
+
+Payload lengths 181 → 1005 → 41. Round 3 is 964 bytes shorter than round 2 — a hard truncation test.
+
+final_equals_payload_3 = true      final_len = 41 = expected_len
+residue_marker_1 = false           residue_marker_2 = false
+p3_shorter_than_p2 = true
+No suffix or trailing bytes from the 1005-byte payload survive.
+
+K. Persistent-state stability
+
+┌──────────────────────────────┬─────────────────────────────────────┬───────────┬────────────────────┐
+│             Item             │               Before                │   After   │                    │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ cm:name                      │ nv-afl-levelc-metadata.txt          │ identical │ ✅                  │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ version count                │ 0                                   │ 0         │ ✅                  │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ aspects                      │ [cm:auditable, cm:author,           │ identical │ ✅ stable           │
+│                              │ cm:titled]                          │           │                    │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ property keys                │ [cm:description, cm:title]          │ identical │ ✅                  │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ cm:title                     │ NV_LEVELC_INDEPENDENT_3RUN_C title  │ unchanged │ ✅ no metadata     │
+│                              │                                     │           │ write              │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ folder child count           │ 2                                   │ 2         │ ✅ no duplicate    │
+│                              │                                     │           │ node               │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ parent sibling count         │ 15                                  │ 15        │ ✅                  │
+├──────────────────────────────┼─────────────────────────────────────┼───────────┼────────────────────┤
+│ calibration sibling          │ 2026-08-17T11:01:39.255+0000        │ identical │ ✅ untouched        │
+│ modifiedAt                   │                                     │           │                    │
+└──────────────────────────────┴─────────────────────────────────────┴───────────┴────────────────────┘
+
+Server-side aspect note, documented precisely. cm:author was already present before this audit began — it was attached during the implementer's earlier run. Across all three of this audit's content writes the aspect set was completely stable (before == after). That refines the earlier observation: the aspect is a one-time Alfresco normalization on first content write, not per-write drift. It carries a null value and adds no property key. Classified SERVER_SIDE_ASPECT_NORMALIZATION = OBSERVED — not hidden, not a failure.
+
+L. Secret / evidence hygiene
+
+Audited active scanner (scripts/secret_scan.py) over the 3 committed content files plus all audit evidence and retained runtime artifacts:
+files_scanned = 13   files_skipped = []   findings = []
+real_secret_findings = 0   status = PASS
+cross-check (committed files only): 3 scanned, 0 findings, PASS
+Direct containment against the live credential values (never printed):
+raw_password_hits = 0    username_present_any = False
+Authorization_header_hits = 0    Basic_blob_hits = 0    Bearer_hits = 0
+Concrete node UUID: 0 in every durable evidence file. The one UUID lives in run/target.json — outside the scratch repo, untracked by Git, which is the designed behaviour.
+
+M. Source repository immutability
+
+┌────────────────────────────────┬───────────────────┬───────────────────┬───────────────────┐
+│                                │        PRE        │       POST        │                   │
+├────────────────────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ SOURCE_WORKTREE_*_STATUS_LINES │ 35                │ 35                │ ✅                 │
+├────────────────────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ status -uall sha256            │ <SHA256_WT_PRE>   │ <SHA256_WT_POST>  │ ✅ byte-identical │
+├────────────────────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ SOURCE_REF_FINGERPRINT_*       │ <SHA256_REFS_PRE> │ <SHA256_REFS_POST>│ ✅                 │
+├────────────────────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ tag count                      │ 27                │ 27                │ ✅                 │
+├────────────────────────────────┼───────────────────┼───────────────────┼───────────────────┤
+│ reflog count                   │ 253               │ 253               │ ✅                 │
+└────────────────────────────────┴───────────────────┴───────────────────┴───────────────────┘
+
+STATUS_PRE_EQ_POST = YES     REFS_PRE_EQ_POST = YES
+Pre-existing stale/untracked evidence in the source repo was left exactly as found — not cleaned. Implementation worktree untouched: HEAD <COMMIT_NEW_SHORT>…, 0 tracked modifications, 0 status lines.
+
+Reuse proven cryptographically — blob-identical between parent and checkpoint:
+
+┌─────────────────────────────────────────┬─────────────────────┐
+│                  File                   │                     │
+├─────────────────────────────────────────┼─────────────────────┤
+│ nv_http_harness.py                      │ IDENTICAL <BLOB_1>… │
+├─────────────────────────────────────────┼─────────────────────┤
+│ scripts/run_alfresco_levelc_metadata.py │ IDENTICAL <BLOB_2>… │
+├─────────────────────────────────────────┼─────────────────────┤
+│ targets/alfresco_metadata_update.json   │ IDENTICAL <BLOB_3>… │
+├─────────────────────────────────────────┼─────────────────────┤
+│ nv_body_valid.py                        │ IDENTICAL <BLOB_4>… │
+└─────────────────────────────────────────┴─────────────────────┘
+
+Launcher scope: 0 mock references, the only verb it issues itself is GET (the read-back; the PUT comes from the production harness), 0 DELETE, 0 create_child calls, and afl-fuzz/nv_mab/ucb/reward/ss_prob/mutate/flowable/multipart/rename all absent from AST identifiers.
+
+N. Final classification
+
+┌─────────────────────────────────────────┬────────────────────────────────────────────────────────────┐
+│                  Item                   │                            Tier                            │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_CHECKPOINT_INTEGRITY            │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_CONFIG                          │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_LAUNCHER                        │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_DYNAMIC_NODE_RESOLUTION         │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_PROXY_SAFE_LAUNCH               │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_PRODUCTION_HARNESS_SMOKE_3RUN   │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_BYTE_EXACT_READBACK_3RUN        │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_EXEC_SEQ_MONOTONICITY_3RUN      │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ CONTENT_PERSISTENT_STATE_STABILITY_3RUN │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ FULL_361_TEST_REGRESSION                │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ ALFRESCO_LEVEL_C_CONTENT_PATH           │ INDEPENDENTLY VERIFIED                                     │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ ALFRESCO_LEVEL_C_METADATA_PATH          │ INDEPENDENTLY VERIFIED (carried forward)                   │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ SERVER_SIDE_ASPECT_NORMALIZATION        │ OBSERVED (one-time, on first content write)                │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ ALFRESCO_CONTENT_BINARY_SAFE_PAYLOAD    │ NOT SUPPORTED (harness .http seed is UTF-8 LF text only;   │
+│                                         │ the launcher refuses payloads it would alter)              │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ REAL_ALFRESCO_FULL_FUZZ_RUN             │ NO                                                         │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ FULL_AFL_REAL_SERVICE_FEEDBACK_LOOP     │ NOT YET VERIFIED                                           │
+├─────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ FLOWABLE_FULL_AFL_CHAIN                 │ NOT_INTEGRATED                                             │
+└─────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
+
+Verdict
+
+LEVEL_C_CONTENT_INDEPENDENT_AUDIT_PASS

@@ -1,0 +1,161 @@
+v0.7.1 — Real HTTP Harness exec_seq Upgrade
+
+A. Baseline
+
+BASE_TAG   = v0.7.0-nv-feedback-release
+BASE_SHA   = a51ad6bb685c3f90a73494a2f211e5cf9c934a1c
+BRANCH     = feature/v0.7.1-real-harness-exec-seq
+CHECKPOINT = c6817ce46b0120da95ba55869b6b298e18e4cf8b
+
+Baseline verified before any work: HEAD = origin/public-release = v0.7.0-nv-feedback-release^{} = a51ad6b, with only ?? _delivery/ untracked (untouched throughout). Worktree created from the tag; public-release was never modified.
+
+B. Harness Inventory
+
+The decisive Phase-0 finding: all ten HTTP launcher scripts run the same single target. There is no per-platform harness — a "platform chain" is a config plus a request shape.
+
+Writer: nv_http_harness.py
+Platform / scenario: Real HTTP API — O2OA, Alfresco, any CFG
+Launcher: 10 scripts, all -- python3 nv_http_harness.py
+Lifecycle: per-execution process
+exec_seq before: NO
+after: YES
+────────────────────────────────────────
+Writer: targets/nv_p0_deterministic_target.py
+Platform / scenario: P0 deterministic profiles
+Launcher: run_p0_mab_feedback_experiment.sh
+Lifecycle: per-execution process
+exec_seq before: YES
+after: YES
+────────────────────────────────────────
+Writer: test/p01/status_seq_target.c
+Platform / scenario: P0.1 M-2 / M-3 integration
+Launcher: test_p01_status_attribution.py, test_p01_replay_identity.py
+Lifecycle: per-execution process
+exec_seq before: YES
+after: YES
+
+ACTIVE_HTTP_STATUS_WRITERS = nv_http_harness.py
+                             targets/nv_p0_deterministic_target.py
+                             test/p01/status_seq_target.c
+
+Correctly excluded, each verified rather than assumed: nv_state_probe.py and nv_neuron_probe.py write NV_PROBE_PATH, a different document the replay consumer never reads; targets/alfresco_*_mock.py and *_online_filter_wrapper.py write their own JSONL and no NV status document at all; fuzz_gui.py and verify_2_5_strict.py only set the env var; src/afl-fuzz-run.c is the consumer. The inventory is now asserted by a test, so a future launcher introducing a second HTTP target fails the suite.
+
+One correction to CLAUDE.md worth noting: it states nv_state_probe.py writes to $NV_STATUS_PATH. It writes NV_PROBE_PATH. I left the file alone — out of scope.
+
+C. Lifecycle
+
+HTTP_HARNESS_LIFECYCLE = PER_EXECUTION_PROCESS
+SEQUENCE_STORAGE       = <NV_STATUS_PATH>.seq   (one sidecar per status namespace)
+CONCURRENCY_MODEL      = one execution at a time per namespace; separate
+                         instances get separate namespaces (fuzz_gui.py);
+                         allocation still done under flock(LOCK_EX)
+RESTART_BEHAVIOR       = counter restarts at 1; C side treats a lower exec_seq
+                         as a restarted counter and resynchronises
+
+This was measured, not inferred. main() reads stdin once and exits — no __AFL_LOOP. The proof: the harness already had a module-level SEQ counter, and running it three times with identical input produced seq=1, seq=1, seq=1. That is precisely the forbidden pattern, already present in the shipping code. A process-lifetime counter cannot identify an execution when the process handles exactly one, so the counter had to outlive the process.
+
+Allocation is open → flock(LOCK_EX) → read → +1 → truncate → write → fsync → unlock. If the sidecar cannot be maintained it returns 0, which the C side reads as "not reported" and handles via the legacy fallback — a degraded environment loses execution identity, not the observation.
+
+D. Unit / Integration
+
+IDENTICAL_EXECUTIONS_GET_DISTINCT_SEQ    = YES
+NO_DUPLICATE_SEQ                         = YES
+PROCESS_RESTART_SAFE                     = YES
+ERROR_PATHS_HAVE_EXEC_SEQ                = YES
+VALIDITY_REJECT_DOES_NOT_FAKE_EXECUTION  = YES
+STATUS_WRITE_ATOMIC                      = YES
+
+Written test-first. The RED run failed 12/13 with one root cause — 'exec_seq' not found, every payload showing 'seq': 1. Measured results: 100 executions → 100 distinct identities across 100 distinct OS pids, strictly increasing; all five outcome classes (2xx/4xx/5xx/timeout/conn_refused) carry a distinct identity; a validity-rejected testcase left the identity unchanged with 0 server hits; restart resets to 1 then advances normally.
+
+Two notes on how these were obtained. Process separation is proven with real OS pids via Popen rather than a test-only hook in production code. And the tests clear http_proxy explicitly — this machine exports a proxy with a glob no_proxy urllib cannot match, which silently turned every local request into a 502; hermetic beats ambient.
+
+Atomic writes needed no change: the harness already used tmp-file + os.replace. Verified under a concurrent reader across 25 executions — zero torn reads.
+
+E. Consumer
+
+REAL_HARNESS_EXEC_SEQ_CONSUMED_BY_C = YES
+
+Checking that the JSON has an exec_seq key proves nothing about the fuzzer, so test/v071/status_consumer_probe.c links the production src/afl-fuzz-nv-covset.c and transcribes the extraction from nv_observe_security_state(). Driven over documents the real harness actually wrote:
+
+ACCEPT exec_seq=1 identity=exec_seq     execution #1
+ACCEPT exec_seq=2 identity=exec_seq     execution #2, byte-identical request
+REPLAY exec_seq=2 identity=exec_seq     re-read of #2
+
+Under the legacy stamp the middle verdict was REPLAY and a real observation was silently discarded. A separate test strips exec_seq and confirms the legacy fallback still gives ACCEPT→REPLAY, so older harnesses are unaffected.
+
+F. Platform Chains
+
+O2OA_HARNESS_EXEC_SEQ     = YES
+ALFRESCO_HARNESS_EXEC_SEQ = YES
+FLOWABLE_HARNESS_EXEC_SEQ = YES (by construction; no launcher references it)
+
+O2OA was driven through the real committed targets/o2oa_query.json with only base redirected to the local server — PUT /x_cms_assemble_control/jaxrs/document/filter/list/1/size/5, two executions, distinct identities.
+
+One finding requiring precise wording: the repository commits no Alfresco HTTP target config. The committed Alfresco AFL work uses mock/wrapper targets that write no NV status document. A real Alfresco HTTP run is driven through run_main_baseline_rule_generic.sh with a caller-supplied CFG, which launches this same harness. I verified the Alfresco metadata_update request shape (built from the committed seed and rules) through that harness — distinct identities confirmed.
+
+flowable_query.json is harness-schema but referenced by no launcher. It inherits the upgrade if ever used; no Flowable AFL++ chain was added.
+
+G. Compatibility
+
+STATUS_SCHEMA_BACKWARD_COMPATIBLE = YES
+LEGACY_FIELDS_PRESERVED           = YES
+
+Purely additive — one field added, nothing removed or renamed. ts_ms and body_hash16 are still written and still serve as the fallback. The legacy seq field is kept exactly as it was (always 1) so historical evidence and older consumers keep parsing; it is now commented as superseded. Historical evidence is unmodified.
+
+H. Regression
+
+BUILD                      = PASS  (full `make`; afl-fuzz + afl-clang-fast + afl-showmap)
+VALIDATE                   = PASS  (WARN only, 0 FAIL)
+TEST_COUNT                 = 149   (127 pre-existing + 22 new)
+FAILURES                   = 0
+ERRORS                     = 0
+SKIPS                      = 0
+TEST_SUITE_NON_DESTRUCTIVE = YES
+
+Per the v0.7.0 audit finding, I used full make — not make -j2 afl-fuzz — so the M-2/M-3 integration tests actually executed rather than skipping. All prior capability modules ran and passed: nv_covset_unit (M-1), p01_status_attribution (M-2), p01_replay_identity (M-3), nv_mab_unit (UCB), p0_mab_feedback_evidence (P0 chains), AE v1 ×4, fAnoGAN ×3, three-semantics.
+
+Clean clone at c6817ce: full make PASS, validate PASS, 149 tests / 0 / 0 / 0, evidence regenerated with every invariant reproducing. git status identical before and after in both trees — the sidecar defaults to /tmp (outside the repo) and is covered by the existing out*/ ignore rule if placed under out/.
+
+I. Evidence
+
+out/v071_exec_seq/ — 12 curated files, no caches, no __pycache__, no raw queue, no sidecar, no lock files:
+
+writer_matrix.csv / writer_matrix.json   identical_requests.json   uniqueness.json
+restart.json    error_paths.json         validity_reject.json
+o2oa_harness.json   alfresco_harness.json
+replay_consumer.json / replay_consumer.txt          summary.json
+
+Regenerable via python3 scripts/collect_v071_exec_seq_evidence.py.
+
+J. Scope
+
+NC_MAB_CHANGED               = NO
+SECURITY_STATE_MODEL_CHANGED = NO
+AE_V1_CHANGED                = NO
+FANOGAN_CHANGED              = NO
+FLOWABLE_FULL_CHAIN_ADDED    = NO
+REAL_O2OA_FULL_FUZZ_RUN      = NO
+REAL_ALFRESCO_FULL_FUZZ_RUN  = NO
+
+No C code changed. The production diff is one Python file: 1 import, 2 functions, 1 status field. Everything else added is tests, a C test probe, an evidence collector, and one doc — 19 files, +1966, 0 deletions.
+
+K. Final Verdict
+
+V071_PASS
+
+Every gate met: all active writers inventoried and asserted by test; the one real HTTP harness emits exec_seq; identical executions get distinct identity; restart behaviour proven; the C consumer accepts distinct executions and rejects replays; O2OA and Alfresco harness paths upgraded; schema backward compatible; 127 old + 22 new tests pass with 0 skips; clean clone reproduces.
+
+REAL_HARNESS_REPLAY_UPGRADE = COMPLETE
+
+Why COMPLETE rather than PARTIAL: the v0.7.0 boundary existed because one active writer — nv_http_harness.py — lacked execution identity. All three active NV status writers now emit exec_seq, and because every one of the ten HTTP launchers runs that single harness, no active real-HTTP path is left on the legacy fallback. I looked specifically for a writer that would force PARTIAL and did not find one; the candidates (nv_state_probe.py, the Alfresco wrappers, fuzz_gui.py) are not status writers, which I verified individually rather than by README.
+
+The legacy fallback remains in the C code deliberately, for third-party or historical harnesses — that is compatibility, not an unupgraded writer.
+
+What this does not mean. REAL_SERVICE_CROSS_PLATFORM_MIGRATION stays PARTIALLY_VERIFIED. Every execution here went to a local deterministic server on 127.0.0.1; no real O2OA, Alfresco or Flowable service was contacted, and no fuzzing campaign was run. Alfresco in particular is verified at the request-shape through the shared harness level, since the repo commits no Alfresco HTTP config.
+
+---
+Stopped at the local checkpoint as instructed — no merge, no push, no tag. public-release and origin/public-release remain at a51ad6b, tag count unchanged at 26, no v0.7.1* tag exists, and _delivery/ is untouched. Awaiting independent review.
+
+✻ Baked for 51m 14s
+                                                                       new task? /clear to save 281k tokens
+────────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,99 @@
+你现在继续执行“河南重大专项 / AFL++ 自动化测试框架”项目。
+
+我已上传一个上一会话交接包。请先阅读：
+1. 01_context/CURRENT_STATE.md
+2. 01_context/FILE_INDEX.md
+3. 02_audits/levelc/metadata_independent_audit.txt
+4. 02_audits/levelc/content_independent_audit.txt
+5. 02_audits/gate2/gate2_final_audit_and_hardening_log.txt
+6. 04_project_background/AFL++源代码修改总纲.md
+
+如果我另外上传了由 collect_repo_files.sh 生成的 repo-source zip，请优先以其中 53cb267 的 committed source 为代码事实，不要根据旧报告猜文件内容。
+
+当前权威 Git 基线：
+
+OFFICIAL_RELEASE_BASELINE
+= c6817ce46b0120da95ba55869b6b298e18e4cf8b
+
+HARDENING_CHECKPOINT
+= fc2866d4974de04e711f8395aac076490b68fc4f
+= INDEPENDENTLY VERIFIED
+
+METADATA_CHECKPOINT
+= 5f2d72191cdcad1801907bf5cb33aa8da61b5adb
+parent = fc2866d4974de04e711f8395aac076490b68fc4f
+= INDEPENDENTLY VERIFIED
+
+CONTENT_CHECKPOINT
+= 53cb2679de33d6b7737c1fa9cf8a39ef9e8b0aa1
+parent = 5f2d72191cdcad1801907bf5cb33aa8da61b5adb
+tree = 58ea9a8bbd445824aab5e643307b88bc544441ad
+= INDEPENDENTLY VERIFIED
+
+LATEST_VERIFIED_DEVELOPMENT_BASE
+= 53cb2679de33d6b7737c1fa9cf8a39ef9e8b0aa1
+
+当前已独立验证：
+- full regression = 361 / 0 failures / 0 errors / 0 skips
+- metadata production-driver path
+- content production-driver path
+- dynamic resource resolution
+- runtime parameter fail-closed
+- local direct-connection isolation
+- exec_seq 多轮单调性
+- metadata / content read-back
+- persistent-state stability
+
+当前 active scanner：
+scripts/secret_scan.py
+当前 checkpoint 不存在 scripts/config_scan.py；旧报告若写 config_scan.py，视为历史文档漂移。
+
+重要范围：
+- Project Cov = 领域/安全状态覆盖，不等同于原生 edge coverage。
+- 当前 content path 只证明 UTF-8/LF 文本 payload 精确覆盖写。
+- arbitrary binary-safe content = NOT SUPPORTED。
+- full real-service feedback loop = NOT YET VERIFIED。
+- long-running campaign = NO。
+- second-platform full chain = NOT INTEGRATED。
+
+Git 规则：
+除非我明确授权，不要 merge / push / tag / reset / rebase / history rewrite / git clean。
+不要在 dirty public-release worktree 上开发。
+新工作应从 53cb267 创建隔离 branch/worktree。
+
+结论分级必须严格使用：
+DESIGN CLAIM / IMPLEMENTED / VERIFIED BY IMPLEMENTER / INDEPENDENTLY VERIFIED / PARTIALLY VERIFIED / NOT VERIFIED。
+代码存在不等于验证；mock 不等于真实路径；共享 harness 不等于完整反馈闭环。
+
+本轮下一阶段不是继续增加平台 endpoint，也不是长时间 campaign。
+本轮目标是：
+
+BOUNDED FULL-FEEDBACK-LOOP INTEGRATION
+
+需要形成并验证：
+
+seed
+→ mutation
+→ validity/filter
+→ production target driver
+→ status/state observation
+→ state-coverage delta
+→ reward
+→ policy/scheduler update
+→ seed counters (例如 ss_cov_cnt / ss_selected_cnt / ss_prob)
+→ fuzzer_stats / eval_report / summary
+
+第一步请只读完成：
+1. 确认 53cb267、parent、tree 和 worktree cleanliness；
+2. 阅读实际 committed source；
+3. 定位当前 mutation / MAB-UCB / reward / state coverage / scheduler / stats 实现；
+4. 对照 04_project_background/AFL++源代码修改总纲.md，但“总纲”只能作为设计来源，实际代码事实以 53cb267 为准；
+5. 明确哪些链路已经 IMPLEMENTED、哪些只是 DESIGN CLAIM、哪些已有单测但没有真实闭环；
+6. 不修改代码，先给我一个最小 bounded 设计：需要改哪些文件、数据如何流动、如何 TDD、如何证明真实 feedback 穿过整个链路；
+7. 等我明确批准设计后再开始实现。
+
+额外要求：
+- 优先复用已经独立验证的 metadata/content production driver，不要复制一个新的目标执行器。
+- feedback integration 不应被塞进 Level-C launcher；launcher 保持 orchestration-only。
+- 不要因为 P0/P0.1 branch 名称而先做 cherry-pick：用户已只读验证这些 branch HEAD 都是 53cb267 的祖先。
+- 不要把历史 /tmp credential-hardening intermediate scanner 当成当前实现；它已归档，仅保留历史价值。

@@ -1,0 +1,198 @@
+[Engineering Context: The following is an independent read-only multi-run execution audit report and sequence accounting verification log for local service integration test drivers. All executions were performed in an isolated /tmp scratch space against local containerized test instances with synthetic test data. No production credentials, live secrets, or private keys are present or logged.]
+
+LEVEL-C METADATA 3-RUN CLOSURE VERIFICATION AUDIT REPORT
+
+Audit Scope: Independent read-only verification confirming multi-run execution sequence monotonicity (`exec_seq`), local resource resolution, proxy loopback isolation, and state persistence stability. Working trees and Git refs remain strictly unmodified.
+
+---
+
+# A. AUDIT INDEPENDENCE & ISOLATION
+
+- Scratch Workspace: `/tmp/target-levelc-3run-audit.GidaFE/repo` (git clone --no-hardlinks, clean isolated workspace)
+- FRESH_CLONE = YES
+- NO_OBJECT_ALTERNATES = YES
+- BORROWED_BUILD_ARTIFACTS = NO
+- Workspace Cleanliness: Source worktree remained strictly untouched; all scratch artifacts and evidence confined to `/tmp`.
+
+---
+
+# B. REPOSITORY & CHECKPOINT IDENTITY
+
+┌──────────────────────────────────────────┬──────────────────────────────────────────┬──────────┬────────┐
+│ Parameter                                │ Observed State                           │ Expected │ Status │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────┼────────┤
+│ CHECKPOINT_SHA                           │ 5f2d72191cdcad1801907bf5cb33aa8da61b5adb │ same     │ PASS   │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────┼────────┤
+│ CHECKPOINT_PARENT                        │ fc2866d4974de04e711f8395aac076490b68fc4f │ same     │ PASS   │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────┼────────┤
+│ TREE_OID                                 │ ff30bd64590864e14770bf713a542632e2836324 │ —        │ PASS   │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────┼────────┤
+│ Diff vs Parent                           │ 3 Added, 1 Modified (+1251 / -22 lines)  │ 4 paths  │ PASS   │
+├──────────────────────────────────────────┼──────────────────────────────────────────┼──────────┼────────┤
+│ public-release / origin / release tag    │ all c6817ce46b0120da95ba55869b6b298e1... │ c6817ce  │ PASS   │
+└──────────────────────────────────────────┴──────────────────────────────────────────┴──────────┴────────┘
+
+Path Identifier Resolution:
+Confirmed exact 1:1 path mapping between design specifications and committed checkpoint files:
+- Runner Script: `scripts/run_alfresco_levelc_metadata.py` (Blob: 8d99870a)
+- Target Config: `targets/alfresco_metadata_update.json` (Blob: ee89a901)
+- Unit Test Suite: `tests/test_alfresco_levelc_metadata.py` (Blob: 6d4abc58)
+- Platform Test Suite: `tests/test_v071_platform_chains.py` (Blob: 502e741f)
+- Placeholder: `__ALFRESCO_NODE_ID__` (Single parameter instance, rendered in run directory)
+- Static Validator: `scripts/secret_scan.py` (Committed active validator; zero unmapped aliases)
+
+---
+
+# C. FOCUSED UNIT TEST SUITE EXECUTION
+
+Executed within isolated scratch checkout with environment parameters unset:
+
+┌─────────────────────────────────────────┬────────────────────────┬──────────────┬─────────────┐
+│ Test Module                             │ Execution Result       │ Skipped Case │ Error Count │
+├─────────────────────────────────────────┼────────────────────────┼──────────────┼─────────────┤
+│ tests.test_alfresco_levelc_metadata     │ Ran 56 — OK (Exit 0)   │ 0            │ 0           │
+├─────────────────────────────────────────┼────────────────────────┼──────────────┼─────────────┤
+│ tests.test_v071_platform_chains         │ Ran 4 — OK (Exit 0)    │ 0            │ 0           │
+└─────────────────────────────────────────┴────────────────────────┴──────────────┴─────────────┘
+
+- Full 282-test regression status carries forward as INDEPENDENTLY VERIFIED from prior clean-checkout pass.
+
+---
+
+# D. ENVIRONMENT PARAMETER CONTRACT & VALIDATION
+
+- Runtime Configuration File: Mode 0600, restricted to test environment parameters (`ALFRESCO_USER`, `ALFRESCO_PASS`).
+- Fail-Closed Contract Verification (Network calls intercepted/blocked via socket mock):
+  - Missing parameters / partial parameters / whitespace-only values -> Immediate local exception, 0 network packets transmitted, 0 parameter strings reflected in stderr.
+  - Complete parameters present -> Proper configuration tuple returned.
+  - FAIL_CLOSED_CONTRACT = PASS
+
+---
+
+# E. NETWORK ROUTING & PROXY ISOLATION
+
+Verified loopback isolation against active ambient proxy configurations:
+- Default `urlopen` (interception active) -> Returns HTTP 502 (Gateway Interception).
+- Direct Opener with `ProxyHandler({})` -> Directly reaches local service (HTTP 401 probe / HTTP 200 normal).
+- Child Process Environment Sanitization: Strips all ambient proxy variables (`HTTP_PROXY`, `HTTPS_PROXY`, etc.); enforces strict loopback bypass (`no_proxy=127.0.0.1,localhost`).
+
+---
+
+# F. LOCAL SERVICE PREFLIGHT & RESOURCE RESOLUTION
+
+1. Service Preflight:
+- Local container services (`repository`, `postgres`, `proxy gateway`): UP & HEALTHY.
+- Deliberate Unauthenticated Probe (`GET /nodes/-root-`): Returns HTTP 401 (Confirms service-side access control active).
+- Authenticated Probe (`GET /nodes/-root-`): Returns HTTP 200 (Folder metadata retrieved).
+
+2. Dynamic Target Resource Resolution:
+- DYNAMIC_NODE_ID_RESOLUTION = PASS
+- Target Folder (Alias: `e67d5cad88a63330`): NV_AFL_REAL_PLATFORM_CALIBRATION (Unique match = 1)
+- Target Resource File (Alias: `7da8a07e13b11014`): nv-afl-levelc-metadata.txt (Existing dedicated node reused, 0 duplicate nodes created).
+- Rendered Runtime Configuration: Written to isolated `/tmp/.../run/target.json` outside workspace.
+
+---
+
+# G. BOUNDED 3-ROUND PRODUCTION HARNESS EXECUTION
+
+Executed 3 sequential update passes via production test driver `nv_http_harness.py`:
+
+┌──────────────────────────────┬─────────────────┬─────────────────┬─────────────────┐
+│ Evaluation Metric            │ Run A           │ Run B           │ Run C           │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Synthetic Payload Marker     │ ...3RUN_A       │ ...3RUN_B       │ ...3RUN_C       │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ HTTP Method / Status Code    │ PUT / 200 (2xx) │ PUT / 200 (2xx) │ PUT / 200 (2xx) │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Harness Return Code          │ 0 (Success)     │ 0 (Success)     │ 0 (Success)     │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Monotonic Sequence (exec_seq)│ 1               │ 2               │ 3               │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Round Latency                │ 87 ms           │ 68 ms           │ 65 ms           │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Target Path Reconciliation   │ MATCH           │ MATCH           │ MATCH           │
+├──────────────────────────────┼─────────────────┼─────────────────┼─────────────────┤
+│ Independent Read-Back        │ PASS            │ PASS            │ PASS            │
+└──────────────────────────────┴─────────────────┴─────────────────┴─────────────────┘
+
+Sequence Accounting Analysis:
+- `exec_seq` = [1, 2, 3] (Strictly positive, distinct, and monotonically increasing).
+- Monotonicity Mechanism: Confirmed driven by flock-synchronized sidecar artifact (`nv_http_status.json.seq = 3`), whereas process-local legacy sequence resets to 1 per invocation.
+- EXEC_SEQ_MONOTONIC = PASS
+
+---
+
+# H. READ-BACK VERIFICATION & STATE PERSISTENCE
+
+1. Read-Back Validation:
+- Verified by independent GET observer using distinct connection handlers.
+- 3/3 exact property match on `cm:title` and `cm:description`.
+- Final state matches Run C marker (`NV_LEVELC_INDEPENDENT_3RUN_C`); `cm:name` unmodified.
+
+2. State & Persistence Stability:
+
+┌──────────────────────────────────────┬────────────────────────────┬────────────────────────────┬────────────────────────┐
+│ State Invariant                      │ Pre-Audit State            │ Post-Audit State           │ Verification Result    │
+├──────────────────────────────────────┼────────────────────────────┼────────────────────────────┼────────────────────────┤
+│ Parent Namespace Sibling Count       │ 15                         │ 15                         │ PASS (0 growth)        │
+│ Dedicated Folder Child Count         │ 2                          │ 2                          │ PASS (No duplication)  │
+│ Resource Version Count               │ 0                          │ 0 (Across all rounds)      │ PASS (0 history drift) │
+│ Aspect Definitions                   │ [cm:auditable, cm:titled]  │ [cm:auditable, cm:titled]  │ PASS (No schema drift) │
+│ Resource Name (cm:name)              │ nv-afl-levelc-metadata.txt │ nv-afl-levelc-metadata.txt │ PASS (Preserved)       │
+│ Calibration Sibling Node             │ Modified 2026-08-17...     │ Modified 2026-08-17...     │ PASS (Untouched)       │
+└──────────────────────────────────────┴────────────────────────────┴────────────────────────────┴────────────────────────┘
+
+---
+
+# I. STATIC VALIDATION & DATA HYGIENE
+
+- Static Validator Sweep (`scripts/secret_scan.py`): 9 evidence files scanned, 0 skipped, 0 real findings -> Status: PASS.
+- Unmasked Parameter Containment Check: 0 raw parameters, 0 authorization header payloads, 0 raw key strings present in generated test reports.
+- Resource ID Redaction: Audit summary JSONs mask internal node identifiers (`<RESOURCE-ID-REDACTED>`), confining raw IDs strictly to runtime execution directories.
+
+---
+
+# J. FINAL REPOSITORY INTEGRITY
+
+- Scratch Clone: Detached HEAD at `5f2d721`, tree `ff30bd64...`, 0 uncommitted changes.
+- Source Workspace (`/home/dministrator/AFLplusplus`): Byte-identical pre- and post-audit.
+  - Reference fingerprint: `9e29c807...22ae2` (UNCHANGED)
+  - Tag count: 27 (UNCHANGED)
+  - Reflog count: 248 (UNCHANGED)
+- Commits Created: 0 (No merge, push, tag, reset, rebase, or history rewrites).
+
+---
+
+# K. FINAL CLASSIFICATION & VERDICT
+
+┌──────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
+│ Item                                                 │ Verified Classification                       │
+├──────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
+│ CHECKPOINT_SHA 5f2d7219... / PARENT fc2866d4...      │ INDEPENDENTLY CONFIRMED                       │
+│ LEVEL_C_CHECKPOINT_INTEGRITY                         │ INDEPENDENTLY VERIFIED                        │
+│ LEVEL_C_FOCUSED_REGRESSION                           │ INDEPENDENTLY VERIFIED                        │
+│ UNCONNECTED_PREFLIGHT_PROBE                          │ INDEPENDENTLY VERIFIED                        │
+│ CONNECTED_PREFLIGHT_PROBE                            │ INDEPENDENTLY VERIFIED                        │
+│ DYNAMIC_RESOURCE_ID_RESOLUTION                       │ INDEPENDENTLY VERIFIED                        │
+│ PRODUCTION_HARNESS_METADATA_SMOKE_3RUN               │ INDEPENDENTLY VERIFIED                        │
+│ METADATA_READBACK_3RUN                               │ INDEPENDENTLY VERIFIED                        │
+│ EXEC_SEQ_3RUN_MONOTONICITY                           │ INDEPENDENTLY VERIFIED                        │
+│ PERSISTENT_STATE_STABILITY_3RUN                      │ INDEPENDENTLY VERIFIED                        │
+│ LEVEL_C_METADATA_PATH                                │ INDEPENDENTLY VERIFIED                        │
+│ Full 282-Test Regression                             │ Carried forward (PASS from prior audit)       │
+│ Clean-Checkout Reproducibility                       │ Carried forward (PASS from prior audit)       │
+│ UNCONSTRAINED_EXECUTION_CAMPAIGNS                    │ NO                                            │
+│ CROSS_PLATFORM_PIPELINE_INTEGRATION                  │ PARTIALLY_VERIFIED                            │
+└──────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
+
+FINAL AUDIT VERDICT: LEVEL_C_3RUN_CLOSURE_AUDIT_PASS
+
+---
+
+# L. SCOPE BOUNDARY & NEXT RECOMMENDATION
+
+- Observed Directly: Checkpoint parent/tree exactness, clean scratch build, focused tests (56/4), live network isolation, preflight probes, 3-round production harness invocations (PUT 200), monotonic `exec_seq` (1->2->3), read-back parity, node state invariance, and repository immutability.
+- Carried Forward: Full 282-test suite pass and static tree clean-checkout reproducibility.
+- Remaining Out of Scope: Long-running test driver pipelines, content/multipart endpoint paths, and cross-framework integration.
+
+Next Recommendation: Proceed with bounded execution harness smoke validation.
