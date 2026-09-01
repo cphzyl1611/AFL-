@@ -172,6 +172,23 @@ class BackendSelectorTest(unittest.TestCase):
         runner = load_runner()
         self.assertEqual(runner.DEFAULT_VALIDITY_BACKEND, "alfresco_ae_v1")
 
+    def test_legacy_se_fanogan_mode_reaches_canonical_reference_scorer(self):
+        """The legacy SEFANOGAN_MODE=se_fanogan_es_reference selector must
+        reach the same canonical ReferenceScorer as NV_VALIDITY_BACKEND=sefanogan_es_reference,
+        not just fail closed on missing artifacts."""
+        checkpoint, metadata = reference_artifacts()
+        environment = {
+            "SEFANOGAN_MODE": "se_fanogan_es_reference",
+            "SEFANOGAN_MODEL_PATH": str(checkpoint),
+            "SEFANOGAN_REFERENCE_META_PATH": str(metadata),
+        }
+        server = load_server_from(ROOT / "model_stage/nv_valid_server_real.py", environment)
+        predictor = server.PREDICTOR
+        scorer = predictor.scorer
+        self.assertEqual(type(scorer).__module__, "model_stage.sefanogan_es_reference")
+        self.assertEqual(type(scorer).__name__, "ReferenceScorer")
+        self.assertTrue(Path(scorer.metadata_path).is_file())
+
 
 class RealRunnerPropagationTest(unittest.TestCase):
     def _layout(self, runner, directory: str):

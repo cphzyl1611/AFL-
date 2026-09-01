@@ -107,18 +107,24 @@ def build_infer_engine():
     elif SEFANOGAN_MODE == "se_fanogan_es_reference":
         model_path = _get_env_required("SEFANOGAN_MODEL_PATH")
         meta_path = _get_env_required("SEFANOGAN_REFERENCE_META_PATH")
-        scorer = ReferenceScorer(model_path, meta_path)
+        # Legacy selector reuses the same canonical loader as NV_VALIDITY_BACKEND=sefanogan_es_reference.
+        scorer = load_validity_backend(
+            "sefanogan_es_reference",
+            {"checkpoint": model_path, "metadata": meta_path},
+        )
 
         # The canonical fixed vector is ordered by the existing Alfresco extractor.
         from model_stage.alfresco_feature_extractor import feature_names as alfresco_feature_names
         feature_names = alfresco_feature_names()
         class ReferenceInfer:
+            def __init__(self, scorer):
+                self.scorer = scorer
             def score(self, feature_map):
-                return {"mode": "se_fanogan_es_reference", "score": scorer.score([float(feature_map.get(k, 0.0)) for k in feature_names]), "recon_err": 0.0, "feat_err": 0.0}
+                return {"mode": "se_fanogan_es_reference", "score": self.scorer.score([float(feature_map.get(k, 0.0)) for k in feature_names]), "recon_err": 0.0, "feat_err": 0.0}
         print(f"[INFO] infer mode = se_fanogan_es_reference", flush=True)
         print(f"[INFO] reference model = {model_path}", flush=True)
         print(f"[INFO] reference meta = {meta_path}", flush=True)
-        return ReferenceInfer()
+        return ReferenceInfer(scorer)
 
     else:
         raise RuntimeError(f"Unsupported SEFANOGAN_MODE: {SEFANOGAN_MODE}")

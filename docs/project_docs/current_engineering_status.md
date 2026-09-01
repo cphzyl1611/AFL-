@@ -1,5 +1,12 @@
 # 当前工程结构与后续推进说明
 
+> **状态说明（supersession notice）**：本文档正文记录的是一个更早的工程阶段（启发式评分 → 中心距离占位模型 → AE 风格占位模型的演进），历史结果按原样保留，不作事后改写。当前最新状态请参见：
+>
+> - `docs/final_delivery/fuzz_component_final_acceptance_20260901.md`（最终验收报告）；
+> - `docs/project_docs/sefanogan_es_reference_contract.md`（SE-fAnoGAN-ES backend 选择器契约）。
+>
+> 当前工程结论为：AE v1 是默认/主要的轻量统计基线模型；canonical SE-fAnoGAN-ES reference 已实现并完成正式对比（formal comparison）；SE-fAnoGAN-ES 是可选的研究后端（optional research backend），非默认；真实服务上的 AE-vs-SE four-run A/B 扩展实验尚未完成（`NOT_COMPLETED`）。
+
 ## 1. 当前阶段定位
 
 当前项目已经完成从启发式评分、中心距离占位模型到 AE 风格占位模型的阶段性演进，建立了从数据集、特征抽取、模型训练、统一预测接口、在线 score 服务到 AFL `rule_score-only` 验证的完整链路。

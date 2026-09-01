@@ -20,7 +20,10 @@
 正式 baseline 为 AFL++ main repository `/home/dministrator/AFLplusplus` 中的 `public-release` 快照：
 
 - `OFFICIAL_RELEASE_BASELINE = c6817ce46b0120da95ba55869b6b298e18e4cf8b`
-- `CURRENT_BOUNDED_HEAD = fe5a89480d1ae5cd17e44f8bb4bde7f139c2cfc5`
+- `CURRENT_BOUNDED_HEAD = fe5a89480d1ae5cd17e44f8bb4bde7f139c2cfc5`（历史记录，早于下方 reconciliation HEAD）
+- `PRE_RECONCILIATION_INTEGRATION_HEAD = e6d17ad211b3fb522932ae812cf8f6310d55904f`
+
+`PRE_RECONCILIATION_INTEGRATION_HEAD` 为本次 SE backend selector 文档/测试 reconciliation 开始前，`integration/final-fuzzing-component` 分支已推送到 GitHub 的 HEAD。本次 reconciliation 完成后会产生新的提交，其确切 SHA 在本文档写入时尚未存在；最终交付提交（final delivery commit）定义为“包含本次已 reconciled 文档的提交”——读者应以 `git log` / `git rev-parse HEAD` 解析该分支当前 HEAD，而不是依赖本文档中写死的某个 SHA 作为最新值。
 
 当前 bounded HEAD 与 official baseline 的差异属于本组件 bounded worktree 的提交范围，不改变 official baseline 的身份和基准结论。证据权威顺序为：current source / final frozen evidence > committed source snapshot > independent audit > historical handoff/report。
 
@@ -131,6 +134,12 @@ O2OA 的最终 post-fix bounded real gate 与 Alfresco 的 metadata、content、
 - AE warm latency 约 `0.074284 ms`，throughput 约 `13461.870 samples/s`；
 - SE warm latency mean 约 `0.249722 ms`，throughput mean 约 `4007.317 samples/s`。
 
+```text
+REAL_AE_VS_SE_FOUR_RUN_AB = NOT_COMPLETED / POST_FREEZE_RESEARCH_EXTENSION
+```
+
+上述真实服务上的 AE-vs-SE four-run A/B 扩展实验未完成，属于 post-freeze research extension，非阻塞项，不得表述为 PASS。已完成并冻结的是本节上方基于 holdout 数据集的 formal training/holdout comparison（`SE_FANOGAN_ES_FORMAL_COMPARISON = COMPLETE`），两者范围不同，不可互相替代。
+
 ## 9. 跨平台验证
 
 ```text
@@ -146,13 +155,31 @@ SCOPE = BOUNDED_ENGINEERING_VALIDATION_ON_ALFRESCO_AND_O2OA
 
 - `TARGETED_C_PROBE_RERUN = PASS`；
 - `ATTRIBUTION_MODULE_RERUN = PASS`：discovered 17，passed 17，failed 0，errors 0，skipped 0；
-- `FULL_OFFLINE_REGRESSION = PASS`：728 / 728，0 failures，0 errors，0 skips；
+- `FULL_OFFLINE_REGRESSION = PASS`：728 / 728，0 failures，0 errors，0 skips（历史 final-freeze 计数，保留为历史证据，不作事后改写）；
 - `AFL_BUILD = PASS`；
 - `SECRET_SCAN = PASS`；
 - `RUNTIME_SECRET_ALLOWLIST_REVIEW = PASS`；
 - `EVIDENCE_HASH_MANIFEST = PASS`。
 
 最终环境问题已解决：根因是 Python interpreter / CPython 3.12 development-tooling environment mismatch；最终方案为 project venv 使用 ABI-compatible Python 3.12 development tooling。该历史环境问题不属于当前 blocker，且不需要 source change 或 model change。
+
+### 10.1 Verification chronology
+
+本文档涉及三轮独立离线回归验证，按时间顺序记录，互不覆盖：
+
+1. **historical final freeze**：`728 / 728`，0 failures，0 errors，0 skips（见上文，历史证据，保留原始计数）。
+2. **pre-delivery verification（`e6d17ad` 之前）**：`744 / 744`，`FULL_OFFLINE_REGRESSION = OK`；`AFL_BUILD_EXIT = 0`；`STAGED_SECRET_GATE = PASS`。
+3. **post-reconciliation verification（本次 SE backend selector reconciliation 之后）**：`745 / 745`，0 failures，0 errors，0 skips（`python -m unittest discover -s tests`，未过滤/跳过任何测试；相对 pre-delivery 的 744 增加 1，对应新增的 `test_legacy_se_fanogan_mode_reaches_canonical_reference_scorer` RED→GREEN 回归测试）。
+
+### 10.2 SE backend selector reconciliation（本次变更）
+
+本次 reconciliation 修复并记录了 SE-fAnoGAN-ES backend selector 的一个遗留缺陷：
+
+- 生产模块 `model_stage/nv_valid_server_real.py` 中，legacy 兼容选择器 `SEFANOGAN_MODE=se_fanogan_es_reference` 在 `build_infer_engine()` 内直接引用 `ReferenceScorer`，但该名称在该函数作用域内未被导入，导致该路径即便配置了有效的 checkpoint/metadata 也会在初始化阶段抛出 `NameError`，而不是产出真实评分结果。
+- 该缺陷此前未被现有测试覆盖：既有测试仅验证 legacy 路径在 artifacts 缺失时 fail closed（NameError 恰好也会导致非零退出码，从而掩盖了根因）。
+- 修复方式：legacy 路径改为复用 `load_validity_backend()`（与 `NV_VALIDITY_BACKEND=sefanogan_es_reference` canonical 路径完全相同的 loader），因此两条路径现在保证解析到同一个 `model_stage.sefanogan_es_reference.ReferenceScorer` 实现，且都在 artifacts 缺失/损坏时 fail closed。
+- 新增 RED→GREEN 回归测试：`tests/test_sefanogan_backend_wiring.py::BackendSelectorTest::test_legacy_se_fanogan_mode_reaches_canonical_reference_scorer`，使用既有的冻结 SE reference checkpoint + metadata（未训练新模型），验证生产 legacy selector 路径能够真正初始化并到达 canonical scorer。
+- AE v1 default 行为、canonical selector 行为、fail-closed 语义均未改变。详见 `docs/project_docs/sefanogan_es_reference_contract.md`。
 
 ## 11. Non-blocking / future extension
 

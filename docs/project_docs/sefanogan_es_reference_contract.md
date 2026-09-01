@@ -15,10 +15,30 @@ of exact reproduction of the underspecified original formula.
 - Score: `0.75*sqrt(reconstruction_mse) + 0.25*sqrt(discriminator_feature_mse)`.
 - Checkpoints and metadata are generated per run and are not production primary
   artifacts.
-- The online backend is selected only with
-  `SEFANOGAN_MODE=se_fanogan_es_reference` and requires both checkpoint and
-  metadata paths. Missing or malformed artifacts fail closed.
-- AE v1 remains the default and primary model.
+- AE v1 remains the default and primary model. SE-fAnoGAN-ES is an explicit
+  opt-in, optional research backend; it is never selected implicitly.
+
+## Backend selectors
+
+There are two ways to select the SE-fAnoGAN-ES reference scorer at runtime.
+Both require a valid checkpoint and metadata path, both resolve to the same
+canonical `model_stage.sefanogan_es_reference.ReferenceScorer` implementation,
+and both fail closed when artifacts are missing or malformed.
+
+- **Canonical selector**: `NV_VALIDITY_BACKEND=sefanogan_es_reference`, with
+  `SEFANOGAN_REFERENCE_CHECKPOINT` and `SEFANOGAN_REFERENCE_META_PATH`. This is
+  the production backend-selection path used by
+  `model_stage/nv_valid_server_real.py:load_validity_backend()` and by the
+  bounded feedback runner (`scripts/run_alfresco_bounded_feedback.py`).
+- **Legacy compatibility selector**: `SEFANOGAN_MODE=se_fanogan_es_reference`,
+  with `SEFANOGAN_MODEL_PATH` and `SEFANOGAN_REFERENCE_META_PATH`. This path is
+  preserved for backward compatibility only; it internally delegates to the
+  same `load_validity_backend()` loader as the canonical selector, so it
+  cannot silently diverge from the canonical scorer.
+
+Prefer `NV_VALIDITY_BACKEND=sefanogan_es_reference` for new integrations. The
+legacy `SEFANOGAN_MODE` selector exists only so that older callers keep
+working.
 
 The training metadata records a hash of the no-raw-content provenance manifest,
 the checkpoint hash, split role, sample counts, and feature representation.

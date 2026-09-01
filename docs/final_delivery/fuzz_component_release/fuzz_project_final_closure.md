@@ -1,5 +1,7 @@
 # 模糊测试项目阶段性最终收口总结
 
+> **历史/已被取代说明（superseded notice）**：本文档是一份阶段性 stage-closure 文档，记录的是当时阶段的收口状态。本文档中的历史结果按原样保留，不作删除或改写。最终、权威的验收结论请参见 `docs/final_delivery/fuzz_component_final_acceptance_20260901.md`。
+
 ## 1. 项目范围说明
 
 当前阶段模糊测试部分的工作范围主要包括：
