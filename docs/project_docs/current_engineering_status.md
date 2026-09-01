@@ -134,3 +134,41 @@
 5. `docs/project_docs/model_evolution_plan.md`
 
 这些文件共同构成了当前阶段从启发式评分向 AE 异常检测模型演进的完整证据链。
+
+---
+
+## 9. Alfresco multipart bounded closure amendment (2026-08-31)
+
+本次 fuzzing 收口新增并验证：
+
+```text
+canonical multipart positive manifest = PASS
+one-shot reproduction script = PASS
+real validation-reject = PASS
+multipart field_value real arm = PASS
+multipart boundary real arm = PASS
+multipart structure real arm = PASS
+multipart multi-arm real validation = PASS
+```
+
+最终真实运行目录：
+
+```text
+/tmp/alfresco-multipart-closure-final-20260831
+```
+
+每个 arm 均完成 21 次 HTTP 201、21/21 创建节点 metadata/content read-back、2 个不同 queue seed 选择、execution ledger/MAB reconciliation 和 runner exit 0。负样本阶段验证了 `HTTP_SENT=0`、`NODES_CREATED=0` 且 parent children 数量不变。
+
+正式 canonical 资产：
+
+```text
+in/alfresco_multipart_upload_bounded/manifest.txt
+scripts/reproduce_alfresco_multipart_bounded.py
+```
+
+长期稳定性和规模化验证按范围保持：
+
+```text
+LONG_TERM_STABILITY = NOT_RUN_BY_SCOPE
+SCALE_VALIDATION = NOT_RUN_BY_SCOPE
+```

@@ -63,7 +63,7 @@ python3 model_stage/nv_valid_server_real.py
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 
 python3 runner/fuzz_test_runner.py submit --task-json runner/templates/task_ae_default.json
 ```
@@ -81,7 +81,7 @@ python3 runner/fuzz_test_runner.py report --task-id <task_id>
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 
 python3 runner/fuzz_test_runner.py submit --task-json runner/templates/task_gan_v2_default.json
 ```
@@ -131,7 +131,60 @@ python3 runner/fuzz_test_runner.py report --task-id <task_id>
 
 ---
 
-## 10. 第二平台最小校准说明（Flowable）
+## 10. Alfresco multipart bounded 一键复现（当前最终口径）
+
+当前 multipart 入口已区分为两个独立层次：
+
+- static-loop：历史接口 replay 证据；
+- bounded：AFL++ stdin/forkserver、MAB、execution ledger、seed audit 和创建节点 read-back。
+
+在 bounded 工作树根目录执行默认 dry-run：
+
+```bash
+cd /home/dministrator/AFLplusplus-alfresco-real-feedback
+python3 scripts/reproduce_alfresco_multipart_bounded.py \
+  --output-root /tmp/alfresco-multipart-repro-dry-<run-id>
+```
+
+真实一次性复现需要显式开启真实写入；凭据只通过环境变量注入：
+
+```bash
+export ALFRESCO_USER='<ALFRESCO_USER>'
+export ALFRESCO_PASS='<ALFRESCO_PASS>'
+python3 scripts/reproduce_alfresco_multipart_bounded.py \
+  --output-root /tmp/alfresco-multipart-repro-<run-id> \
+  --allow-real-write \
+  --max-test-cases 12 \
+  --time-budget 45
+```
+
+脚本固定按以下顺序执行并在首个失败处停止：
+
+```text
+negative validation
+field_value
+boundary
+structure
+```
+
+canonical 正向 manifest：
+
+```text
+in/alfresco_multipart_upload_bounded/manifest.txt
+```
+
+负样本不进入正向 manifest：
+
+```text
+negative_boundary_mismatch.http
+negative_missing_filedata.http
+```
+
+长期稳定性、规模化 seed campaign、CI 调度和无限重试不属于该一键脚本范围。
+
+---
+
+## 11. 第二平台最小校准说明（Flowable）
 
 当前已完成 Flowable 第二平台的最小校准验证：
 

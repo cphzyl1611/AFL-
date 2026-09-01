@@ -1,6 +1,6 @@
 {
   "base": "http://127.0.0.1:20020",
-  "health": "/x_desktop/index.html",
+  "health_url": "http://127.0.0.1:80/",
 
   "auth": {
     "type": "raw_token",

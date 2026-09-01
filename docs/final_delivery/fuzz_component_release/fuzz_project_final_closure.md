@@ -249,6 +249,24 @@ v3 保留为后续数据整理与再训练参考版本。
 
 ---
 
+## Multipart bounded closure amendment (2026-08-31)
+
+The original stage summary above predates the completed Alfresco multipart bounded closure. The current fuzzing status is:
+
+```text
+ALFRESCO_MULTIPART_STATIC_LOOP = PASS
+ALFRESCO_MULTIPART_BOUNDED_FUZZ = PASS
+ALFRESCO_MULTIPART_REAL_VALIDATION_REJECT = PASS
+ALFRESCO_MULTIPART_FIELD_VALUE_REAL = PASS
+ALFRESCO_MULTIPART_BOUNDARY_REAL = PASS
+ALFRESCO_MULTIPART_STRUCTURE_REAL = PASS
+ALFRESCO_MULTIPART_MULTI_ARM_REAL = PASS
+```
+
+Canonical inputs are stored under `in/alfresco_multipart_upload_bounded/`; the one-shot reproduction entry is `scripts/reproduce_alfresco_multipart_bounded.py`. Final real evidence is recorded in `/tmp/alfresco-multipart-closure-final-20260831`. The one-shot order is `negative -> field_value -> boundary -> structure`, and long-term stability/scale validation remain intentionally not run.
+
+See `docs/final_delivery/fuzz_component_release/alfresco_multipart_bounded_final.md` for the detailed evidence contract and `docs/project_docs/alfresco_multipart_bounded_repro.md` for reproduction instructions.
+
 ## 10. 当前阶段结束说明
 
 综上，当前模糊测试部分已经完成：

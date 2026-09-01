@@ -25,6 +25,7 @@ static u32 pending_arm_at_common;
 static u32 mutator_calls;
 static s32 mutator_reported = -1;
 static u8  continuous_scenario;
+static fsrv_run_result_t forced_fault = FSRV_RUN_OK;
 static const char *target_input_path;
 static const char *fake_target_path;
 static const char *python_path;
@@ -105,7 +106,7 @@ fsrv_run_result_t afl_fsrv_run_target(afl_forkserver_t *fsrv, u32 timeout,
 
   }
 
-  return FSRV_RUN_OK;
+  return forced_fault;
 
 }
 
@@ -396,6 +397,38 @@ static void print_observation(const char *label, const afl_state_t *afl,
 
 }
 
+static int run_wait_for_fresh(const char *status_path,
+                               const char *new_status_path) {
+
+  afl_state_t afl;
+  struct queue_entry queue;
+  nv_state_obs_t obs;
+  init_feedback_state(&afl, &queue);
+  if (setenv("NV_STATUS_PATH", status_path, 1) != 0) return 2;
+
+  nv_observe_security_state(&afl, status_path, &obs);
+  if (!obs.has) return 3;
+
+  pid_t child = fork();
+  if (child < 0) return 4;
+  if (child == 0) {
+    usleep(20000);
+    if (rename(new_status_path, status_path) != 0) _exit(5);
+    _exit(0);
+  }
+
+  nv_observe_security_state_after_execution(&afl, status_path, &obs);
+  int child_status = 0;
+  if (waitpid(child, &child_status, 0) != child ||
+      !WIFEXITED(child_status) || WEXITSTATUS(child_status) != 0) return 6;
+  printf("WAIT has=%u exec_seq=%llu replays=%llu\n",
+         (unsigned)obs.has,
+         (unsigned long long)obs.exec_seq,
+         (unsigned long long)afl.nv_sec_state_replays);
+  return obs.has && obs.exec_seq > 1 ? 0 : 1;
+
+}
+
 static int run_credit(const char *first_path, const char *second_path) {
 
   afl_state_t        afl;
@@ -445,7 +478,8 @@ static int run_saturation(const char *status_path) {
 }
 
 static int run_reward(const char *status_path, const char *pending_text,
-                      const char *arm_text) {
+                      const char *arm_text, const char *journal_path,
+                      const char *zero_reward_text) {
 
   int pending = atoi(pending_text);
   int arm = atoi(arm_text);
@@ -466,6 +500,17 @@ static int run_reward(const char *status_path, const char *pending_text,
   afl.nv_mab.pending_update = (u8)pending;
   afl.nv_mab.update_source = pending ? 1 : 0;
   setenv("NV_STATUS_PATH", status_path, 1);
+  if (journal_path && *journal_path) setenv("NV_MAB_JOURNAL_PATH", journal_path, 1);
+
+  if (zero_reward_text && !strcmp(zero_reward_text, "zero")) {
+
+    nv_state_obs_t prior;
+    nv_observe_security_state(&afl, status_path, &prior);
+    /* The fixture reuses one status document for the next execution.  Keep
+       the consumed state set, but model the next execution identity. */
+    if (prior.exec_seq > 0) afl.nv_last_exec_seq = prior.exec_seq - 1;
+
+  }
 
   int rc = common_fuzz_stuff(&afl, input, 1);
   printf("REWARD rc=%d selected=%u observed_seq=%llu reward_src_seq=%llu "
@@ -480,6 +525,88 @@ static int run_reward(const char *status_path, const char *pending_text,
          (unsigned long long)afl.nv_mab.arms[2].pulls,
          (unsigned)afl.nv_mab.pending_update,
          (unsigned)afl.nv_mab.update_source, target_calls);
+  unsetenv("NV_MAB_JOURNAL_PATH");
+  return rc;
+
+}
+
+static int run_no_status_target(const char *status_path,
+                                 const char *ledger_path) {
+
+  afl_state_t afl;
+  struct queue_entry queue;
+  u8 input[] = "x";
+  init_feedback_state(&afl, &queue);
+  afl.max_length = 1024;
+  afl.stage_name = (u8 *)"phase3b";
+  afl.stage_cur = 1;
+  afl.stage_max = 10;
+  afl.stats_update_freq = 100;
+  afl.nv_mab.pending_update = 0;
+  forced_fault = FSRV_RUN_OK;
+  continuous_mode = 0;
+  target_calls = 0;
+  setenv("NV_STATUS_PATH", status_path, 1);
+  setenv("NV_EXECUTION_LEDGER_PATH", ledger_path, 1);
+
+  int rc = common_fuzz_stuff(&afl, input, 1);
+  FILE *fp = fopen(ledger_path, "rb");
+  char line[2048] = {0};
+  if (!fp || !fgets(line, sizeof(line), fp)) {
+    if (fp) fclose(fp);
+    return 3;
+  }
+  fclose(fp);
+  printf("NO_STATUS rc=%d target_calls=%u ledger=%s", rc, target_calls, line);
+  unsetenv("NV_EXECUTION_LEDGER_PATH");
+  return 0;
+
+}
+
+static int run_pending(const char *reason, const char *status_path,
+                       const char *journal_path) {
+
+  afl_state_t afl;
+  struct queue_entry queue;
+  u8 input[] = "x";
+  init_feedback_state(&afl, &queue);
+  afl.max_length = 1024;
+  afl.stage_name = (u8 *)"phase3b";
+  afl.stage_cur = 1;
+  afl.stage_max = 10;
+  afl.stats_update_freq = 100;
+  afl.nv_mab.pending_arm = NV_ARM_BOUNDARY;
+  afl.nv_mab.pending_update = 1;
+  afl.nv_mab.update_source = 1;
+  forced_fault = FSRV_RUN_OK;
+
+  if (!strcmp(reason, "budget_boundary")) {
+    afl.nv_task.max_test_cases = 1;
+  } else if (!strcmp(reason, "stop_soon")) {
+    afl.stop_soon = 1;
+  } else if (!strcmp(reason, "timeout")) {
+    forced_fault = FSRV_RUN_TMOUT;
+    afl.subseq_tmouts = TMOUT_LIMIT + 1;
+  } else if (!strcmp(reason, "invalid_input")) {
+    input[0] = 0;
+  } else if (!strcmp(reason, "skip")) {
+    afl.skip_requested = 1;
+  } else {
+    return 2;
+  }
+
+  setenv("NV_STATUS_PATH", status_path, 1);
+  setenv("NV_MAB_JOURNAL_PATH", journal_path, 1);
+  u32 input_len = strcmp(reason, "invalid_input") ? 1 : 0;
+  int rc = common_fuzz_stuff(&afl, input, input_len);
+  printf("PENDING rc=%d pulls=%llu arm_pulls=%llu records=%llu pending=%u "
+         "update_source=%u\n",
+         rc, (unsigned long long)afl.nv_mab.total_pulls,
+         (unsigned long long)afl.nv_mab.arms[NV_ARM_BOUNDARY].pulls,
+         (unsigned long long)afl.nv_mab_journal_record_count,
+         (unsigned)afl.nv_mab.pending_update, (unsigned)afl.nv_mab.update_source);
+  unsetenv("NV_MAB_JOURNAL_PATH");
+  forced_fault = FSRV_RUN_OK;
   return rc;
 
 }
@@ -777,7 +904,9 @@ static int run_continuous(const char *scenario, const char *status_path,
          "mutator_calls=%u pending_at_common=%u pending_arm_at_common=%u "
          "target_calls=%u observed_seq=%llu reward_src_seq=%llu "
          "total_pulls=%llu arm0=%llu arm1=%llu arm2=%llu pending_after=%u "
-         "update_source_after=%u mutator_reported=%d\n",
+         "update_source_after=%u arm0_sum=%.17g arm1_sum=%.17g "
+         "arm2_sum=%.17g arm0_pos=%llu arm1_pos=%llu arm2_pos=%llu "
+         "mutator_reported=%d\n",
          (unsigned)continuous_scenario, fuzz_rc, (unsigned)afl.nv_mab.last_arm,
          nv_cur && nv_cur[0] && !nv_cur[1] ? nv_cur[0] - '0' : -1,
          nv_used && nv_used[0] && !nv_used[1] ? nv_used[0] - '0' : -1,
@@ -789,12 +918,112 @@ static int run_continuous(const char *scenario, const char *status_path,
          (unsigned long long)afl.nv_mab.arms[1].pulls,
          (unsigned long long)afl.nv_mab.arms[2].pulls,
          (unsigned)afl.nv_mab.pending_update,
-         (unsigned)afl.nv_mab.update_source, mutator_reported);
+          (unsigned)afl.nv_mab.update_source,
+          afl.nv_mab.arms[0].sum_reward, afl.nv_mab.arms[1].sum_reward,
+          afl.nv_mab.arms[2].sum_reward,
+          (unsigned long long)afl.nv_mab.arms[0].pos_cnt,
+          (unsigned long long)afl.nv_mab.arms[1].pos_cnt,
+          (unsigned long long)afl.nv_mab.arms[2].pos_cnt, mutator_reported);
   return fuzz_rc;
 
 }
 
+static int run_multi_arm(const char *status_path, const char *fixture_path,
+                         const char *rules_path, const char *python_executable,
+                         const char *input_path, const char *journal_path) {
+
+  static u8 testcase[] =
+      "PUT /offline/node HTTP/1.1\r\n"
+      "Content-Type: application/json\r\n"
+      "\r\n"
+      "{\"name\":\"offline-node\",\"properties\":"
+      "{\"cm:title\":\"local\"}}";
+  afl_state_t         afl;
+  struct queue_entry  queue;
+  struct skipdet_entry skipdet;
+  init_feedback_state(&afl, &queue);
+  memset(&skipdet, 0, sizeof(skipdet));
+
+  queue.testcase_buf = testcase;
+  queue.len = sizeof(testcase) - 1;
+  queue.depth = 1;
+  queue.perf_score = 100;
+  queue.weight = 1.0;
+  queue.trim_done = 1;
+  queue.was_fuzzed = 1;
+  queue.favored = 1;
+  queue.skipdet_e = &skipdet;
+  afl.queued_items = 1;
+  afl.active_items = 1;
+  afl.non_instrumented_mode = 1;
+  afl.skip_deterministic = 1;
+  afl.custom_only = 1;
+  afl.havoc_div = 1;
+  afl.max_length = MAX_FILE;
+  afl.stats_update_freq = 100;
+  afl.fixed_seed = 1;
+  afl.fsrv.real_map_size = 1;
+  afl.rand_seed[0] = 1;
+  nv_mab_init_defaults(&afl.nv_mab);
+  afl.nv_mab.min_explore = 1;
+  afl.nv_task.mutation_scope = 0x7;
+
+  setenv("NV_STATUS_PATH", status_path, 1);
+  setenv("NV_BODY_RULES", rules_path, 1);
+  setenv("NV_MAB_JOURNAL_PATH", journal_path, 1);
+  setenv("PYTHONDONTWRITEBYTECODE", "1", 1);
+  unsetenv("NV_CUR_ARM");
+  unsetenv("NV_JSON_ARM_USED");
+  target_input_path = input_path;
+  fake_target_path = fixture_path;
+  python_path = python_executable;
+  continuous_mode = 1;
+  continuous_scenario = 0;
+  mutator_calls = 0;
+  mutator_reported = -1;
+
+  struct custom_mutator *mutator =
+      load_custom_mutator_py(&afl, (char *)"nv_json_mutator");
+  struct audited_mutator audited = {
+      .actual_data = mutator->data,
+      .actual_fuzz = mutator->afl_custom_fuzz,
+  };
+  mutator->data = &audited;
+  mutator->afl_custom_fuzz = audited_custom_fuzz;
+  mutator->afl_custom_fuzz_count = one_custom_fuzz;
+  afl.custom_mutators_count = 1;
+  list_append(&afl.custom_mutator_list, mutator);
+
+  int rc0 = fuzz_one_original(&afl);
+  int rc1 = fuzz_one_original(&afl);
+  int rc2 = fuzz_one_original(&afl);
+  printf("MULTI_ARM rc0=%d rc1=%d rc2=%d calls=%u total_pulls=%llu arm0=%llu arm1=%llu "
+         "arm2=%llu records=%llu last_exec_seq=%llu last_arm=%u\n",
+         rc0, rc1, rc2, mutator_calls,
+         (unsigned long long)afl.nv_mab.total_pulls,
+         (unsigned long long)afl.nv_mab.arms[0].pulls,
+         (unsigned long long)afl.nv_mab.arms[1].pulls,
+         (unsigned long long)afl.nv_mab.arms[2].pulls,
+         (unsigned long long)afl.nv_mab_journal_record_count,
+         (unsigned long long)afl.nv_last_exec_seq, (unsigned)afl.nv_mab.last_arm);
+  unsetenv("NV_MAB_JOURNAL_PATH");
+  return rc0 || rc1 || rc2;
+
+}
+
 int main(int argc, char **argv) {
+
+  if (argc == 4 && !strcmp(argv[1], "wait-for-fresh")) {
+
+    return run_wait_for_fresh(argv[2], argv[3]);
+
+  }
+
+  if (argc == 4 && !strcmp(argv[1], "no-status-target")) {
+
+    return run_no_status_target(argv[2], argv[3]);
+
+  }
 
   if (argc == 4 && !strcmp(argv[1], "credit")) {
 
@@ -816,7 +1045,25 @@ int main(int argc, char **argv) {
 
   if (argc == 5 && !strcmp(argv[1], "reward")) {
 
-    return run_reward(argv[2], argv[3], argv[4]);
+    return run_reward(argv[2], argv[3], argv[4], NULL, NULL);
+
+  }
+
+  if (argc == 6 && !strcmp(argv[1], "reward")) {
+
+    return run_reward(argv[2], argv[3], argv[4], argv[5], NULL);
+
+  }
+
+  if (argc == 7 && !strcmp(argv[1], "reward")) {
+
+    return run_reward(argv[2], argv[3], argv[4], argv[5], argv[6]);
+
+  }
+
+  if (argc == 5 && !strcmp(argv[1], "pending")) {
+
+    return run_pending(argv[2], argv[3], argv[4]);
 
   }
 
@@ -834,11 +1081,20 @@ int main(int argc, char **argv) {
 
   }
 
+  if (argc == 8 && !strcmp(argv[1], "multi-arm")) {
+
+    return run_multi_arm(argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
+
+  }
+
   fprintf(stderr,
           "usage: %s credit <first-status> <second-status> | "
           "saturation <status> | reject <status> <testcase> | "
-          "reward <status> <pending:0|1> <arm> | continuous <scenario> "
-          "<status> <fixture> <rules> <python> <input> | reporting "
+           "reward <status> <pending:0|1> <arm> | continuous <scenario> "
+           "<status> <fixture> <rules> <python> <input> | pending <reason> "
+           "<status> <journal> | reporting "
+           "<status> <fixture> <rules> <python> <input> | multi-arm "
+           "<status> <fixture> <rules> <python> <input> <journal> | reporting "
           "<status> <fixture> <rules> <python> <input> <out-dir>\n",
           argv[0]);
   return 2;

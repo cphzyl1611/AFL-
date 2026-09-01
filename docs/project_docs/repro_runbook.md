@@ -101,7 +101,7 @@ python3 nv_valid_server_real.py
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 export NV_BODY_SCORE_ENDPOINT='unix:///tmp/nv_valid_real.sock'
 export NV_BODY_SCORE_THRESHOLD='1.0'
 export NV_DEBUG_BODY_VALID=1
@@ -122,7 +122,7 @@ cat /tmp/nv_body_valid_stats.json
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 export NV_BODY_SCORE_ENDPOINT='unix:///tmp/nv_valid_real.sock'
 export NV_BODY_SCORE_THRESHOLD='1.0'
 export NV_DEBUG_BODY_VALID=1
@@ -210,7 +210,7 @@ python3 nv_valid_server_real.py
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 export NV_BODY_SCORE_ENDPOINT='unix:///tmp/nv_valid_real.sock'
 export NV_BODY_SCORE_THRESHOLD='1.0'
 export NV_DEBUG_BODY_VALID=1
@@ -224,7 +224,7 @@ IN_DIR=$HOME/AFLplusplus/in/o2oa_body_model_compare DUR=20 ./scripts/run_cms_bod
 
 ```bash
 cd ~/AFLplusplus
-export NV_TOKEN='你的token'
+export NV_TOKEN="${NV_TOKEN:?Set NV_TOKEN in environment before running}"
 export NV_BODY_SCORE_ENDPOINT='unix:///tmp/nv_valid_real.sock'
 export NV_BODY_SCORE_THRESHOLD='1.0'
 export NV_DEBUG_BODY_VALID=1
@@ -310,3 +310,27 @@ IN_DIR=$HOME/AFLplusplus/in/o2oa_body_model_compare DUR=60 ./scripts/run_cms_bod
 ```bash
 ls -l docs/project_docs/repro_runbook.md
 ```
+
+
+---
+
+## 8. Alfresco multipart bounded 最终复现入口
+
+从 bounded 工作树根目录执行：
+
+```bash
+cd /home/dministrator/AFLplusplus-alfresco-real-feedback
+export ALFRESCO_USER="<ALFRESCO_USER>"
+export ALFRESCO_PASS="<ALFRESCO_PASS>"
+python3 scripts/reproduce_alfresco_multipart_bounded.py \
+  --output-root /tmp/alfresco-multipart-repro-<run-id> \
+  --allow-real-write \
+  --max-test-cases 12 \
+  --time-budget 45
+```
+
+脚本固定按 `negative -> field_value -> boundary -> structure` 顺序执行，首个失败即停止。正向 seed 唯一来源是 `in/alfresco_multipart_upload_bounded/manifest.txt`，负样本不进入正向 manifest。
+
+负样本通过条件：boundary mismatch 和 missing filedata 在上传前拒绝，HTTP requests sent=0，created nodes=0，target_invoked=false。每个正向 arm 通过条件：至少两个不同 seed queue、至少一个 HTTP 201、响应 node identity、exec_seq/status、execution ledger、MAB journal、seed-selection audit、metadata/content read-back 和 artifact report 全部对账通过。
+
+该脚本是一次性 bounded 实验入口，不实现长期调度、CI 编排、无限重试或规模化 campaign。

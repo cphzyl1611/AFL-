@@ -30,7 +30,7 @@ def main() -> int:
         return 2
 
     validation = body_validate(
-        endpoint_name="metadata_update",
+        endpoint_name="offline_feedback",
         raw_body=body,
         rules_path=os.environ.get("NV_BODY_RULES", ""),
         score_endpoint=None,

@@ -1,0 +1,46 @@
+{
+  "scenario": "alfresco_multipart_upload",
+  "canonical_manifest": "in/alfresco_multipart_upload_bounded/manifest.txt",
+  "canonical_positive_seed_count": 3,
+  "negative_validation": {
+    "status": "PASS",
+    "boundary_mismatch": "validation_reject",
+    "missing_filedata": "validation_reject",
+    "http_sent": 0,
+    "nodes_created": 0,
+    "parent_children_before": 88,
+    "parent_children_after": 88
+  },
+  "real_arms": {
+    "field_value": {
+      "status": "PASS",
+      "http_201": 21,
+      "readback_verified": 21,
+      "selected_queue_ids": [0, 1],
+      "ledger_reconciled": true,
+      "mab_reconciled": true,
+      "runner_exit_code": 0
+    },
+    "boundary": {
+      "status": "PASS",
+      "http_201": 21,
+      "readback_verified": 21,
+      "selected_queue_ids": [0, 1],
+      "ledger_reconciled": true,
+      "mab_reconciled": true,
+      "runner_exit_code": 0
+    },
+    "structure": {
+      "status": "PASS",
+      "http_201": 21,
+      "readback_verified": 21,
+      "selected_queue_ids": [0, 1],
+      "ledger_reconciled": true,
+      "mab_reconciled": true,
+      "runner_exit_code": 0
+    }
+  },
+  "evidence_root": "/tmp/alfresco-multipart-closure-final-20260831",
+  "long_term_stability": "NOT_RUN_BY_SCOPE",
+  "scale_validation": "NOT_RUN_BY_SCOPE"
+}

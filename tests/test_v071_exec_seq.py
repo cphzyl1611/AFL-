@@ -371,8 +371,9 @@ class ErrorPathTest(ExecSeqTestBase):
 
 class ValidityRejectTest(ExecSeqTestBase):
 
-    def test_validity_reject_does_not_write_a_status_document(self):
-        """No HTTP request happened, so no execution identity may be issued."""
+    def test_validity_reject_writes_non_target_terminal_status(self):
+        """No HTTP request happened; the reject gets a terminal identity but
+        is explicitly marked as a non-target execution."""
         cfg = self.tmp / "task_bodyonly.json"
         # body_only_mode resolves the endpoint by name, so the name in the
         # config has to be the one the rules file describes.
@@ -399,9 +400,11 @@ class ValidityRejectTest(ExecSeqTestBase):
                     NV_ENDPOINT_NAME="cms_doc_list", NV_BODY_RULES=str(rules))
         after = read_status(self.status)
 
-        self.assertEqual(
-            baseline["exec_seq"], after["exec_seq"],
-            "a validity-rejected testcase minted a target execution identity",
+        self.assertEqual(after["validation_reject"], 1)
+        self.assertEqual(after["http_code"], 0)
+        self.assertGreater(
+            after["exec_seq"], baseline["exec_seq"],
+            "a validity-rejected testcase still needs a terminal identity",
         )
         self.assertEqual(self.server.hit_count, hits_before,
                          "validity-rejected testcase still reached the server")

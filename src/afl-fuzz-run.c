@@ -128,6 +128,8 @@ typedef struct {
   u64 new_states;      /* security states seen for the first time            */
   u64 state_id;        /* fnv1a64("METHOD PATH|CLASS")                       */
   u64 exec_seq;        /* target execution this observation came from, 0=n/a */
+  int http_status;
+  u8 validation_reject;
 } nv_state_obs_t;
 
 /* Reads the status document, folds it into the security-state set, credits
@@ -135,29 +137,93 @@ typedef struct {
    plain observation.  Reward computation is deliberately kept out of here so
    that state accounting happens on every execution, not only on the ones a
    bandit arm produced. */
-static void nv_observe_security_state(afl_state_t *afl, const char *path,
-                                      nv_state_obs_t *obs) {
+static void nv_observe_security_state_once(afl_state_t *afl,
+                                           const char *path,
+                                           nv_state_obs_t *obs,
+                                           u64 minimum_exec_seq) {
 
   memset(obs, 0, sizeof(*obs));
 
-  FILE *fp = fopen(path, "rb");
-  if (!fp) { afl->nv_http_status_fail++; return; }
+  /* O2OA runs multiple short-lived harness processes.  Its append-only
+     ledger is authoritative because the legacy snapshot is overwritten by
+     the next process before the consumer necessarily reads it.  Attribute
+     the *latest* complete record to the execution that just finished: the
+     snapshot semantics stay the same, but append-only storage removes the
+     overwrite race that lost observations between processes.  Dry-run and
+     calibration records accumulate in the same ledger, so always take the
+     newest complete line instead of the next unread one. */
+  const char *ledger_path = getenv("NV_STATUS_LEDGER_PATH");
+  char *buf = NULL;
+  size_t buf_len = 0;
+  static off_t ledger_offset = 0;
+  off_t candidate_ledger_end = -1;
 
-  fseek(fp, 0, SEEK_END);
-  long sz = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-  if (sz <= 0 || sz > 65536) { afl->nv_http_status_fail++; fclose(fp); return; }
+  if (ledger_path && *ledger_path) {
 
-  char *buf = ck_alloc(sz + 1);
-  if (fread(buf, 1, sz, fp) != (size_t)sz) {
-    ck_free(buf);
+    FILE *ledger = fopen(ledger_path, "rb");
+    if (!ledger) { afl->nv_http_status_fail++; return; }
+    if (fseeko(ledger, ledger_offset, SEEK_SET) != 0) {
+      fclose(ledger);
+      afl->nv_http_status_fail++;
+      return;
+    }
+
+    char *line = NULL;
+    size_t line_cap = 0;
+    char *cand = NULL;
+    size_t cand_len = 0;
+    off_t cand_end = -1;
+    for (;;) {
+
+      ssize_t n = getline(&line, &line_cap, ledger);
+      if (n <= 0) break;
+      off_t line_end = ftello(ledger);
+      if (line[n - 1] != '\n') break;  /* partial tail: wait for completion */
+      if (cand) ck_free(cand);
+      cand = ck_alloc((size_t)n + 1);
+      memcpy(cand, line, (size_t)n);
+      cand[n] = 0;
+      cand_len = (size_t)n;
+      cand_end = line_end;
+
+    }
+    free(line);
+    fclose(ledger);
+    if (!cand || cand_len <= 0 || cand_len > 65536) {
+
+      if (cand) ck_free(cand);
+      return;
+
+    }
+    buf = cand;
+    buf_len = cand_len;
+    candidate_ledger_end = cand_end;
+
+  } else {
+
+    FILE *fp = fopen(path, "rb");
+    if (!fp) { afl->nv_http_status_fail++; return; }
+
+    fseek(fp, 0, SEEK_END);
+    long sz = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (sz <= 0 || sz > 65536) { afl->nv_http_status_fail++; fclose(fp); return; }
+
+    buf = ck_alloc((size_t)sz + 1);
+    if (fread(buf, 1, (size_t)sz, fp) != (size_t)sz) {
+      ck_free(buf);
+      fclose(fp);
+      afl->nv_http_status_fail++;
+      return;
+    }
+    buf[sz] = 0;
+    buf_len = (size_t)sz;
     fclose(fp);
-    afl->nv_http_status_fail++;
-    return;
-  }
-  buf[sz] = 0;
-  fclose(fp);
 
+  }
+
+
+  (void)buf_len;
   cJSON *root = cJSON_Parse(buf);
   ck_free(buf);
   if (!root) { afl->nv_http_status_fail++; return; }
@@ -172,6 +238,8 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
   const cJSON *tsj = cJSON_GetObjectItemCaseSensitive(root, "ts_ms");
   const cJSON *bhj = cJSON_GetObjectItemCaseSensitive(root, "body_hash16");
   const cJSON *esj = cJSON_GetObjectItemCaseSensitive(root, "exec_seq");
+  const cJSON *hcj = cJSON_GetObjectItemCaseSensitive(root, "http_code");
+  const cJSON *vrj = cJSON_GetObjectItemCaseSensitive(root, "validation_reject");
 
   /* Execution identity, when the harness supplies one.  0 means "not
      reported" and makes the legacy timestamp stamp the fallback. */
@@ -191,6 +259,14 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
      execution id when the harness reports one: two distinct executions can
      legitimately produce byte-identical documents, and dropping the second as
      a "replay" silently discarded real observations. */
+  /* A status older than the execution just completed belongs to the
+     previous target invocation.  Do not classify this transient snapshot as
+     a replay; the caller may wait for the producer's atomic replacement. */
+  if (minimum_exec_seq && (!exec_seq || exec_seq <= minimum_exec_seq)) {
+    cJSON_Delete(root);
+    return;
+  }
+
   if (nv_status_is_fresh(exec_seq, stamp, &afl->nv_last_exec_seq,
                          &afl->nv_last_status_seq) == NV_STATUS_REPLAY) {
     afl->nv_sec_state_replays++;
@@ -198,6 +274,7 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
     return;
   }
   afl->nv_status_cnt++;
+  if (candidate_ledger_end >= 0) ledger_offset = candidate_ledger_end;
 
   /* ---- After dedup: Err/Rec accounting ---- */
   const cJSON *ie = cJSON_GetObjectItemCaseSensitive(root, "is_exception");
@@ -264,6 +341,9 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
   obs->new_states   = is_new ? 1 : 0;
   obs->state_id     = h;
   obs->exec_seq     = exec_seq;
+  obs->http_status  = cJSON_IsNumber(hcj) ? (int)hcj->valuedouble : 0;
+  obs->validation_reject = cJSON_IsTrue(vrj) ||
+                           (cJSON_IsNumber(vrj) && vrj->valuedouble != 0);
 
   afl->nv_sec_state_obs++;
   afl->nv_sec_state_delta_last = obs->new_states;
@@ -318,6 +398,29 @@ static void nv_observe_security_state(afl_state_t *afl, const char *path,
   }
 
   cJSON_Delete(root);
+
+}
+
+static void nv_observe_security_state(afl_state_t *afl, const char *path,
+                                      nv_state_obs_t *obs) {
+
+  nv_observe_security_state_once(afl, path, obs, 0);
+
+}
+
+/* Wait for the status producer to publish an identity newer than the last
+   consumed execution.  A bounded timeout preserves fail-closed behavior. */
+static void nv_observe_security_state_after_execution(
+    afl_state_t *afl, const char *path, nv_state_obs_t *obs) {
+
+  u64 baseline = afl->nv_last_exec_seq;
+  for (u32 attempt = 0; attempt < 500; ++attempt) {
+    nv_observe_security_state_once(afl, path, obs, baseline);
+    if (obs->has && (!baseline || obs->exec_seq > baseline)) return;
+    usleep(2000);
+  }
+  memset(obs, 0, sizeof(*obs));
+  afl->nv_http_status_fail++;
 
 }
 
@@ -2152,11 +2255,16 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
                                           u32 len) {
 
   u8 fault;
+  u64 iteration_id = ++afl->nv_execution_iteration;
+  nv_arm_id_t selected_arm = afl->nv_mab.pending_update
+                               ? (afl->nv_mab.pending_selected_valid
+                                      ? afl->nv_mab.pending_selected_arm
+                                      : afl->nv_mab.pending_arm)
+                               : NV_ARM_FIELD_VALUE;
 
   if (unlikely(len = write_to_testcase(afl, (void **)&out_buf, len, 0)) == 0) {
 
-    afl->nv_mab.pending_update = 0;
-    afl->nv_mab.update_source = 0;
+    nv_mab_journal_clear_pending(afl, "invalid_input");
     return 0;
 
   }
@@ -2170,8 +2278,10 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
       nv_account_invalid(afl, vr);
 
-      afl->nv_mab.pending_update = 0;
-      afl->nv_mab.update_source = 0;
+      nv_execution_ledger_append(afl, iteration_id, selected_arm, selected_arm,
+                                 0, 1, 0, 0, 0, 0, 0,
+                                 "body_validation_reject", "invalid_input");
+      nv_mab_journal_clear_pending(afl, "invalid_input");
       return 0; /* skip execution, but do NOT bail out */
 
     }
@@ -2205,13 +2315,47 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
     }
 
-    nv_observe_security_state(afl, sp, &obs);
+    nv_observe_security_state_after_execution(afl, sp, &obs);
 
   }
 
+  nv_arm_id_t actual_arm = afl->nv_mab.pending_update
+                             ? afl->nv_mab.pending_arm : selected_arm;
+  const char *terminal_outcome = "target_execution_no_mab";
+  if (obs.validation_reject)
+    terminal_outcome = "body_validation_reject";
+  else if (afl->stop_soon && afl->nv_mab.pending_update)
+    terminal_outcome = "pending_cleanup";
+  else if (afl->nv_mab.pending_update && actual_arm != selected_arm)
+    terminal_outcome = "arm_mismatch";
+  else if (afl->nv_mab.pending_update && obs.exec_seq == 0)
+    terminal_outcome = "invalid_exec_identity";
+  else if (afl->nv_mab.pending_update)
+    terminal_outcome = "committed_update";
+  /* committed_update is appended only after the journal commit below;
+     pending cleanup is emitted by nv_mab_journal_clear_pending(), which has
+     the pending slot's iteration and arm correlation. */
+  if (strcmp(terminal_outcome, "committed_update") != 0 &&
+      strcmp(terminal_outcome, "pending_cleanup") != 0 &&
+      !nv_execution_ledger_append(
+          afl, iteration_id, selected_arm, actual_arm,
+          obs.validation_reject ? 0 : 1, 1,
+          obs.validation_reject ? 0 : (obs.has ? 1 : 0),
+          obs.validation_reject ? 0 : (obs.has ? 1 : 0),
+          obs.validation_reject ? 0 : (obs.exec_seq > 0),
+          obs.validation_reject ? 0 : obs.exec_seq,
+          obs.validation_reject ? 0 : obs.http_status,
+          terminal_outcome, NULL)) return 1;
+  if (afl->nv_mab.pending_update &&
+      nv_mab_terminal_ledger_suppresses_cleanup(terminal_outcome))
+    afl->nv_mab.pending_ledger_terminal_recorded = 1;
+
   if (afl->stop_soon) {
-    afl->nv_mab.pending_update = 0;
-    afl->nv_mab.update_source = 0;
+    nv_mab_journal_clear_pending(
+        afl, afl->stop_soon == 2 && afl->nv_task.max_test_cases &&
+                     afl->nv_total_valid_exec >= afl->nv_task.max_test_cases
+                 ? "budget_boundary"
+                 : "stop_soon");
     return 1;
   }
 
@@ -2220,8 +2364,7 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
     if (afl->subseq_tmouts++ > TMOUT_LIMIT) {
 
       ++afl->cur_skipped_items;
-      afl->nv_mab.pending_update = 0;
-      afl->nv_mab.update_source = 0;
+      nv_mab_journal_clear_pending(afl, "timeout");
       return 1;
 
     }
@@ -2239,8 +2382,7 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
     afl->skip_requested = 0;
     ++afl->cur_skipped_items;
-    afl->nv_mab.pending_update = 0;
-    afl->nv_mab.update_source = 0;
+    nv_mab_journal_clear_pending(afl, "skip");
     return 1;
 
   }
@@ -2256,11 +2398,68 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
   if (afl->nv_mab.pending_update) {
 
     nv_arm_id_t reward_arm = afl->nv_mab.pending_arm;
+
+    if (afl->nv_mab.pending_selected_valid &&
+        reward_arm != afl->nv_mab.pending_selected_arm) {
+      nv_mab_journal_clear_pending(afl, "arm_mismatch");
+      return 0;
+    }
+
+    /* Validation rejection has an audit identity but no target execution.
+       It must clear the pending arm without committing reward. */
+    if (obs.validation_reject) {
+
+      nv_mab_journal_clear_pending(afl, "invalid_input");
+      return 0;
+
+    }
+
+    /* A committed mab_update requires a valid execution identity.
+       exec_seq == 0 means the harness did not report one -- the target
+       may have run, but the link between this seed, this arm, this
+       mutation and the execution evidence is broken.  Treat as a
+       pending arm that did not complete a verifiable target execution. */
+    if (obs.exec_seq == 0) {
+
+      nv_mab_journal_clear_pending(afl, "invalid_exec_identity");
+      return 0;
+
+    }
+
+    nv_mab_journal_update_t journal_update;
+    double reward = nv_reward_from_obs(&obs);
     afl->nv_mab.pending_update = 0;
     afl->nv_mab.update_source = 0;
 
     afl->nv_sec_state_reward_src_seq = obs.exec_seq;
-    nv_mab_update(&afl->nv_mab, reward_arm, nv_reward_from_obs(&obs));
+    memset(&journal_update, 0, sizeof(journal_update));
+    journal_update.exec_seq = obs.exec_seq;
+    journal_update.selected_arm = reward_arm;
+    journal_update.actual_used_arm = reward_arm;
+    journal_update.arm_match = 1;
+    journal_update.reward = reward;
+    journal_update.harness_native_coverage =
+        NV_REWARD_HARNESS_NCOV * (double)obs.ncov_delta;
+    journal_update.security_state =
+        NV_REWARD_NEW_SECURITY_STATE * (double)obs.new_states;
+    journal_update.exception = obs.is_exception ? NV_REWARD_EXCEPTION : 0.0;
+    journal_update.recovery = obs.recovered ? NV_REWARD_RECOVERED : 0.0;
+    journal_update.http_4xx_penalty = obs.is_4xx ? NV_REWARD_4XX_PENALTY : 0.0;
+    journal_update.security_state_new = obs.new_states ? 1 : 0;
+    journal_update.update_source = 1;
+    int committed = nv_mab_journal_commit_update(afl, &journal_update);
+    if (!committed) {
+      if (!nv_execution_ledger_append(
+              afl, iteration_id, selected_arm, reward_arm, 1, 1, 1, 1,
+              1, obs.exec_seq, obs.http_status, "mab_commit_failed", NULL))
+        return 1;
+      return 1;
+    }
+    if (!nv_execution_ledger_append(
+            afl, iteration_id, selected_arm, reward_arm, 1, 1, 1, 1,
+            1, obs.exec_seq, obs.http_status, "committed_update", NULL))
+      return 1;
+    afl->nv_mab.pending_ledger_terminal_recorded = 1;
 
   }
   if (!(afl->stage_cur % afl->stats_update_freq) ||

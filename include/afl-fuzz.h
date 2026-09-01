@@ -575,13 +575,46 @@ typedef struct {
   u32 enabled_mask;     /* = afl->nv_task.mutation_scope */
   nv_arm_id_t last_arm; /* record last choice */
   nv_arm_id_t pending_arm;
+  nv_arm_id_t pending_selected_arm;
+  u8 pending_selected_valid;
+  u64 pending_iteration;
   u8 pending_update;    /* set only when an NV arm generated current input */
+  u8 pending_ledger_terminal_recorded;
   u8 update_source;     /* 0=none, 1=custom_json_mutator */
   u64 min_explore;      /* warm-up samples per enabled arm */
   u64 cold_start_picks; /* decisions served by the warm-up branch */
   u64 ucb_picks;        /* decisions served by the UCB branch */
   u8  initialized;      /* guards against a silently zero-initialised bandit */
 } nv_mab_t;
+
+/* Per-update audit payload.  It intentionally contains reward inputs and MAB
+   snapshots only; request data and security-state text never cross this API. */
+typedef struct {
+  u64 exec_seq;
+  nv_arm_id_t selected_arm;
+  nv_arm_id_t actual_used_arm;
+  u8 arm_match;
+  double reward;
+  double harness_native_coverage;
+  double security_state;
+  double exception;
+  double recovery;
+  double http_4xx_penalty;
+  u8 security_state_new;
+  u8 update_source;
+} nv_mab_journal_update_t;
+
+/* The writer is injectable only for deterministic C unit fault injection.
+   Production leaves this hook unset and uses the system write(2). */
+typedef ssize_t (*nv_mab_journal_write_hook_t)(int fd, const void *buf,
+                                               size_t len);
+
+typedef FILE *(*nv_seed_selection_audit_open_hook_t)(const char *path,
+                                                     const char *mode);
+typedef int (*nv_seed_selection_audit_write_hook_t)(FILE *file,
+                                                    const char *line,
+                                                    size_t len);
+typedef int (*nv_seed_selection_audit_close_hook_t)(FILE *file);
 
 void        nv_mab_init_defaults(nv_mab_t *mab);
 
@@ -591,6 +624,30 @@ int         nv_mab_env_c(double *out);
 int         nv_mab_env_min_explore(u64 *out);
 nv_arm_id_t nv_mab_pick(nv_mab_t *mab, u32 scope_mask);
 void        nv_mab_update(nv_mab_t *mab, nv_arm_id_t arm, double reward);
+void        nv_mab_begin_pending(afl_state_t *afl, nv_arm_id_t selected_arm,
+                                 nv_arm_id_t actual_used_arm, u64 iteration_id,
+                                 u8 update_source);
+int         nv_mab_terminal_ledger_suppresses_cleanup(const char *outcome);
+int         nv_mab_journal_commit_update(afl_state_t *afl,
+                                          const nv_mab_journal_update_t *update);
+int         nv_mab_journal_append_event(afl_state_t *afl, const char *event,
+                                         const char *reason,
+                                          nv_arm_id_t selected_arm,
+                                          nv_arm_id_t actual_used_arm);
+void        nv_mab_journal_set_write_hook(nv_mab_journal_write_hook_t hook);
+  int         nv_mab_journal_clear_pending(afl_state_t *afl, const char *reason);
+int         nv_execution_ledger_append(afl_state_t *afl, u64 iteration_id,
+                                       nv_arm_id_t selected_arm,
+                                       nv_arm_id_t actual_used_arm,
+                                       u8 counted_execution, u8 harness_invoked,
+                                       u8 target_invoked, u8 body_validated,
+                                       u8 status_observed, u64 exec_seq,
+                                       int http_status, const char *outcome,
+                                       const char *cleanup_reason);
+void        nv_seed_selection_audit_set_hooks(
+                nv_seed_selection_audit_open_hook_t open_hook,
+                nv_seed_selection_audit_write_hook_t write_hook,
+                nv_seed_selection_audit_close_hook_t close_hook);
 
 /* ---- security-state coverage set ----
    Open-addressed, linear-probed, fixed capacity.  The table is never resized,
@@ -1073,6 +1130,13 @@ typedef struct afl_state {
   u64 nv_rec_ms_sum;
   u64 nv_status_cnt;
 
+  /* ===== run-scoped execution ledger ===== */
+  u8  nv_execution_ledger_enabled;
+  u8  nv_execution_ledger_audit_invalid;
+  u64 nv_execution_ledger_error_count;
+  u64 nv_execution_ledger_record_count;
+  u64 nv_execution_iteration;
+
   /* ===== security-state coverage =====
      A security state is identified by "METHOD PATH|RESPONSE_CLASS" as
      reported by the harness/target.  This is the project's Cov signal; it is
@@ -1086,6 +1150,21 @@ typedef struct afl_state {
   u64 nv_last_exec_seq;         /* execution id of the last consumed status  */
   u64 nv_sec_state_replays;     /* status documents rejected as already seen */
   u64 nv_sec_state_reward_src_seq; /* execution that fed the latest reward   */
+
+  /* ===== per-update MAB journal ===== */
+  u8  nv_mab_journal_enabled;
+  u8  nv_mab_journal_audit_invalid;
+  u64 nv_mab_journal_error_count;
+  u64 nv_mab_journal_record_count;
+  u64 nv_mab_journal_pending_cleared_count;
+  u64 nv_mab_journal_mismatch_count;
+
+  /* ===== seed-selection audit ===== */
+  u8  seed_audit_enabled;
+  u8  seed_audit_invalid;
+  u64 seed_audit_error_count;
+  u64 seed_audit_record_count;
+  u64 seed_audit_expected_selection_count;
 
   /* ===== NV target config cache (from NV_TARGET_CONFIG) ===== */
   u8   nv_tcfg_loaded;     /* 0/1 */
@@ -1522,6 +1601,8 @@ double get_runnable_processes(void);
 void   nuke_resume_dir(afl_state_t *);
 int    check_main_node_exists(afl_state_t *);
 u32    select_next_queue_entry(afl_state_t *afl);
+int    nv_seed_selection_audit_record(afl_state_t *afl,
+                                      const struct queue_entry *q);
 double ss_calc_prob(struct queue_entry *q);
 void   create_alias_table(afl_state_t *afl);
 void   setup_dirs_fds(afl_state_t *);

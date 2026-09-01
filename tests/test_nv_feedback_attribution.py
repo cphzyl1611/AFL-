@@ -22,6 +22,7 @@ from tests.test_nv_feedback_execution_identity import (
     RULES,
     VALID_FULL_HTTP,
 )
+from tests.test_nv_mab_journal import load_runner
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -66,7 +67,9 @@ PROBE_LABELS = {
     "REWARD",
     "REJECT",
     "CONTINUOUS",
+    "MULTI_ARM",
     "REPORTING",
+    "PENDING",
 }
 
 
@@ -171,13 +174,15 @@ class NvFeedbackAttributionTest(unittest.TestCase):
         return document, int(payload["exec_seq"])
 
     def run_probe(
-        self, *args: object
+        self, *args: object, allowed_returncodes: tuple[int, ...] = (0,)
     ) -> list[tuple[str, dict[str, int | float]]]:
         probe_env = {
             **os.environ,
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONPATH": str(REPO_ROOT),
         }
+        probe_env.setdefault("NV_MAB_JOURNAL_PATH", str(self.tmp / "probe-mab.jsonl"))
+        probe_env.setdefault("NV_EXECUTION_LEDGER_PATH", str(self.tmp / "executions.jsonl"))
         completed = subprocess.run(
             [str(self.probe), *(str(arg) for arg in args)],
             capture_output=True,
@@ -186,13 +191,54 @@ class NvFeedbackAttributionTest(unittest.TestCase):
             env=probe_env,
             timeout=20,
         )
-        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn(completed.returncode, allowed_returncodes, completed.stderr)
         self.assertNotIn("NETWORK_AUDIT_EVENT=", completed.stderr)
         return [
             parse_probe_line(line)
             for line in completed.stdout.splitlines()
             if line.strip() and line.split(maxsplit=1)[0] in PROBE_LABELS
         ]
+
+    def test_harness_without_status_is_not_counted_as_target_invocation(self) -> None:
+        self.build_probe()
+        ledger = self.tmp / "no-status-ledger.jsonl"
+        completed = subprocess.run(
+            [
+                str(self.probe),
+                "no-status-target",
+                str(self.tmp / "missing-status.json"),
+                str(ledger),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            timeout=20,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        record = json.loads(ledger.read_text(encoding="utf-8").splitlines()[0])
+        self.assertTrue(record["harness_invoked"])
+        self.assertFalse(record["target_invoked"])
+        self.assertFalse(record["status_observed"])
+        self.assertEqual(record["mab_outcome"], "target_execution_no_mab")
+
+    def test_status_consumer_waits_for_delayed_new_execution_identity(self) -> None:
+        first_status, first_seq = self.capture_status("wait-first.json")
+        second_status, second_seq = self.capture_status("wait-second.json")
+        self.assertEqual(second_seq, first_seq + 1)
+        self.build_probe()
+
+        completed = subprocess.run(
+            [str(self.probe), "wait-for-fresh", str(first_status), str(second_status)],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            timeout=20,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("WAIT has=1", completed.stdout)
+        self.assertIn(f"exec_seq={second_seq}", completed.stdout)
 
     def test_new_state_is_credited_once_and_existing_state_is_not(self) -> None:
         first_status, first_seq = self.capture_status("first.json")
@@ -360,6 +406,28 @@ class NvFeedbackAttributionTest(unittest.TestCase):
             ],
         )
 
+    def test_each_pending_cleanup_branch_writes_a_non_update_journal_event(self) -> None:
+        self.build_probe()
+        status, _ = self.capture_status("pending-status.json")
+        for reason in ("budget_boundary", "stop_soon", "timeout", "invalid_input", "skip"):
+            with self.subTest(reason=reason):
+                journal = self.tmp / f"{reason}.jsonl"
+                rows = self.run_probe(
+                    "pending", reason, status, journal,
+                    allowed_returncodes=(0, 1),
+                )
+                self.assertEqual(len(rows), 1, rows)
+                label, values = rows[0]
+                self.assertEqual(label, "PENDING")
+                self.assertEqual(values["rc"], 1 if reason != "invalid_input" else 0)
+                self.assertEqual(values["pulls"], 0)
+                self.assertEqual(values["arm_pulls"], 0)
+                self.assertEqual(values["records"], 1)
+                record = json.loads(journal.read_text(encoding="utf-8"))
+                self.assertEqual(record["event"], "mab_pending_cleared")
+                self.assertEqual(record["reason"], reason)
+                self.assertNotEqual(record["event"], "mab_update")
+
     def test_confirmed_actual_arm_receives_the_only_mab_update(self) -> None:
         selected_arm = 2
         with mock.patch.dict(
@@ -465,10 +533,16 @@ class NvFeedbackAttributionTest(unittest.TestCase):
                         "total_pulls": 1,
                         "arm0": 1,
                         "arm1": 0,
-                        "arm2": 0,
-                        "pending_after": 0,
-                        "update_source_after": 0,
-                        "mutator_reported": 0,
+                         "arm2": 0,
+                         "pending_after": 0,
+                         "update_source_after": 0,
+                         "arm0_sum": 10,
+                         "arm1_sum": 0,
+                         "arm2_sum": 0,
+                         "arm0_pos": 1,
+                         "arm1_pos": 0,
+                         "arm2_pos": 0,
+                         "mutator_reported": 0,
                     },
                 )
             ],
@@ -487,34 +561,46 @@ class NvFeedbackAttributionTest(unittest.TestCase):
             self.tmp / "target-input",
         )
 
+        self.assertEqual(len(rows), 1)
+        label, values = rows[0]
+        self.assertEqual(label, "CONTINUOUS")
+        self.assertEqual(values["scenario"], 1)
+        self.assertEqual(values["fuzz_rc"], 0)
+        self.assertEqual(values["selected"], 0)
+        self.assertEqual(values["nv_cur"], 0)
+        self.assertEqual(values["nv_used"], -1)
+        self.assertEqual(values["mutator_calls"], 1)
+        self.assertEqual(values["pending_at_common"], 1)
+        self.assertEqual(values["pending_arm_at_common"], 3)
+        self.assertEqual(values["target_calls"], 1)
+        self.assertEqual(values["observed_seq"], 1)
+        self.assertEqual(values["reward_src_seq"], 0)
+        self.assertEqual(values["pending_after"], 0)
+        self.assertEqual(values["update_source_after"], 0)
+        self.assertEqual([values[f"arm{arm}"] for arm in range(3)], [0, 0, 0])
         self.assertEqual(
-            rows,
-            [
-                (
-                    "CONTINUOUS",
-                    {
-                        "scenario": 1,
-                        "fuzz_rc": 0,
-                        "selected": 0,
-                        "nv_cur": 0,
-                        "nv_used": -1,
-                        "mutator_calls": 1,
-                        "pending_at_common": 0,
-                        "pending_arm_at_common": 0,
-                        "target_calls": 1,
-                        "observed_seq": 1,
-                        "reward_src_seq": 0,
-                        "total_pulls": 0,
-                        "arm0": 0,
-                        "arm1": 0,
-                        "arm2": 0,
-                        "pending_after": 0,
-                        "update_source_after": 0,
-                        "mutator_reported": 0,
-                    },
-                )
-            ],
+            [values[f"arm{arm}_sum"] for arm in range(3)], [0, 0, 0]
         )
+        self.assertEqual(
+            [values[f"arm{arm}_pos"] for arm in range(3)], [0, 0, 0]
+        )
+        records = [
+            json.loads(line)
+            for line in (self.tmp / "executions.jsonl").read_text().splitlines()
+        ]
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["mab_outcome"], "arm_mismatch")
+        self.assertEqual(records[0]["selected_arm"], 0)
+        self.assertEqual(records[0]["actual_used_arm"], 3)
+        journal = [
+            json.loads(line)
+            for line in (self.tmp / "probe-mab.jsonl").read_text().splitlines()
+        ]
+        self.assertEqual(
+            [record["event"] for record in journal],
+            ["mab_update_mismatch", "mab_pending_cleared"],
+        )
+        self.assertNotIn("mab_update", [record["event"] for record in journal])
 
     def test_continuous_mismatched_confirmation_does_not_credit_selected_arm(self) -> None:
         self.build_probe()
@@ -529,33 +615,179 @@ class NvFeedbackAttributionTest(unittest.TestCase):
             self.tmp / "target-input",
         )
 
+        self.assertEqual(len(rows), 1)
+        label, values = rows[0]
+        self.assertEqual(label, "CONTINUOUS")
+        self.assertEqual(values["scenario"], 2)
+        self.assertEqual(values["fuzz_rc"], 0)
+        self.assertEqual(values["selected"], 0)
+        self.assertEqual(values["nv_cur"], 0)
+        self.assertEqual(values["nv_used"], 1)
+        self.assertEqual(values["mutator_calls"], 1)
+        self.assertEqual(values["pending_at_common"], 1)
+        self.assertEqual(values["pending_arm_at_common"], 1)
+        self.assertEqual(values["target_calls"], 1)
+        self.assertEqual(values["observed_seq"], 1)
+        self.assertEqual(values["reward_src_seq"], 0)
+        self.assertEqual(values["pending_after"], 0)
+        self.assertEqual(values["update_source_after"], 0)
+        self.assertEqual([values[f"arm{arm}"] for arm in range(3)], [0, 0, 0])
         self.assertEqual(
-            rows,
-            [
-                (
-                    "CONTINUOUS",
-                    {
-                        "scenario": 2,
-                        "fuzz_rc": 0,
-                        "selected": 0,
-                        "nv_cur": 0,
-                        "nv_used": 1,
-                        "mutator_calls": 1,
-                        "pending_at_common": 0,
-                        "pending_arm_at_common": 0,
-                        "target_calls": 1,
-                        "observed_seq": 1,
-                        "reward_src_seq": 0,
-                        "total_pulls": 0,
-                        "arm0": 0,
-                        "arm1": 0,
-                        "arm2": 0,
-                        "pending_after": 0,
-                        "update_source_after": 0,
-                        "mutator_reported": 0,
-                    },
-                )
-            ],
+            [values[f"arm{arm}_sum"] for arm in range(3)], [0, 0, 0]
+        )
+        self.assertEqual(
+            [values[f"arm{arm}_pos"] for arm in range(3)], [0, 0, 0]
+        )
+        records = [
+            json.loads(line)
+            for line in (self.tmp / "executions.jsonl").read_text().splitlines()
+        ]
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["mab_outcome"], "arm_mismatch")
+        self.assertEqual(records[0]["selected_arm"], 0)
+        self.assertEqual(records[0]["actual_used_arm"], 1)
+        journal = [
+            json.loads(line)
+            for line in (self.tmp / "probe-mab.jsonl").read_text().splitlines()
+        ]
+        self.assertEqual(
+            [record["event"] for record in journal],
+            ["mab_update_mismatch", "mab_pending_cleared"],
+        )
+        self.assertNotIn("mab_update", [record["event"] for record in journal])
+
+    def test_production_path_journal_reconciles_commit_cleanup_and_mismatch(self) -> None:
+        self.build_probe()
+        journal = self.tmp / "production-path.jsonl"
+        with mock.patch.dict(os.environ, {"NV_MAB_JOURNAL_PATH": str(journal)}, clear=False):
+            rows = self.run_probe(
+                "continuous",
+                "positive",
+                self.status,
+                FAKE_TARGET,
+                RULES,
+                sys.executable,
+                self.tmp / "target-input",
+            )
+        self.assertEqual(rows[0][0], "CONTINUOUS")
+        records = [json.loads(line) for line in journal.read_text().splitlines()]
+        self.assertEqual([record["event"] for record in records], ["mab_update"])
+        self.assertGreater(records[0]["exec_seq"], 0)
+        self.assertEqual(records[0]["selected_arm"], records[0]["actual_used_arm"])
+        self.assertEqual(records[0]["pulls_after"], 1)
+        self.assertEqual(rows[0][1]["total_pulls"], 1)
+        parsed = load_runner().parse_mab_journal(journal)
+        stats = {
+            "nv_mab_total_pulls": "1",
+            "nv_mab_arm0_pulls": "1",
+            "nv_mab_arm1_pulls": "0",
+            "nv_mab_arm2_pulls": "0",
+            "nv_mab_arm0_sum": str(records[0]["sum_after"]),
+            "nv_mab_arm1_sum": "0",
+            "nv_mab_arm2_sum": "0",
+            "nv_mab_arm0_pos": "1",
+            "nv_mab_arm1_pos": "0",
+            "nv_mab_arm2_pos": "0",
+            "security_state_reward_src_seq": str(records[0]["exec_seq"]),
+        }
+        self.assertTrue(load_runner().reconcile_mab_journal(parsed, stats)["reconciled"])
+
+    def test_production_path_zero_exec_seq_clears_pending_without_commit(self) -> None:
+        self.build_probe()
+        status = self.tmp / "zero-exec.json"
+        status.write_text(
+            json.dumps({
+                "exec_seq": 0,
+                "method": "PUT",
+                "path": "/offline/node",
+                "response_class": "2xx",
+                "ncov_delta": 0,
+            }) + "\n",
+            encoding="utf-8",
+        )
+        journal = self.tmp / "zero-exec.jsonl"
+        with mock.patch.dict(os.environ, {"NV_MAB_JOURNAL_PATH": str(journal)}, clear=False):
+            rows = self.run_probe("reward", status, 1, 1, journal)
+        self.assertEqual(rows[0][1]["total_pulls"], 0)
+        records = [json.loads(line) for line in journal.read_text().splitlines()]
+        self.assertEqual(records[0]["event"], "mab_pending_cleared")
+        self.assertEqual(records[0]["reason"], "invalid_exec_identity")
+
+    def test_production_path_zero_reward_commits_and_mismatch_does_not_aggregate(self) -> None:
+        self.build_probe()
+        status, exec_seq = self.capture_status("zero-reward.json")
+        journal = self.tmp / "zero-reward.jsonl"
+        with mock.patch.dict(os.environ, {"NV_MAB_JOURNAL_PATH": str(journal)}, clear=False):
+            rows = self.run_probe("reward", status, 1, 1, journal, "zero")
+        self.assertEqual(rows[0][1]["total_pulls"], 1)
+        records = [json.loads(line) for line in journal.read_text().splitlines()]
+        self.assertEqual(records[0]["event"], "mab_update")
+        self.assertEqual(records[0]["exec_seq"], exec_seq)
+        self.assertEqual(records[0]["reward"], 0)
+
+        mismatch_journal = self.tmp / "mismatch.jsonl"
+        with mock.patch.dict(os.environ, {"NV_MAB_JOURNAL_PATH": str(mismatch_journal)}, clear=False):
+            mismatch_rows = self.run_probe(
+                "continuous", "mismatch", self.status, FAKE_TARGET, RULES,
+                sys.executable, self.tmp / "target-input",
+            )
+        self.assertEqual(mismatch_rows[0][1]["total_pulls"], 0)
+        mismatch = [json.loads(line) for line in mismatch_journal.read_text().splitlines()]
+        self.assertEqual(mismatch[0]["event"], "mab_update_mismatch")
+
+    def test_multiple_actual_mutator_arms_update_and_reconcile_in_journal(self) -> None:
+        """Three production picker decisions traverse the Python handshake path."""
+        self.build_probe()
+        journal = self.tmp / "multi-arm-updates.jsonl"
+        multi_arm_rules = self.tmp / "multi-arm-rules.json"
+        multi_arm_rules.write_text(
+            json.dumps({
+                "common": {"max_bytes": 16384, "max_depth": 8,
+                           "max_keys": 128, "max_string": 2048},
+                "endpoints": {
+                    "offline_feedback": {
+                        "type": "object", "allow_unknown": True
+                    }
+                },
+            }),
+            encoding="utf-8",
+        )
+        rows = self.run_probe(
+            "multi-arm",
+            self.status,
+            FAKE_TARGET,
+            multi_arm_rules,
+            sys.executable,
+            self.tmp / "target-input",
+            journal,
+        )
+        self.assertEqual(len(rows), 1, rows)
+        label, values = rows[0]
+        self.assertEqual(label, "MULTI_ARM")
+        self.assertEqual(
+            (values["rc0"], values["rc1"], values["rc2"], values["calls"]),
+            (0, 0, 0, 3),
+        )
+        self.assertEqual(values["total_pulls"], 3)
+        self.assertEqual(
+            [values[f"arm{arm}"] for arm in range(3)], [1, 1, 1]
+        )
+        self.assertEqual(values["records"], values["total_pulls"])
+
+        records = [
+            json.loads(line)
+            for line in journal.read_text(encoding="utf-8").splitlines()
+        ]
+        self.assertEqual(len(records), 3)
+        self.assertEqual(
+            [record["selected_arm"] for record in records], [0, 1, 2]
+        )
+        self.assertEqual(
+            [record["actual_used_arm"] for record in records], [0, 1, 2]
+        )
+        self.assertTrue(all(record["arm_match"] for record in records))
+        self.assertTrue(
+            all(record["exec_seq"] > 0 for record in records), records
         )
 
     def test_production_reports_conserve_the_live_feedback_state(self) -> None:

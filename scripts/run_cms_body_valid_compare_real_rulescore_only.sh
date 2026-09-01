@@ -1,14 +1,99 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${ROOT:-$HOME/AFLplusplus}"
-CFG="${CFG:-$ROOT/targets/o2oa_query.json}"
-IN_DIR="${IN_DIR:-$ROOT/in/o2oa_body_cms_score}"
-OUT_ROOT="${OUT_ROOT:-$ROOT/out/cms_body_valid_compare_real}"
+: "${ROOT:?ROOT is required}"
+: "${CFG:?CFG is required}"
+: "${IN_DIR:?IN_DIR is required and must be the runner manifest seed view}"
+: "${SEED_MANIFEST:?SEED_MANIFEST is required}"
+: "${OUT_ROOT:?OUT_ROOT is required}"
+: "${BODY_VALID_STATS:?BODY_VALID_STATS is required}"
+: "${STATUS_PATH:?STATUS_PATH is required}"
+: "${RUNNER_RUN_DIR:?RUNNER_RUN_DIR is required}"
+: "${DUR:?DUR is required}"
+
+SCRIPT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+ROOT="$(realpath -e -- "$ROOT")"
+if [[ "$ROOT" != "$SCRIPT_ROOT" ]]; then
+  echo "[ERR] ROOT must be the bounded source root containing this script" >&2
+  exit 2
+fi
+
+reject_traversal() {
+  local name="$1"
+  local value="$2"
+  if [[ "$value" != /* || "/$value/" == */../* ]]; then
+    echo "[ERR] $name must be an absolute path without traversal" >&2
+    exit 2
+  fi
+}
+
+require_under() {
+  local name="$1"
+  local value="$2"
+  local parent="$3"
+  reject_traversal "$name" "$value"
+  value="$(realpath -m -- "$value")"
+  if [[ "$value" != "$parent" && "$value" != "$parent"/* ]]; then
+    echo "[ERR] $name escapes its approved root" >&2
+    exit 2
+  fi
+  printf '%s\n' "$value"
+}
+
+reject_traversal RUNNER_RUN_DIR "$RUNNER_RUN_DIR"
+RUNNER_RUN_DIR="$(realpath -m -- "$RUNNER_RUN_DIR")"
+if [[ "$RUNNER_RUN_DIR" == "$ROOT" || "$RUNNER_RUN_DIR" == "$ROOT"/* ]]; then
+  echo "[ERR] RUNNER_RUN_DIR must be outside ROOT" >&2
+  exit 2
+fi
+
+CFG="$(require_under CFG "$CFG" "$ROOT")"
+SEED_MANIFEST="$(require_under SEED_MANIFEST "$SEED_MANIFEST" "$ROOT")"
+IN_DIR="$(require_under IN_DIR "$IN_DIR" "$RUNNER_RUN_DIR")"
+OUT_ROOT="$(require_under OUT_ROOT "$OUT_ROOT" "$RUNNER_RUN_DIR")"
+BODY_VALID_STATS="$(require_under BODY_VALID_STATS "$BODY_VALID_STATS" "$RUNNER_RUN_DIR")"
+STATUS_PATH="$(require_under STATUS_PATH "$STATUS_PATH" "$RUNNER_RUN_DIR")"
+if [[ ! -f "$CFG" || ! -f "$SEED_MANIFEST" || ! -d "$IN_DIR" ]]; then
+  echo "[ERR] CFG, SEED_MANIFEST, and manifest-only IN_DIR must exist" >&2
+  exit 2
+fi
+if [[ ! "$DUR" =~ ^[1-9][0-9]*$ ]]; then
+  echo "[ERR] DUR must be a positive integer" >&2
+  exit 2
+fi
+
+declare -A manifest_seeds=()
+idx=0
+while IFS= read -r manifest_line || [[ -n "$manifest_line" ]]; do
+  manifest_line="${manifest_line%$'\r'}"
+  [[ -z "${manifest_line//[[:space:]]/}" || "$manifest_line" == \#* ]] && continue
+  seed_name="${manifest_line%%,*}"
+  seed_name="${seed_name#"${seed_name%%[![:space:]]*}"}"
+  seed_name="${seed_name%"${seed_name##*[![:space:]]}"}"
+  seed_name="${seed_name##*/}"
+  idx=$((idx + 1))
+  prefixed=$(printf '%04d__%s' "$idx" "$seed_name")
+  if [[ -z "$seed_name" || ! -e "$IN_DIR/$prefixed" || -n "${manifest_seeds[$seed_name]:-}" ]]; then
+    echo "[ERR] IN_DIR does not match SEED_MANIFEST" >&2
+    exit 2
+  fi
+  manifest_seeds["$seed_name"]=1
+done < "$SEED_MANIFEST"
+if (( ${#manifest_seeds[@]} == 0 )); then
+  echo "[ERR] SEED_MANIFEST has no seeds" >&2
+  exit 2
+fi
+for seed_path in "$IN_DIR"/*; do
+  [[ -e "$seed_path" || -L "$seed_path" ]] || continue
+  entry_name="${seed_path##*/}"
+  base_name="${entry_name#*__}"
+  if [[ -z "${manifest_seeds[$base_name]:-}" ]]; then
+    echo "[ERR] IN_DIR contains a seed outside SEED_MANIFEST" >&2
+    exit 2
+  fi
+done
+
 RULES_PATH="${RULES_PATH:-$ROOT/validity/o2oa_query_rules.json}"
-STATUS_PATH="${STATUS_PATH:-/tmp/nv_http_status.json}"
-BODY_VALID_STATS="${BODY_VALID_STATS:-/tmp/nv_body_valid_stats.json}"
-DUR="${DUR:-120}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 : "${NV_TOKEN:?NV_TOKEN is required}"
@@ -37,10 +122,21 @@ run_one() {
   export NV_TARGET_CONFIG="$CFG"
   export NV_ENDPOINT_NAME="$ENDPOINT"
   export NV_STATUS_PATH="$STATUS_PATH"
+  export NV_STATUS_LEDGER_PATH="${NV_STATUS_LEDGER_PATH:-$RUNNER_RUN_DIR/evidence/status.jsonl}"
+  export AFL_PYTHON_MODULE="nv_json_mutator"
+  export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+  export NV_BODY_ONLY_MODE=1
+  export NV_KEEP_INITIAL_SEEDS=1
   export NV_TOKEN=${NV_TOKEN}
+  export NV_PROBE_PATH="${NV_PROBE_PATH:-$RUNNER_RUN_DIR/nv_probe.json}"
+  export NV_STATE_TRACE_PATH="${NV_STATE_TRACE_PATH:-$RUNNER_RUN_DIR/nv_state_trace.jsonl}"
+  export NV_CTX_PATH="${NV_CTX_PATH:-$RUNNER_RUN_DIR/nv_ctx.json}"
+  export NV_MAB_JOURNAL_PATH="${NV_MAB_JOURNAL_PATH:-$RUNNER_RUN_DIR/evidence/mab_updates.jsonl}"
+  export NV_EXECUTION_LEDGER_PATH="${NV_EXECUTION_LEDGER_PATH:-$RUNNER_RUN_DIR/evidence/executions.jsonl}"
+  export NV_SEED_SELECTION_AUDIT_PATH="${NV_SEED_SELECTION_AUDIT_PATH:-$RUNNER_RUN_DIR/evidence/seed_selection.jsonl}"
+  mkdir -p "${RUNNER_RUN_DIR}/evidence"
 
   # 关闭旧 C-side validity，避免干扰
-  unset NV_TASK_PATH || true
   unset ENABLE_VALIDITY || true
   unset NV_VALIDITY_ENDPOINT || true
   unset NV_VALIDITY_THRESHOLD || true
@@ -74,19 +170,27 @@ run_one() {
       ;;
   esac
 
+  set +e
   timeout "${DUR}s" \
     env AFL_NO_UI=1 \
-    "$ROOT/afl-fuzz" -n \
+    "$ROOT/afl-fuzz" -n -Z \
       -i "$IN_DIR" \
-      -o "$outdir" \
-      -- "$PYTHON_BIN" "$ROOT/nv_http_harness.py" \
-    || true
+    -o "$outdir" \
+    -- "$PYTHON_BIN" "$ROOT/nv_http_harness.py"
+  run_rc=$?
+  set -e
+  if (( run_rc != 0 && run_rc != 124 )); then
+    echo "[ERR] bounded AFL runner failed for mode=$mode rc=$run_rc" >&2
+    return "$run_rc"
+  fi
+  if (( run_rc == 124 )); then
+    echo "[WARN] bounded AFL budget expired for mode=$mode; collecting artifacts" >&2
+  fi
 
   local stats="$outdir/fuzzer_stats"
   if [[ ! -f "$stats" ]]; then
-    echo "[WARN] missing fuzzer_stats for mode=$mode"
-    echo "$mode,0,0,0,0,0,-1,-1,-1,0,0,0,0,0,0,$SUMMARY_SOURCE,$EXECUTION_SCOPE,$METRIC_SEMANTICS" >> "$SUMMARY_CSV"
-    return
+    echo "[ERR] missing_fuzzer_stats for mode=$mode" >&2
+    return 66
   fi
 
   local nv_total_valid_exec nv_err_exec nv_err_rate saved_hangs saved_crashes

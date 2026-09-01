@@ -17,9 +17,6 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROFILES_DIR = ROOT / "integration" / "platform_profiles"
-GENERATED_TASKS_DIR = ROOT / "integration" / "generated_tasks"
-RUNNER_CLI = ROOT / "runner" / "fuzz_test_runner.py"
 TASK_ID_PREFIX = "fuzz-task-"
 
 
@@ -36,11 +33,81 @@ def save_json(path: Path, obj):
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def resolve_repo_path(path_value: str) -> Path:
-    p = Path(path_value)
-    if p.is_absolute():
-        return p
-    return ROOT / p
+def canonical_root(path_value, name: str, *, require_existing=False) -> Path:
+    if path_value is None or not str(path_value).strip():
+        raise ValueError(f"{name} is required")
+    root = Path(path_value)
+    if not root.is_absolute():
+        root = Path.cwd() / root
+    root = root.resolve(strict=False)
+    if require_existing and not root.exists():
+        raise ValueError(f"{name} does not exist")
+    if root.exists() and not root.is_dir():
+        raise ValueError(f"{name} must be a directory")
+    return root
+
+
+def git_worktree_root(repo_root: Path) -> Path:
+    for parent in (repo_root, *repo_root.parents):
+        if (parent / ".git").exists():
+            return parent
+    raise ValueError("repo_root must be a Git worktree")
+
+
+def resolve_repo_path(path_value: str, repo_root=ROOT) -> Path:
+    if path_value is None or not str(path_value).strip():
+        raise ValueError("repo path must not be empty")
+    root = canonical_root(repo_root, "repo_root", require_existing=True)
+    raw = Path(path_value)
+    if ".." in raw.parts:
+        raise ValueError("repo path must not contain path traversal")
+    path = raw if raw.is_absolute() else root / raw
+    resolved = path.resolve(strict=False)
+    if not resolved.is_relative_to(root):
+        raise ValueError("repo path escapes repo_root")
+    return resolved
+
+
+def resolve_run_path(path_value: str, run_root) -> Path:
+    if path_value is None or not str(path_value).strip():
+        raise ValueError("run path must not be empty")
+    root = canonical_root(run_root, "run_root")
+    raw = Path(path_value)
+    if ".." in raw.parts:
+        raise ValueError("run path must not contain path traversal")
+    path = raw if raw.is_absolute() else root / raw
+    resolved = path.resolve(strict=False)
+    if not resolved.is_relative_to(root):
+        raise ValueError("run path escapes run_root")
+    return resolved
+
+
+def validate_roots(repo_root, run_root, *, require_run=True) -> tuple[Path, Path | None]:
+    repo = canonical_root(repo_root, "repo_root", require_existing=True)
+    worktree = git_worktree_root(repo)
+    if run_root is None or not str(run_root).strip():
+        if require_run:
+            raise ValueError("run_root is required for non-dry-run actions")
+        return repo, None
+    run = canonical_root(run_root, "run_root")
+    if run == repo or run.is_relative_to(worktree):
+        raise ValueError("run_root must be outside repo_root")
+    return repo, run
+
+
+def resolve_run_output(value, run_root: Path) -> Path:
+    # Older templates used this fixed sidecar path; keep it run-scoped.
+    if str(value) == "/tmp/nv_body_valid_stats.json":
+        return resolve_run_path("body_valid_stats.json", run_root)
+    return resolve_run_path(value, run_root)
+
+
+def request_roots(request: dict, *, require_run=True) -> tuple[Path, Path | None]:
+    return validate_roots(
+        ROOT if "repo_root" not in request else request["repo_root"],
+        request.get("run_root"),
+        require_run=require_run,
+    )
 
 
 def public_task_id(raw_task_id: str) -> str:
@@ -76,9 +143,9 @@ def success_response(action: str, **extra):
     return obj
 
 
-def read_request(args):
+def read_request(args, repo_root=None):
     if getattr(args, "request_json", None):
-        return load_json(resolve_repo_path(args.request_json))
+        return load_json(resolve_repo_path(args.request_json, repo_root or ROOT))
     if getattr(args, "json", None):
         return json.loads(args.json)
     if not sys.stdin.isatty():
@@ -88,12 +155,14 @@ def read_request(args):
     return {}
 
 
-def profile_path(profile_name: str) -> Path:
-    return PROFILES_DIR / f"{profile_name}.json"
+def profile_path(profile_name: str, repo_root=ROOT) -> Path:
+    return resolve_repo_path(
+        f"integration/platform_profiles/{profile_name}.json", repo_root
+    )
 
 
-def load_profile(profile_name: str):
-    path = profile_path(profile_name)
+def load_profile(profile_name: str, repo_root=ROOT):
+    path = profile_path(profile_name, repo_root)
     if not path.exists():
         raise FileNotFoundError(f"profile not found: {profile_name}")
     profile = load_json(path)
@@ -104,11 +173,12 @@ def load_profile(profile_name: str):
     return profile
 
 
-def list_profiles():
+def list_profiles(repo_root=ROOT):
     profiles = []
-    if not PROFILES_DIR.exists():
+    profiles_dir = resolve_repo_path("integration/platform_profiles", repo_root)
+    if not profiles_dir.exists():
         return profiles
-    for path in sorted(PROFILES_DIR.glob("*.json")):
+    for path in sorted(profiles_dir.glob("*.json")):
         obj = load_json(path)
         profiles.append({
             "profile": obj.get("profile", path.stem),
@@ -156,7 +226,14 @@ def prepend_env_assignments(command: str, env_map: dict[str, str]) -> str:
     return f"{prefix} {command}"
 
 
-def update_launch_cmd(task_config: dict, profile: dict, seed_dir: str, threshold: str, duration_plan):
+def update_launch_cmd(
+    task_config: dict,
+    profile: dict,
+    seed_dir: str,
+    threshold: str,
+    duration_plan,
+    repo_root=ROOT,
+):
     launch_cmd = task_config.get("launch_cmd")
     if not isinstance(launch_cmd, list):
         return
@@ -176,7 +253,10 @@ def update_launch_cmd(task_config: dict, profile: dict, seed_dir: str, threshold
         text = replace_env_assignment(text, "NV_BODY_SCORE_THRESHOLD", str(threshold))
         for old_seed in old_seed_values:
             text = text.replace(f"{{ROOT}}/{old_seed}", f"{{ROOT}}/{seed_dir}")
-            text = text.replace(str(resolve_repo_path(old_seed)), str(resolve_repo_path(seed_dir)))
+            text = text.replace(
+                str(resolve_repo_path(old_seed, repo_root)),
+                str(resolve_repo_path(seed_dir, repo_root)),
+            )
         updated.append(text)
 
     decision_profile_path = profile.get("_profile_path")
@@ -189,8 +269,8 @@ def update_launch_cmd(task_config: dict, profile: dict, seed_dir: str, threshold
     task_config["launch_cmd"] = updated
 
 
-def build_runner_task(request: dict, profile: dict):
-    template_path = resolve_repo_path(profile["template"])
+def build_runner_task(request: dict, profile: dict, repo_root=ROOT):
+    template_path = resolve_repo_path(profile["template"], repo_root)
     if not template_path.exists():
         raise FileNotFoundError(f"runner template not found: {template_path}")
 
@@ -212,6 +292,20 @@ def build_runner_task(request: dict, profile: dict):
     task_config["notes"] = profile.get("notes", template.get("notes", ""))
     task_config["integration_profile"] = profile["profile"]
     task_config["decision"] = copy.deepcopy(profile.get("decision", {}))
+    # Keep the generated task authoritative for AFL's NV feedback contract.
+    # The runner replaces seed_location with the run-scoped materialized view.
+    task_config["target_type"] = task_config.get("target_type") or "http_api"
+    task_config["target_endpoint"] = task_config.get("target_endpoint") or profile.get("target_endpoint", "")
+    task_config["seed_source"] = "manifest" if task_config.get("manifest") else "seed_file"
+    task_config["seed_location"] = task_config.get("seed_dir", "")
+    task_config["mutation_scope"] = request.get(
+        "mutation_scope", ["field_value", "boundary", "structure"]
+    )
+    task_config["max_test_cases"] = int(request.get("max_test_cases") or 30)
+    task_config["time_budget"] = int(request.get("time_budget") or duration_plan[-1])
+    # O2OA uses body-only JSON validation in nv_http_harness; the C-side
+    # full-HTTP gate would reject every body-only seed before the harness.
+    task_config["enable_validity"] = 0 if str(profile.get("platform", "")).casefold() == "o2oa" else 1
     task_config["integration_request"] = {
         "task_name": task_config["task_name"],
         "platform": profile["profile"],
@@ -232,7 +326,7 @@ def build_runner_task(request: dict, profile: dict):
         "decision": copy.deepcopy(profile.get("decision", {})),
     }
 
-    update_launch_cmd(task_config, profile, seed_dir, threshold, duration_plan)
+    update_launch_cmd(task_config, profile, seed_dir, threshold, duration_plan, repo_root)
     return task_config
 
 
@@ -258,14 +352,14 @@ def apply_simulated_runner_task(task_config: dict, request: dict):
     task_config["result_stats_json"] = ""
 
 
-def validate_profile_and_task(profile: dict, task_config: dict):
+def validate_profile_and_task(profile: dict, task_config: dict, repo_root=ROOT):
     checks = []
 
     def add_check(name: str, path_value: str, required=True):
         if not path_value:
             checks.append({"name": name, "path": "", "exists": False, "required": required})
             return
-        p = resolve_repo_path(path_value)
+        p = resolve_repo_path(path_value, repo_root)
         checks.append({
             "name": name,
             "path": str(p),
@@ -287,11 +381,19 @@ def validate_profile_and_task(profile: dict, task_config: dict):
     }
 
 
-def run_runner(args):
-    cmd = [sys.executable, str(RUNNER_CLI)] + args
+def run_runner(args, *, repo_root, run_root):
+    repo_root, run_root = validate_roots(repo_root, run_root)
+    runner_cli = resolve_repo_path("runner/fuzz_test_runner.py", repo_root)
+    cmd = [
+        sys.executable,
+        str(runner_cli),
+        *args,
+        "--repo-root", str(repo_root),
+        "--run-root", str(run_root),
+    ]
     proc = subprocess.run(
         cmd,
-        cwd=str(ROOT),
+        cwd=str(repo_root),
         text=True,
         capture_output=True,
         check=False,
@@ -341,27 +443,37 @@ def describe_status(status: dict, report: dict | None = None):
     return desc
 
 
-def read_existing_report(status: dict):
+def read_existing_report(status: dict, run_root=None):
     report_path = status.get("report_json")
     if not report_path:
         return None
-    path = Path(report_path)
+    if run_root is not None:
+        path = resolve_run_path(report_path, run_root)
+    else:
+        path = Path(report_path).resolve(strict=False)
     if not path.exists():
         return None
     return load_json(path)
 
 
 def action_submit(request: dict, dry_run=False):
+    repo_root, run_root = request_roots(request, require_run=not dry_run)
     profile_name = request.get("platform") or request.get("profile")
     if not profile_name:
         raise ValueError("submit request must include platform")
 
-    profile = load_profile(profile_name)
-    task_config = build_runner_task(request, profile)
+    profile = load_profile(profile_name, repo_root)
+    task_config = build_runner_task(request, profile, repo_root)
     simulate = bool(request.get("simulate") or request.get("integration_demo"))
     if simulate:
         apply_simulated_runner_task(task_config, request)
-    validation = validate_profile_and_task(profile, task_config)
+    if run_root is not None:
+        for key in ("out_dir", "result_summary_csv", "result_stats_json"):
+            if task_config.get(key):
+                task_config[key] = str(resolve_run_output(task_config[key], run_root))
+        task_config["run_root"] = str(run_root)
+    task_config["repo_root"] = str(repo_root)
+    validation = validate_profile_and_task(profile, task_config, repo_root)
 
     if dry_run:
         return success_response(
@@ -382,13 +494,18 @@ def action_submit(request: dict, dry_run=False):
             validation=validation,
         )
 
-    GENERATED_TASKS_DIR.mkdir(parents=True, exist_ok=True)
+    generated_tasks_dir = resolve_run_path("adapter_tasks", run_root)
+    generated_tasks_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     name = sanitize_name(task_config.get("task_name", profile_name))
-    task_path = GENERATED_TASKS_DIR / f"{stamp}_{profile_name}_{name}.json"
+    task_path = generated_tasks_dir / f"{stamp}_{profile_name}_{name}.json"
     save_json(task_path, task_config)
 
-    runner_out = run_runner(["submit", "--task-json", str(task_path)])
+    runner_out = run_runner(
+        ["submit", "--task-json", str(task_path)],
+        repo_root=repo_root,
+        run_root=run_root,
+    )
     runner_task_id = runner_out.get("task_id")
     return success_response(
         "submit",
@@ -404,12 +521,15 @@ def action_submit(request: dict, dry_run=False):
 
 
 def action_query(request: dict):
+    repo_root, run_root = request_roots(request)
     task_id = request.get("task_id")
     if not task_id:
         raise ValueError("query request must include task_id")
     raw_id = raw_task_id(task_id)
-    status = run_runner(["query", "--task-id", raw_id])
-    report = read_existing_report(status)
+    status = run_runner(
+        ["query", "--task-id", raw_id], repo_root=repo_root, run_root=run_root
+    )
+    report = read_existing_report(status, run_root)
     return success_response(
         "query",
         task_id=public_task_id(raw_id),
@@ -423,23 +543,29 @@ def action_query(request: dict):
 
 
 def action_stop(request: dict, dry_run=False):
+    repo_root, run_root = request_roots(request, require_run=not dry_run)
     task_id = request.get("task_id")
     if not task_id:
         raise ValueError("stop request must include task_id")
     raw_id = raw_task_id(task_id)
 
     if dry_run:
-        status_path = ROOT / "runner" / "tasks" / raw_id / "status.json"
+        status_path = (
+            resolve_run_path(f"tasks/{raw_id}/status.json", run_root)
+            if run_root else None
+        )
         return success_response(
             "stop",
             dry_run=True,
             task_id=public_task_id(raw_id),
             runner_task_id=raw_id,
-            task_exists=status_path.exists(),
+            task_exists=bool(status_path and status_path.exists()),
             query_description="停止路径静态验证完成；dry-run 未发送停止信号。",
         )
 
-    runner_out = run_runner(["stop", "--task-id", raw_id])
+    runner_out = run_runner(
+        ["stop", "--task-id", raw_id], repo_root=repo_root, run_root=run_root
+    )
     return success_response(
         "stop",
         task_id=public_task_id(raw_id),
@@ -449,27 +575,37 @@ def action_stop(request: dict, dry_run=False):
     )
 
 
-def load_status(raw_id: str):
-    status_path = ROOT / "runner" / "tasks" / raw_id / "status.json"
+def load_status(raw_id: str, run_root):
+    status_path = resolve_run_path(f"tasks/{raw_id}/status.json", run_root)
     if not status_path.exists():
         raise FileNotFoundError(f"task not found: {public_task_id(raw_id)}")
     return load_json(status_path)
 
 
-def normalize_report(raw_id: str, report: dict, status: dict | None = None):
+def normalize_report(
+    raw_id: str,
+    report: dict,
+    status: dict | None = None,
+    run_root=None,
+):
     status = status or {}
     task_json_path = status.get("task_json") or report.get("task_json")
     task_name = ""
-    if task_json_path and Path(task_json_path).exists():
+    if task_json_path and run_root is not None:
         try:
-            task_obj = load_json(Path(task_json_path))
+            safe_task_json = resolve_run_path(task_json_path, run_root)
+            task_obj = load_json(safe_task_json)
             task_name = task_obj.get("task_name") or task_obj.get("integration_request", {}).get("task_name", "")
         except Exception:
             task_name = ""
     if not task_name:
         task_name = status.get("task_name", "") or report.get("task_name", "") or public_task_id(raw_id)
 
-    report_path = report.get("report_json") or status.get("report_json") or str(ROOT / "runner" / "tasks" / raw_id / "report.json")
+    report_path = (
+        report.get("report_json")
+        or status.get("report_json")
+        or str(resolve_run_path(f"tasks/{raw_id}/report.json", status["run_root"]))
+    )
     return {
         "task_id": public_task_id(raw_id),
         "runner_task_id": raw_id,
@@ -497,6 +633,7 @@ def in_time_range(generate_time: str, start_time: str | None, end_time: str | No
 
 
 def action_report_query(request: dict, refresh=True):
+    repo_root, run_root = request_roots(request)
     reports = []
     task_id = request.get("task_id")
     task_name_filter = request.get("task_name")
@@ -505,16 +642,20 @@ def action_report_query(request: dict, refresh=True):
 
     if task_id:
         raw_id = raw_task_id(task_id)
-        status = load_status(raw_id)
+        status = load_status(raw_id, run_root)
         if refresh:
-            report = run_runner(["report", "--task-id", raw_id])
+            report = run_runner(
+                ["report", "--task-id", raw_id],
+                repo_root=repo_root,
+                run_root=run_root,
+            )
         else:
-            report = read_existing_report(status)
+            report = read_existing_report(status, run_root)
             if report is None:
                 raise FileNotFoundError(f"report not found for task: {public_task_id(raw_id)}")
-        reports.append(normalize_report(raw_id, report, status))
+        reports.append(normalize_report(raw_id, report, status, run_root))
     else:
-        task_root = ROOT / "runner" / "tasks"
+        task_root = resolve_run_path("tasks", run_root)
         if not task_root.exists():
             reports = []
         else:
@@ -525,7 +666,7 @@ def action_report_query(request: dict, refresh=True):
                 if status_path.exists():
                     status = load_json(status_path)
                 report = load_json(report_path)
-                item = normalize_report(raw_id, report, status)
+                item = normalize_report(raw_id, report, status, run_root)
                 if task_name_filter and task_name_filter not in item.get("task_name", ""):
                     continue
                 if not in_time_range(item.get("generate_time", ""), start_time, end_time):
@@ -544,22 +685,29 @@ def build_parser():
     sub = parser.add_subparsers(dest="action", required=True)
 
     p_profiles = sub.add_parser("profiles")
+    p_profiles.add_argument("--repo-root", default=str(ROOT))
 
     p_submit = sub.add_parser("submit")
     p_submit.add_argument("--request-json")
     p_submit.add_argument("--json")
     p_submit.add_argument("--dry-run", action="store_true")
+    p_submit.add_argument("--repo-root", default=str(ROOT))
+    p_submit.add_argument("--run-root")
 
     p_query = sub.add_parser("query")
     p_query.add_argument("--request-json")
     p_query.add_argument("--json")
     p_query.add_argument("--task-id")
+    p_query.add_argument("--repo-root", default=str(ROOT))
+    p_query.add_argument("--run-root")
 
     p_stop = sub.add_parser("stop")
     p_stop.add_argument("--request-json")
     p_stop.add_argument("--json")
     p_stop.add_argument("--task-id")
     p_stop.add_argument("--dry-run", action="store_true")
+    p_stop.add_argument("--repo-root", default=str(ROOT))
+    p_stop.add_argument("--run-root")
 
     p_report = sub.add_parser("report_query")
     p_report.add_argument("--request-json")
@@ -569,6 +717,8 @@ def build_parser():
     p_report.add_argument("--start-time")
     p_report.add_argument("--end-time")
     p_report.add_argument("--no-refresh", action="store_true")
+    p_report.add_argument("--repo-root", default=str(ROOT))
+    p_report.add_argument("--run-root")
 
     return parser
 
@@ -579,9 +729,14 @@ def main():
 
     try:
         if args.action == "profiles":
-            result = success_response("profiles", profiles=list_profiles())
+            result = success_response(
+                "profiles", profiles=list_profiles(args.repo_root)
+            )
         else:
-            request = read_request(args)
+            request = read_request(args, args.repo_root)
+            request["repo_root"] = args.repo_root
+            if args.run_root:
+                request["run_root"] = args.run_root
             if getattr(args, "task_id", None):
                 request["task_id"] = args.task_id
             if getattr(args, "task_name", None):

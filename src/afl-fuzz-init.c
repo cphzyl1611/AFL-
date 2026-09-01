@@ -1447,6 +1447,7 @@ void perform_dry_run(afl_state_t *afl) {
       struct queue_entry *p = afl->queue_buf[i];
       if (p->disabled || p->cal_failed || !p->exec_cksum) { continue; }
       if (p->exec_cksum != q->exec_cksum) continue;
+      if (getenv("NV_KEEP_INITIAL_SEEDS")) continue;
 
       duplicates = 1;
 

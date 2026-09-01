@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import json
+import math
 from pathlib import Path
 
 
@@ -36,29 +38,70 @@ SUITES = {
         "ucb_follows_updated_mean",
         "reward_updates_mean_incrementally",
     ],
+    "unit_nv_mab_journal": [
+        "journal_positive_update",
+        "journal_zero_reward_update",
+        "journal_schema_contains_required_update_fields",
+        "journal_update_aggregate_ordering",
+        "journal_open_failure_returns_failure",
+        "journal_open_failure_marks_audit_invalid_without_rollback",
+        "journal_write_failure_is_fail_closed",
+        "journal_flush_failure_is_fail_closed",
+        "journal_non_update_events_do_not_increment_pulls",
+        "journal_non_update_failure_is_fail_closed",
+        "journal_zero_exec_seq_pending_is_cleared",
+        "journal_arm_mismatch_is_rejected",
+        "journal_missing_actual_arm_is_rejected",
+    ],
     "unit_nv_sched": [
         "security_state_credit_raises_weight",
         "weight_scales_with_security_state_count",
         "over_selection_suppresses_weight",
         "weight_has_a_floor",
     ],
+    "unit_nv_sched_picker": [
+        "three_metadata_seeds_are_full_http_distinct_and_credential_free",
+        "seed_directory_is_loaded_through_read_testcases_and_add_to_queue",
+        "production_picker_selects_each_initial_seed",
+        "selection_audit_has_exact_allowed_fields",
+        "selection_audit_has_no_sensitive_fields",
+        "selection_audit_distinguishes_seeds_without_request_data",
+        "production_picker_uses_security_state_credit",
+        "selection_audit_does_not_change_picker_decision",
+        "selection_audit_is_disabled_when_path_unset",
+        "selection_audit_does_not_modify_rng_or_weights",
+        "seed_audit_open_failure_is_observable",
+        "seed_audit_write_failure_is_observable",
+        "seed_audit_close_failure_is_observable",
+    ],
 }
 
 SOURCES = {
     "unit_nv_mab": "src/afl-fuzz-nv-mab.c",
+    "unit_nv_mab_journal": "src/afl-fuzz-nv-mab.c",
     "unit_nv_sched": "src/afl-fuzz-nv-sched.c",
+    "unit_nv_sched_picker": [
+        "src/afl-fuzz-queue.c",
+        "src/afl-fuzz-nv-sched.c",
+        "src/afl-fuzz-init.c",
+    ],
 }
 
 
 def build_and_run(name: str) -> str:
     test_src = REPO_ROOT / "test" / "unittests" / f"{name}.c"
-    impl_src = REPO_ROOT / SOURCES[name]
+    sources = SOURCES[name]
+    if isinstance(sources, str):
+        sources = [sources]
+    impl_sources = [REPO_ROOT / source for source in sources]
     with tempfile.TemporaryDirectory() as tmp:
         binary = Path(tmp) / name
         compile_proc = subprocess.run(
             [
-                "gcc", "-std=c11", "-Wall", "-I", str(INCLUDE),
-                "-o", str(binary), str(test_src), str(impl_src), "-lm",
+                "gcc", "-std=c11", "-Wall", "-ffunction-sections",
+                "-fdata-sections", "-I", str(INCLUDE), "-o", str(binary),
+                str(test_src), *(str(source) for source in impl_sources),
+                "-Wl,--gc-sections", "-lm",
             ],
             capture_output=True,
             text=True,
@@ -75,7 +118,7 @@ def build_and_run(name: str) -> str:
             f"{name} reported failures (exit {run_proc.returncode}):\n"
             f"{run_proc.stdout}"
         )
-    return run_proc.stdout
+    return run_proc.stdout + run_proc.stderr
 
 
 class NvFeedbackUnitTest(unittest.TestCase):
@@ -122,6 +165,56 @@ class NvFeedbackUnitTest(unittest.TestCase):
         )
         self.assertIn("before=0", line)
         self.assertIn("after=2", line)
+
+    def test_production_picker_visits_multiple_seeds(self) -> None:
+        line = next(
+            l for l in self.output["unit_nv_sched_picker"].splitlines()
+            if l.startswith("SELECTED ")
+        )
+        selected = line.split()[1:]
+        self.assertEqual(set(selected), {"0", "1", "2"}, line)
+
+    def test_seed_selection_audit_has_exact_allowed_fields(self) -> None:
+        """Parse the JSON line emitted by the production C audit writer."""
+        lines = [
+            line.removeprefix("AUDIT_JSON ")
+            for line in self.output["unit_nv_sched_picker"].splitlines()
+            if line.startswith("AUDIT_JSON ")
+        ]
+        self.assertGreaterEqual(len(lines), 3)
+        for line in lines:
+            record = json.loads(line)
+            self.assertEqual(
+                set(record),
+                {"queue_id", "depth", "ss_cov_cnt", "ss_selected_cnt", "ss_prob"},
+            )
+            self.assertIsInstance(record["queue_id"], int)
+            self.assertIsInstance(record["depth"], int)
+            self.assertIsInstance(record["ss_cov_cnt"], int)
+            self.assertIsInstance(record["ss_selected_cnt"], int)
+            self.assertIsInstance(record["ss_prob"], (int, float))
+            self.assertTrue(math.isfinite(record["ss_prob"]))
+
+    def test_seed_selection_audit_has_no_sensitive_fields(self) -> None:
+        lines = [
+            line.removeprefix("AUDIT_JSON ").lower()
+            for line in self.output["unit_nv_sched_picker"].splitlines()
+            if line.startswith("AUDIT_JSON ")
+        ]
+        for raw in lines:
+            for forbidden in (
+                "event", "authorization", "token", "password", "username",
+                "seed", "request", "body", "path", "alfresco", "metadata",
+            ):
+                self.assertNotIn(forbidden, raw)
+
+    def test_seed_audit_failure_fallback_is_observable(self) -> None:
+        self.assertGreaterEqual(
+            self.output["unit_nv_sched_picker"].count(
+                "NV_SEED_SELECTION_AUDIT_ERROR"
+            ),
+            3,
+        )
 
 
 if __name__ == "__main__":

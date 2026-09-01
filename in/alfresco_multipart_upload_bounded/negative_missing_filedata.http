@@ -1,0 +1,19 @@
+POST /alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children HTTP/1.1
+Host: 127.0.0.1:8080
+Content-Type: multipart/form-data; boundary=nv-negative-missing
+Accept: application/json
+
+--nv-negative-missing
+Content-Disposition: form-data; name="name"
+
+nv-afl-negative-missing.txt
+--nv-negative-missing
+Content-Disposition: form-data; name="nodeType"
+
+cm:content
+--nv-negative-missing
+Content-Disposition: form-data; name="autoRename"
+
+true
+
+--nv-negative-missing--

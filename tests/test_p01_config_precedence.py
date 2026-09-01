@@ -234,6 +234,17 @@ class P01ConfigPrecedenceTest(unittest.TestCase):
                 got[1], 1000000, f"{label}: min_explore overflowed to {got[1]}"
             )
 
+    def test_bounded_afl_binary_has_resolvable_runtime_dependencies(self) -> None:
+        """P01 must not rely on the test harness to repair AFL's loader path."""
+        proc = subprocess.run(
+            ["ldd", str(AFL_FUZZ)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertNotIn("not found", proc.stdout, proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

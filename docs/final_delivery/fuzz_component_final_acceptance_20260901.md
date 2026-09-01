@@ -1,0 +1,223 @@
+# 模糊测试组件最终验收报告
+
+## 1. 项目任务与验收目标
+
+本组件面向河南重大专项自动化测试框架中的模糊测试任务，形成基于模糊测试的内生安全性能评估模型。验收目标限定于 fuzzing 组件本身，具体包括：
+
+- 生成和维护高质量种子与测试用例；
+- 通过变异、有效性过滤和目标执行开展基于模糊测试的内生安全性能测评；
+- 验证框架在不同真实业务平台上的迁移能力；
+- 建立自动执行、反馈、评价和报告闭环，为工程验收和后续研究提供可追溯证据。
+
+本报告不扩展到其他课题子系统，也不将 bounded engineering validation 表述为所有平台上的普适性证明。
+
+## 2. 仓库身份与冻结口径
+
+本报告对应的 bounded worktree 为：
+
+`/home/dministrator/AFLplusplus-alfresco-real-feedback`
+
+正式 baseline 为 AFL++ main repository `/home/dministrator/AFLplusplus` 中的 `public-release` 快照：
+
+- `OFFICIAL_RELEASE_BASELINE = c6817ce46b0120da95ba55869b6b298e18e4cf8b`
+- `CURRENT_BOUNDED_HEAD = fe5a89480d1ae5cd17e44f8bb4bde7f139c2cfc5`
+
+当前 bounded HEAD 与 official baseline 的差异属于本组件 bounded worktree 的提交范围，不改变 official baseline 的身份和基准结论。证据权威顺序为：current source / final frozen evidence > committed source snapshot > independent audit > historical handoff/report。
+
+## 3. 最终技术链路
+
+组件形成如下闭环：
+
+```text
+seed / testcase
+    -> mutation
+    -> validity
+    -> production execution
+    -> status / exec_seq
+    -> business/security-state observation
+    -> reward
+    -> MAB
+    -> scheduler
+    -> stats / report
+```
+
+核心职责如下：
+
+- `seed / testcase`：提供可复用的高质量初始输入和受控测试样本。
+- `mutation`：按字段值、边界和结构三个变异臂生成候选输入。
+- `validity`：先执行规则过滤，并可接入 AE 或 SE-fAnoGAN-ES 评分后端，减少明显无效输入对目标服务的干扰。
+- `production execution`：通过 HTTP JSON、文本或 multipart 目标适配器执行真实或受控目标请求。
+- `status / exec_seq`：记录 HTTP 状态、执行身份和案例序号，支持执行与观察结果对账。
+- `business/security-state observation`：读取业务对象或安全状态变化，区分请求返回与业务后置状态。
+- `reward`：将新覆盖、有效执行和业务反馈归因到具体测试案例及变异臂。
+- `MAB`：根据奖励更新多臂老虎机状态，动态选择更有价值的变异臂。
+- `scheduler`：使用种子级覆盖和选择信用参与后续调度。
+- `stats / report`：输出统计、反馈、奖励、调度和验收报告。
+
+实现状态与证据等级区分如下：核心 C/Python 组件、harness、MAB、调度器、统计和报告链路为 `implemented`；Gate-1、Gate-2、表示桥、C validity、exec_seq/accounting、状态覆盖、reward attribution、MAB 和 scheduler 均有独立证据，标记为 `independently verified`；Alfresco 与 O2OA 的列明场景标记为 `real-platform verified`，但仅在本报告声明的 bounded 范围内成立。
+
+## 4. 主要变异与调度机制
+
+框架提供三个 NV JSON 变异臂：
+
+- `field_value`：保持请求结构，改变字段值、枚举、字符串或数值内容；
+- `boundary`：围绕长度、范围、空值、极值和边界类型生成测试用例；
+- `structure`：增加、删除、重排或改变嵌套结构及字段形态。
+
+变异臂使用情况由 `NV_JSON_ARM_USED` 标识，并进入 reward attribution。每次有效生产执行的业务反馈、状态覆盖或安全状态变化，按案例和当前 arm 归因，更新 `nv_mab_t`；该 MAB 再用于后续 arm 选择。
+
+种子调度侧维护：
+
+- `ss_cov_cnt`：种子产生新覆盖或覆盖信用的累计计数；
+- `ss_selected_cnt`：种子被选择的累计计数；
+- `ss_prob`：基于种子覆盖信用和选择次数计算的选择权重。
+
+这些字段构成 scheduler-visible seed credit，使变异反馈能够影响后续种子选择，而不只停留在单次执行统计中。
+
+## 5. `exec_seq`、案例预算与 accounting
+
+最终冻结口径如下：
+
+- `exec_seq namespace = NV_STATUS_PATH`；
+- sidecar 为 `NV_STATUS_PATH + ".seq"`；
+- C-side validity reject 不消耗 case；
+- Python/body reject 若发生在 target 内，则消耗 case；
+- observer/read-back 不消耗 case；
+- 第 N 个 case 的 state accounting 与 pending MAB update 存在 stop boundary 顺序差异。
+
+因此，不作无条件的 `nv_mab_total_pulls == max_test_cases` 声明。案例预算、目标执行、状态回读和待处理 MAB 更新必须按各自语义解释，并以 `NV_STATUS_PATH` 及其 seq sidecar 对账。
+
+## 6. Alfresco real validation
+
+冻结的 Alfresco bounded real validation 最终状态为：
+
+| 场景 | 最终状态 |
+|---|---|
+| metadata real feedback | PASS |
+| content real update | PASS |
+| multipart full bounded feedback | PASS |
+| multi-arm real | PASS |
+| multi-seed all-arms real | PASS |
+
+multipart bounded closure 覆盖 validation reject、`field_value`、`boundary`、`structure` 以及多臂反馈。该证据为 bounded real validation，不等同于长时间稳定性或规模验证；本轮不重跑实验。
+
+## 7. O2OA real validation
+
+`O2OA final post-fix bounded real gate = PASS`。
+
+O2OA 的最终 post-fix bounded real gate 与 Alfresco 的 metadata、content、multipart 真实反馈证据共同支撑跨平台 bounded engineering validation。该结论限于已冻结的接口、种子、执行预算和反馈范围，不扩大为 O2OA 全量接口或所有平台适用性证明。
+
+## 8. SE-fAnoGAN-ES 与 AE 最终模型选择
+
+冻结状态为：
+
+- `SE_FANOGAN_ES_REFERENCE_IMPLEMENTATION = COMPLETE`
+- `SE_FANOGAN_ES_FORMAL_COMPARISON = COMPLETE`
+- `MODEL_EFFECTIVENESS_VERDICT = SCENARIO_DEPENDENT`
+- `ENGINEERING_MODEL_SELECTION = AE_V1_RETAINS_PRIMARY`
+- `SE_FANOGAN_ES_ROLE = OPTIONAL_RESEARCH_BACKEND`
+
+冻结 holdout 结果：
+
+| 模型 | false_accept | false_reject | F1 | balanced_accuracy | AUROC | AUPRC |
+|---|---:|---:|---:|---:|---:|---:|
+| AE v1 | 7 | 0 | 0.872727 | 0.650000 | 0.637500 | 0.556600 |
+| SE-fAnoGAN-ES mean | 5.0 | 0.0 | 0.905660 | 0.750000 | 0.912500 | 0.878639 |
+
+场景结论为：metadata 场景 `SE_BETTER`，content 场景 `AE_BETTER`，multipart 场景 `SE_BETTER`。完整 canonical SE-fAnoGAN-ES 在冻结的 Alfresco holdout 上总体检测指标优于当前 AE v1 lightweight statistical baseline，并在 metadata 与 multipart 场景表现更好；content 场景由 AE 更优。由于结果具有场景依赖性，同时 SE 推理约慢 3.36 倍，因此当前工程继续采用 AE v1 作为默认轻量有效性判定机制，并保留 SE-fAnoGAN-ES 作为可选研究后端。
+
+效率冻结值为：
+
+- AE warm latency 约 `0.074284 ms`，throughput 约 `13461.870 samples/s`；
+- SE warm latency mean 约 `0.249722 ms`，throughput mean 约 `4007.317 samples/s`。
+
+## 9. 跨平台验证
+
+```text
+CROSS_PLATFORM_FUZZING_FRAMEWORK_VALIDATED = YES
+SCOPE = BOUNDED_ENGINEERING_VALIDATION_ON_ALFRESCO_AND_O2OA
+```
+
+该结论表示框架已在 Alfresco 与 O2OA 的冻结 bounded 场景中完成迁移和反馈闭环验证，不表示所有平台普适性已经证明。
+
+## 10. Final regression、build 与 evidence integrity
+
+最终冻结回归与完整性状态如下：
+
+- `TARGETED_C_PROBE_RERUN = PASS`；
+- `ATTRIBUTION_MODULE_RERUN = PASS`：discovered 17，passed 17，failed 0，errors 0，skipped 0；
+- `FULL_OFFLINE_REGRESSION = PASS`：728 / 728，0 failures，0 errors，0 skips；
+- `AFL_BUILD = PASS`；
+- `SECRET_SCAN = PASS`；
+- `RUNTIME_SECRET_ALLOWLIST_REVIEW = PASS`；
+- `EVIDENCE_HASH_MANIFEST = PASS`。
+
+最终环境问题已解决：根因是 Python interpreter / CPython 3.12 development-tooling environment mismatch；最终方案为 project venv 使用 ABI-compatible Python 3.12 development tooling。该历史环境问题不属于当前 blocker，且不需要 source change 或 model change。
+
+## 11. Non-blocking / future extension
+
+以下项目明确归类为 `NON-BLOCKING / FUTURE EXTENSION`，不构成当前项目失败项：
+
+- Flowable full real feedback；
+- multipart long-term / scale validation；
+- additional O2OA scenarios；
+- third-platform validation；
+- larger SE-fAnoGAN-ES generalization study。
+
+## 12. Final acceptance matrix
+
+| 项目 | 最终状态 | 验证等级 | 主要证据 | 是否阻塞 |
+|---|---|---|---|---|
+| Official baseline | PASS | COMMITTED BASELINE | `/home/dministrator/AFLplusplus`, `c6817ce46b0120da95ba55869b6b298e18e4cf8b` | 否 |
+| Gate-1 | PASS | INDEPENDENTLY VERIFIED | final freeze evidence root / Gate-1 record | 否 |
+| Gate-2 | PASS | INDEPENDENTLY VERIFIED | final freeze evidence root / Gate-2 record | 否 |
+| representation bridge | PASS | INDEPENDENTLY VERIFIED | representation bridge acceptance artifact | 否 |
+| C validity | PASS | INDEPENDENTLY VERIFIED | targeted C probe and validity evidence | 否 |
+| production harness | PASS | INDEPENDENTLY VERIFIED | production harness acceptance artifact | 否 |
+| exec_seq | PASS | INDEPENDENTLY VERIFIED | `NV_STATUS_PATH` and `.seq` accounting evidence | 否 |
+| state coverage | PASS | INDEPENDENTLY VERIFIED | state coverage attribution record | 否 |
+| reward | PASS | INDEPENDENTLY VERIFIED | reward attribution record | 否 |
+| MAB | PASS | INDEPENDENTLY VERIFIED | MAB journal and attribution record | 否 |
+| scheduler | PASS | INDEPENDENTLY VERIFIED | scheduler-visible seed credit evidence | 否 |
+| reporting | PASS | INDEPENDENTLY VERIFIED | stats/report reconciliation record | 否 |
+| Alfresco metadata | PASS | REAL-PLATFORM VERIFIED | existing Alfresco metadata acceptance artifacts | 否 |
+| Alfresco content | PASS | REAL-PLATFORM VERIFIED | existing Alfresco content acceptance artifacts | 否 |
+| Alfresco multipart | PASS | REAL-PLATFORM VERIFIED | `docs/final_delivery/fuzz_component_release/alfresco_multipart_bounded_final.md` and bounded closure artifact | 否 |
+| multi-arm | PASS | REAL-PLATFORM VERIFIED | Alfresco multi-arm real evidence | 否 |
+| multi-seed | PASS | REAL-PLATFORM VERIFIED | Alfresco multi-seed all-arms real evidence | 否 |
+| O2OA final bounded real | PASS | REAL-PLATFORM VERIFIED | O2OA final post-fix bounded real gate artifact | 否 |
+| SE-fAnoGAN-ES reference | PASS | INDEPENDENTLY VERIFIED | SE Round 3 frozen evidence root | 否 |
+| SE vs AE comparison | PASS | INDEPENDENTLY VERIFIED | SE Round 3 formal comparison record | 否 |
+| model selection | PASS | INDEPENDENTLY VERIFIED | frozen model selection decision | 否 |
+| cross-platform validation | PASS | REAL-PLATFORM VERIFIED | Alfresco/O2OA bounded engineering evidence | 否 |
+| full offline regression | PASS | INDEPENDENTLY VERIFIED | final 728/728 reconciliation record | 否 |
+| AFL build | PASS | INDEPENDENTLY VERIFIED | final freeze build record | 否 |
+| secret scan | PASS | INDEPENDENTLY VERIFIED | final freeze secret scan record | 否 |
+| allowlist review | PASS | INDEPENDENTLY VERIFIED | runtime secret allowlist review record | 否 |
+| evidence hash freeze | PASS | INDEPENDENTLY VERIFIED | evidence SHA256 manifest | 否 |
+
+## 13. Evidence references
+
+本报告只引用冻结证据类别和现有归档 artifact，不复制大型输出，不打印 credential、token 或 raw business IDs：
+
+- final freeze evidence root；
+- SE Round 3 frozen evidence root；
+- existing Alfresco metadata/content/multipart acceptance artifacts；
+- existing O2OA final post-fix bounded real gate artifact；
+- `docs/final_delivery/fuzz_component_release/alfresco_multipart_bounded_final.md`；
+- `docs/final_delivery/fuzz_component_release/alfresco_multipart_integration_result.md`；
+- final 728/728 reconciliation record；
+- evidence SHA256 manifest。
+
+## 14. Final conclusion
+
+```text
+FINAL_FUZZING_COMPONENT_ACCEPTANCE = PASS_WITH_NON_BLOCKING_GAPS
+BLOCKING_ITEMS = []
+READY_FOR_FINAL_EVIDENCE_FREEZE = YES
+READY_FOR_PROJECT_ACCEPTANCE_WRITEUP = YES
+CORE_DEVELOPMENT_CAN_STOP = YES
+FINAL_FREEZE_STATUS = PASS
+```
+
+模糊测试组件核心研发、真实平台闭环、跨平台 bounded 验证、multi-arm/multi-seed、报告与反馈对账、有效性模型比较及最终 release regression 均已完成。现有剩余项属于非阻塞扩展，不影响当前工程验收。项目可停止核心功能开发，转入正式验收、论文/报告撰写和后续扩展研究阶段。

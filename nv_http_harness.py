@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys, json, urllib.request, urllib.error,time,os,zlib
 import base64
+import hashlib
 import fcntl
 from nv_state_probe import update_state
 from urllib.parse import urlparse
@@ -16,6 +17,14 @@ DEFAULT_CFG = {
     ],
     "biz_fields": ["code", "errCode", "errorCode", "status", "message", "msg"],
 }
+
+def resolve_health_url(cfg):
+    health_url = str(cfg.get("health_url", "")).strip()
+    if health_url:
+        return health_url
+    return str(cfg.get("base", DEFAULT_CFG["base"])).rstrip("/") + str(
+        cfg.get("health", DEFAULT_CFG["health"])
+    )
 
 def load_target_config():
     cfg_path = os.getenv("NV_TARGET_CONFIG", "").strip()
@@ -192,6 +201,33 @@ ALLOWED_PATHS = {
   "/api/doc/query",
 }
 
+def status_ledger_path() -> str:
+    return os.getenv("NV_STATUS_LEDGER_PATH", STATUS_PATH + ".jsonl")
+
+
+def append_status_record(record: dict) -> None:
+    payload = (json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    path = status_ledger_path()
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        offset = 0
+        while offset < len(payload):
+            written = os.write(fd, payload[offset:])
+            if written <= 0:
+                raise OSError("status ledger short write")
+            offset += written
+        os.fsync(fd)
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
 def seq_sidecar_path() -> str:
     """Where this status namespace keeps its execution counter.
 
@@ -265,7 +301,7 @@ def next_exec_seq() -> int:
 
 def write_status(method, path, http_code, timeout=False, recovered=False, latency_ms=0,
                  body_hash16=0, ncov_delta=0, ncov_total=0, nall=0,
-                 is_exception=0, recover_ms=0):
+                 is_exception=0, recover_ms=0, validation_reject=0):
     global SEQ
 
     # class
@@ -309,6 +345,7 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
         "ts_ms": int(time.time() * 1000),
         "is_exception": int(is_exception),
         "recover_ms": int(recover_ms),
+        "validation_reject": 1 if validation_reject else 0,
     }
 
     # atomic write
@@ -316,6 +353,239 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(st, f, ensure_ascii=False)
     os.replace(tmp, STATUS_PATH)
+    append_status_record(st)
+    return st
+
+
+class AlfrescoMultipartClient:
+    """Small proxy-free client for the multipart children endpoint."""
+
+    def __init__(self, base: str, parent_node_id: str):
+        self.base = str(base).rstrip("/")
+        self.parent_node_id = str(parent_node_id).strip()
+        if not self.parent_node_id or any(char in self.parent_node_id for char in ("/", "\\", "?", "#")):
+            raise ValueError("MULTIPART_PARENT_REQUIRED")
+
+    def _request_json(self, method: str, path: str) -> tuple[int, dict]:
+        user = _require_runtime_credential("ALFRESCO_USER")
+        password = _require_runtime_credential("ALFRESCO_PASS")
+        auth = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
+        req = urllib.request.Request(
+            self.base + path,
+            method=method,
+            headers={"Authorization": f"Basic {auth}", "Accept": "application/json"},
+        )
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        try:
+            with opener.open(req, timeout=5) as response:
+                payload = json.loads(response.read().decode("utf-8", errors="replace") or "{}")
+                return int(response.getcode()), payload if isinstance(payload, dict) else {}
+        except urllib.error.HTTPError as exc:
+            try:
+                payload = json.loads(exc.read().decode("utf-8", errors="replace") or "{}")
+            except Exception:
+                payload = {}
+            return int(exc.code), payload
+
+    def get_node(self, node_id: str) -> dict:
+        code, payload = self._request_json(
+            "GET", f"/alfresco/api/-default-/public/alfresco/versions/1/nodes/{node_id}?include=properties"
+        )
+        if code != 200 or not isinstance(payload.get("entry"), dict):
+            raise RuntimeError("MULTIPART_READBACK_METADATA_FAILED")
+        return payload["entry"]
+
+    def get_content_bytes(self, node_id: str) -> bytes:
+        user = _require_runtime_credential("ALFRESCO_USER")
+        password = _require_runtime_credential("ALFRESCO_PASS")
+        auth = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
+        req = urllib.request.Request(
+            self.base + f"/alfresco/api/-default-/public/alfresco/versions/1/nodes/{node_id}/content",
+            method="GET",
+            headers={"Authorization": f"Basic {auth}", "Accept": "application/octet-stream"},
+        )
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        try:
+            with opener.open(req, timeout=5) as response:
+                if int(response.getcode()) != 200:
+                    raise RuntimeError("MULTIPART_READBACK_CONTENT_FAILED")
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError("MULTIPART_READBACK_CONTENT_FAILED") from exc
+
+    def upload_multipart(self, *, fields: dict, filename: str, file_bytes: bytes) -> dict:
+        boundary = "----nv-alfresco-" + hashlib.sha256(
+            file_bytes + filename.encode("utf-8")
+        ).hexdigest()[:24]
+        chunks: list[bytes] = []
+        for name, value in fields.items():
+            chunks.extend([
+                f"--{boundary}\r\n".encode("ascii"),
+                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode("ascii"),
+                str(value).encode("utf-8"),
+                b"\r\n",
+            ])
+        chunks.extend([
+            f"--{boundary}\r\n".encode("ascii"),
+            f'Content-Disposition: form-data; name="filedata"; filename="{filename}"\r\n'.encode("utf-8"),
+            b"Content-Type: application/octet-stream\r\n\r\n",
+            file_bytes,
+            b"\r\n",
+            f"--{boundary}--\r\n".encode("ascii"),
+        ])
+        body = b"".join(chunks)
+        user = _require_runtime_credential("ALFRESCO_USER")
+        password = _require_runtime_credential("ALFRESCO_PASS")
+        auth = base64.b64encode(f"{user}:{password}".encode("utf-8")).decode("ascii")
+        req = urllib.request.Request(
+            self.base + f"/alfresco/api/-default-/public/alfresco/versions/1/nodes/{self.parent_node_id}/children",
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Basic {auth}",
+                "Accept": "application/json",
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+            },
+        )
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        try:
+            with opener.open(req, timeout=5) as response:
+                return {
+                    "status": int(response.getcode()),
+                    "body": json.loads(response.read().decode("utf-8", errors="replace") or "{}"),
+                }
+        except urllib.error.HTTPError as exc:
+            try:
+                payload = json.loads(exc.read().decode("utf-8", errors="replace") or "{}")
+            except Exception:
+                payload = {}
+            return {"status": int(exc.code), "body": payload}
+
+
+def _multipart_upload_record_path() -> str:
+    return os.getenv("NV_MULTIPART_UPLOADS_PATH", "/tmp/nv_multipart_uploads.jsonl")
+
+
+def _append_multipart_upload_record(record: dict) -> None:
+    path = _multipart_upload_record_path()
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as stream:
+        stream.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def run_multipart_seed(data: bytes, *, client, status_writer=None) -> dict:
+    """Validate and execute one multipart upload through an injectable client."""
+
+    if status_writer is None:
+        status_writer = write_status
+
+    def reject(reason: str, *, path: str = "/alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children", body_hash16: int = 0) -> dict:
+        status = status_writer(
+            method="POST", path=path, http_code=0,
+            body_hash16=body_hash16, validation_reject=1,
+        )
+        result = {
+            "validation_reject": True,
+            "target_invoked": False,
+            "status_observed": False,
+            "http_status": 0,
+            "exec_seq": status.get("exec_seq") if isinstance(status, dict) else None,
+            "reject_reason": reason,
+            "response_node_id": "",
+        }
+        _append_multipart_upload_record(result)
+        return result
+
+    try:
+        parsed = parse_multipart_http_seed(data)
+    except ValueError as exc:
+        return reject(str(exc))
+
+    fields = parsed["fields"]
+    filename = str(parsed["filename"])
+    file_bytes = bytes(parsed["file_bytes"])
+    body_hash16 = int(zlib.crc32(file_bytes) & 0xffff)
+    if fields.get("name") != filename:
+        return reject("MULTIPART_NAME_FILENAME_MISMATCH", path=parsed["path"], body_hash16=body_hash16)
+    if fields.get("nodeType") != "cm:content":
+        return reject("MULTIPART_NODE_TYPE_INVALID", path=parsed["path"], body_hash16=body_hash16)
+    if not file_bytes:
+        return reject("MULTIPART_FILEDATA_EMPTY", path=parsed["path"], body_hash16=body_hash16)
+    if len(file_bytes) > 4096 or b"\x00" in file_bytes:
+        return reject("MULTIPART_FILEDATA_INVALID", path=parsed["path"], body_hash16=body_hash16)
+    try:
+        file_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        return reject("MULTIPART_FILEDATA_INVALID_UTF8", path=parsed["path"], body_hash16=body_hash16)
+
+    response = client.upload_multipart(
+        fields=dict(fields), filename=filename, file_bytes=file_bytes
+    )
+    if not isinstance(response, dict):
+        raise ValueError("MULTIPART_UPLOAD_RESPONSE_INVALID")
+    http_status = int(response.get("status", response.get("http_code", 0)) or 0)
+    body = response.get("body", {})
+    if not isinstance(body, dict):
+        body = {}
+    entry = body.get("entry") if isinstance(body.get("entry"), dict) else body
+    response_node_id = str(entry.get("id", "")) if isinstance(entry, dict) else ""
+    server_name = str(entry.get("name", "")) if isinstance(entry, dict) else ""
+    if not (200 <= http_status < 300):
+        status = status_writer(
+            method=parsed["method"], path=parsed["path"], http_code=http_status,
+            body_hash16=body_hash16, validation_reject=0,
+        )
+        result = {
+            "validation_reject": False,
+            "target_invoked": True,
+            "status_observed": True,
+            "http_status": http_status,
+            "exec_seq": status.get("exec_seq") if isinstance(status, dict) else None,
+            "response_node_id": "",
+            "filename": filename,
+            "uploaded_name": filename,
+            "file_size": len(file_bytes),
+            "file_sha256": "sha256:" + hashlib.sha256(file_bytes).hexdigest(),
+            "upload_error": True,
+        }
+        _append_multipart_upload_record(result)
+        return result
+    if not response_node_id or not server_name:
+        raise ValueError("MULTIPART_UPLOAD_IDENTITY_MISSING")
+
+    status = status_writer(
+        method=parsed["method"],
+        path=parsed["path"],
+        http_code=http_status,
+        body_hash16=int(zlib.crc32(file_bytes) & 0xffff),
+        validation_reject=0,
+    )
+    exec_seq = status.get("exec_seq") if isinstance(status, dict) else None
+    if exec_seq is None or int(exec_seq) <= 0:
+        raise ValueError("MULTIPART_EXEC_SEQ_MISSING")
+    result = {
+        "validation_reject": False,
+        "target_invoked": True,
+        "status_observed": True,
+        "http_status": http_status,
+        "exec_seq": int(exec_seq),
+        "response_node_id": response_node_id,
+        "filename": filename,
+        "uploaded_name": server_name,
+        "file_bytes": file_bytes,
+        "file_size": len(file_bytes),
+        "file_sha256": "sha256:" + hashlib.sha256(file_bytes).hexdigest(),
+    }
+    record = dict(result)
+    record.pop("file_bytes", None)
+    record["parent_node_id"] = str(getattr(client, "parent_node_id", ""))
+    _append_multipart_upload_record(record)
+    return result
+
 
 def body_valid_stats_path() -> str:
     return os.getenv("NV_BODY_VALID_STATS", "/tmp/nv_body_valid_stats.json")
@@ -374,7 +644,7 @@ def save_err_case(raw_input: bytes, cls: str, code: int):
           f'python3 "{os.path.abspath(__file__)}" < "{p}"\n'
     with open(p + ".cmd", "w", encoding="utf-8") as f:
         f.write(cmd)
-    
+
     meta = {
     "ts_ms": ts, "cls": cls, "http_code": code,
     "base": BASE
@@ -416,6 +686,132 @@ def parse_http_seed(data: bytes):
 
     body = "\n".join(lines[i:]).encode("utf-8") if i < len(lines) else b""
     return method, path, headers, body
+
+def parse_multipart_http_seed(data: bytes) -> dict:
+    """Parse one full HTTP multipart seed while preserving file bytes."""
+
+    if not isinstance(data, (bytes, bytearray)):
+        raise ValueError("MULTIPART_INPUT_NOT_BYTES")
+    raw = bytes(data)
+    header_separator = b"\r\n\r\n" if b"\r\n\r\n" in raw else b"\n\n"
+    if header_separator not in raw:
+        raise ValueError("MULTIPART_HTTP_HEADERS_MISSING")
+    header_bytes, body = raw.split(header_separator, 1)
+    line_separator = b"\r\n" if b"\r\n" in header_bytes else b"\n"
+    header_lines = header_bytes.split(line_separator)
+    if not header_lines:
+        raise ValueError("MULTIPART_REQUEST_LINE_MISSING")
+    try:
+        request_line = header_lines[0].decode("ascii").split()
+    except UnicodeDecodeError as exc:
+        raise ValueError("MULTIPART_REQUEST_LINE_INVALID") from exc
+    if len(request_line) != 3 or request_line[2] != "HTTP/1.1":
+        raise ValueError("MULTIPART_REQUEST_LINE_INVALID")
+    method, path = request_line[0], request_line[1]
+    if method != "POST" or not path.startswith("/"):
+        raise ValueError("MULTIPART_REQUEST_CONTRACT_INVALID")
+
+    headers: dict[str, str] = {}
+    for line in header_lines[1:]:
+        if b":" not in line:
+            raise ValueError("MULTIPART_HEADER_INVALID")
+        key, value = line.split(b":", 1)
+        try:
+            key_text = key.decode("ascii").strip().lower()
+            value_text = value.decode("ascii").strip()
+        except UnicodeDecodeError as exc:
+            raise ValueError("MULTIPART_HEADER_INVALID") from exc
+        if not key_text or key_text in headers:
+            raise ValueError("MULTIPART_HEADER_INVALID")
+        headers[key_text] = value_text
+
+    content_type_parts = [part.strip() for part in headers.get("content-type", "").split(";")]
+    if not content_type_parts or content_type_parts[0].lower() != "multipart/form-data":
+        raise ValueError("MULTIPART_CONTENT_TYPE_INVALID")
+    boundary = ""
+    for part in content_type_parts[1:]:
+        if "=" in part:
+            key, value = part.split("=", 1)
+            if key.strip().lower() == "boundary":
+                boundary = value.strip().strip('"')
+                break
+    if not boundary or any(ord(char) < 0x21 or ord(char) > 0x7e for char in boundary):
+        raise ValueError("MULTIPART_BOUNDARY_INVALID")
+
+    delimiter = b"--" + boundary.encode("ascii")
+    if not body.startswith(delimiter + b"\r\n") and not body.startswith(delimiter + b"\n"):
+        raise ValueError("MULTIPART_BOUNDARY_MISMATCH")
+    segments = body.split(delimiter)
+    if len(segments) < 3 or segments[0] != b"":
+        raise ValueError("MULTIPART_BOUNDARY_MISMATCH")
+    if segments[-1] not in (b"--", b"--\r\n", b"--\n"):
+        raise ValueError("MULTIPART_TERMINATOR_MISSING")
+
+    fields: dict[str, str] = {}
+    file_parts: list[tuple[str, str, bytes]] = []
+    for segment in segments[1:-1]:
+        if segment.startswith(b"\r\n"):
+            segment = segment[2:]
+        elif segment.startswith(b"\n"):
+            segment = segment[1:]
+        part_separator = b"\r\n\r\n" if b"\r\n\r\n" in segment else b"\n\n"
+        if part_separator not in segment:
+            raise ValueError("MULTIPART_PART_HEADERS_MISSING")
+        part_header_bytes, part_body = segment.split(part_separator, 1)
+        if part_body.endswith(b"\r\n"):
+            part_body = part_body[:-2]
+        elif part_body.endswith(b"\n"):
+            part_body = part_body[:-1]
+        part_headers: dict[str, str] = {}
+        part_line_separator = b"\r\n" if b"\r\n" in part_header_bytes else b"\n"
+        for line in part_header_bytes.split(part_line_separator):
+            if b":" not in line:
+                raise ValueError("MULTIPART_PART_HEADER_INVALID")
+            key, value = line.split(b":", 1)
+            try:
+                part_headers[key.decode("ascii").strip().lower()] = value.decode("ascii").strip()
+            except UnicodeDecodeError as exc:
+                raise ValueError("MULTIPART_PART_HEADER_INVALID") from exc
+        disposition_parts = [part.strip() for part in part_headers.get("content-disposition", "").split(";")]
+        if not disposition_parts or disposition_parts[0].lower() != "form-data":
+            raise ValueError("MULTIPART_DISPOSITION_INVALID")
+        params: dict[str, str] = {}
+        for item in disposition_parts[1:]:
+            if "=" in item:
+                key, value = item.split("=", 1)
+                params[key.strip().lower()] = value.strip().strip('"')
+        field_name = params.get("name", "")
+        if not field_name:
+            raise ValueError("MULTIPART_FIELD_NAME_MISSING")
+        filename = params.get("filename")
+        if filename is not None:
+            if not filename or filename in {".", ".."} or "/" in filename or "\\" in filename:
+                raise ValueError("MULTIPART_FILENAME_INVALID")
+            if any(ord(char) < 0x20 or ord(char) == 0x7f for char in filename):
+                raise ValueError("MULTIPART_FILENAME_INVALID")
+            file_parts.append((field_name, filename, part_body))
+        else:
+            if field_name in fields:
+                raise ValueError("MULTIPART_FIELD_DUPLICATE")
+            try:
+                fields[field_name] = part_body.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("MULTIPART_FIELD_INVALID_UTF8") from exc
+
+    filedata_parts = [part for part in file_parts if part[0] == "filedata"]
+    if len(filedata_parts) != 1 or len(file_parts) != 1:
+        raise ValueError("MULTIPART_FILEDATA_INVALID")
+    _, filename, file_bytes = filedata_parts[0]
+    return {
+        "method": method,
+        "path": path,
+        "headers": headers,
+        "boundary": boundary,
+        "fields": fields,
+        "filename": filename,
+        "file_bytes": file_bytes,
+    }
+
 
 def classify(code: int, timeout_flag: bool) -> str:
     if timeout_flag:
@@ -474,12 +870,23 @@ def inject_ctx_placeholders(body: bytes, ctx: dict) -> bytes:
     except Exception:
         return body
 
-def health_check(base: str, health_path: str, timeout_sec=1.0) -> bool:
+def health_check(health_url: str, timeout_sec=1.0) -> bool:
     try:
-        with urllib.request.urlopen(base + health_path, timeout=timeout_sec) as r:
+        with open_direct(health_url, timeout=timeout_sec) as r:
             return 200 <= r.getcode() < 400
     except Exception:
         return False
+
+
+def open_direct(request, timeout):
+    """Open an HTTP request without consulting ambient proxy settings."""
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    previous = getattr(urllib.request, "_opener", None)
+    urllib.request._opener = opener
+    try:
+        return urllib.request.urlopen(request, timeout=timeout)
+    finally:
+        urllib.request._opener = previous
 
 def normalize_json_body_or_none(data: bytes):
     if not data:
@@ -514,10 +921,48 @@ def main():
     # --- load cfg once ---
     cfg = load_target_config()
     BASE = cfg.get("base", "http://127.0.0.1:8080").rstrip("/")
+    if cfg.get("scenario") == "multipart_upload":
+        parent_node_id = str(cfg.get("parent_node_id", "")).strip()
+        if not parent_node_id:
+            raise RuntimeError("MULTIPART_PARENT_REQUIRED")
+        multipart_client = AlfrescoMultipartClient(BASE, parent_node_id)
+
+        def multipart_status_writer(**kwargs):
+            method = str(kwargs.get("method", "POST"))
+            path = str(kwargs.get("path", ""))
+            code = int(kwargs.get("http_code", 0) or 0)
+            validation_reject = int(kwargs.get("validation_reject", 0) or 0)
+            try:
+                cls = classify(code, code < 0)
+                biz_code = f"http_{code}_{cls}"
+                probe = update_state(method, path, cls, biz_code=biz_code)
+            except Exception:
+                probe = {"ncov_delta": 0, "ncov_total": 0, "nall": 0}
+            return write_status(
+                method,
+                path,
+                code,
+                body_hash16=int(kwargs.get("body_hash16", 0) or 0),
+                ncov_delta=int(probe.get("ncov_delta", 0)),
+                ncov_total=int(probe.get("ncov_total", 0)),
+                nall=int(probe.get("nall", 0)),
+                validation_reject=validation_reject,
+            )
+
+        result = run_multipart_seed(
+            data,
+            client=multipart_client,
+            status_writer=multipart_status_writer,
+        )
+        if result.get("validation_reject"):
+            bump_body_valid_stat("body_rule_reject")
+            return 0
+        return 0 if int(result.get("http_status", 0)) < 400 else 1
+
     ALLOWED_PATHS = cfg.get("_allowed_paths", set())
     ALLOWED_METHODS = cfg.get("_allowed_methods", {"GET", "POST"})
     BIZ_FIELDS = cfg.get("biz_fields", ["code", "message", "msg"])
-    HEALTH_PATH = cfg.get("health", "/health") or "/health"
+    HEALTH_URL = resolve_health_url(cfg)
 
     # default endpoint fallback
     eps = cfg.get("endpoints", [])
@@ -585,6 +1030,17 @@ def main():
                 bump_body_valid_stat("body_score_reject")
             else:
                 bump_body_valid_stat("body_rule_reject")
+            # Every body-only invocation must leave a terminal record so the
+            # append-only status consumer can associate the execution.  A
+            # rule reject with no normalized body (malformed JSON) is still a
+            # validation reject, never a target execution.
+            write_status(
+                method,
+                path,
+                0,
+                body_hash16=int(zlib.crc32(validation_body) & 0xffff),
+                validation_reject=1,
+            )
             return 0
 
         bump_body_valid_stat("body_rule_pass")
@@ -646,7 +1102,7 @@ def main():
     resp_body = b""
 
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with open_direct(req, timeout=5) as resp:
             code = resp.getcode()
             resp_body = resp.read(4096)
 
@@ -705,7 +1161,12 @@ def main():
         except Exception:
             pass
 
-    probe = update_state(method, path, cls, biz_code=biz_code)
+    try:
+        probe = update_state(method, path, cls, biz_code=biz_code)
+    except Exception:
+        # Status is the execution identity boundary; accounting failure must
+        # not erase an already completed HTTP response.
+        probe = {"ncov_delta": 0, "ncov_total": 0, "nall": 0}
     is_exception = (cls in ("5xx", "timeout", "conn_refused"))
 
     recovered = 0
@@ -714,7 +1175,7 @@ def main():
     if is_exception:
         t_rec0 = time.time()
         for _ in range(3):
-            if health_check(BASE, HEALTH_PATH, timeout_sec=1.0):
+            if health_check(HEALTH_URL, timeout_sec=1.0):
                 recovered = 1
                 break
             time.sleep(0.1)

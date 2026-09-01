@@ -1975,14 +1975,22 @@ custom_mutator_stage:
             if (nv_used && nv_used[0] == (char)('0' + (int)arm) &&
                 nv_used[1] == 0) {
 
-              afl->nv_mab.pending_arm = arm;
-              afl->nv_mab.pending_update = 1;
-              afl->nv_mab.update_source = 1;
+              nv_mab_begin_pending(afl, arm, arm,
+                                    afl->nv_execution_iteration + 1, 1);
 
             } else {
 
-              afl->nv_mab.pending_update = 0;
-              afl->nv_mab.update_source = 0;
+              nv_arm_id_t actual_arm = NV_ARM_MAX;
+              if (nv_used && nv_used[0] >= '0' &&
+                  nv_used[0] < (char)('0' + NV_ARM_MAX) && nv_used[1] == 0)
+                actual_arm = (nv_arm_id_t)(nv_used[0] - '0');
+              if (!nv_mab_journal_append_event(afl, "mab_update_mismatch", "",
+                                               arm, actual_arm))
+                goto abandon_entry;
+              /* Keep the mismatch identity through common_fuzz_stuff so the
+                 target lifecycle gets a terminal ledger record. */
+              nv_mab_begin_pending(afl, arm, actual_arm,
+                                    afl->nv_execution_iteration + 1, 0);
 
             }
 

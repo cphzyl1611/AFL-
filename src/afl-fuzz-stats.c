@@ -476,6 +476,15 @@ static void nv_write_eval_report_json(afl_state_t *afl, double bitmap_cvg,
   }
 
   fputs("]},\n", j);
+  fprintf(j,
+          "  \"mab_journal\": {\"enabled\": %u, \"record_count\": %llu, "
+          "\"error_count\": %llu, \"audit_invalid\": %u},\n",
+          (unsigned)(afl->nv_mab_journal_enabled ||
+                     (getenv("NV_MAB_JOURNAL_PATH") &&
+                      *getenv("NV_MAB_JOURNAL_PATH"))),
+          (unsigned long long)afl->nv_mab_journal_record_count,
+          (unsigned long long)afl->nv_mab_journal_error_count,
+          (unsigned)afl->nv_mab_journal_audit_invalid);
 
   /* validity */
   fprintf(j,
@@ -704,6 +713,32 @@ void write_stats_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
   fprintf(f, "nv_mab_pending_arm : %u\n", (unsigned)afl->nv_mab.pending_arm);
   fprintf(f, "nv_mab_pending     : %u\n", (unsigned)afl->nv_mab.pending_update);
   fprintf(f, "nv_mab_update_src  : %u\n", (unsigned)afl->nv_mab.update_source);
+  fprintf(f, "nv_mab_journal_enabled : %u\n",
+          (unsigned)(afl->nv_mab_journal_enabled ||
+                     (getenv("NV_MAB_JOURNAL_PATH") &&
+                      *getenv("NV_MAB_JOURNAL_PATH"))));
+  fprintf(f, "nv_mab_journal_record_count : %llu\n",
+          (unsigned long long)afl->nv_mab_journal_record_count);
+  fprintf(f, "nv_mab_journal_error_count : %llu\n",
+          (unsigned long long)afl->nv_mab_journal_error_count);
+  fprintf(f, "nv_mab_journal_audit_invalid : %u\n",
+          (unsigned)afl->nv_mab_journal_audit_invalid);
+  fprintf(f, "nv_mab_journal_pending_cleared_count : %llu\n",
+          (unsigned long long)afl->nv_mab_journal_pending_cleared_count);
+  fprintf(f, "nv_mab_journal_mismatch_count : %llu\n",
+           (unsigned long long)afl->nv_mab_journal_mismatch_count);
+  fprintf(f, "nv_execution_ledger_enabled : %u\n",
+          (unsigned)(afl->nv_execution_ledger_enabled ||
+                     (getenv("NV_EXECUTION_LEDGER_PATH") &&
+                      *getenv("NV_EXECUTION_LEDGER_PATH"))));
+  fprintf(f, "nv_execution_ledger_record_count : %llu\n",
+          (unsigned long long)afl->nv_execution_ledger_record_count);
+  fprintf(f, "nv_execution_ledger_error_count : %llu\n",
+          (unsigned long long)afl->nv_execution_ledger_error_count);
+  fprintf(f, "nv_execution_ledger_audit_invalid : %u\n",
+           (unsigned)afl->nv_execution_ledger_audit_invalid);
+  fprintf(f, "nv_execution_iteration : %llu\n",
+          (unsigned long long)afl->nv_execution_iteration);
   fprintf(f, "nv_mab_c           : %.10e\n", afl->nv_mab.c);
   fprintf(f, "nv_mab_min_explore : %llu\n",
           (unsigned long long)afl->nv_mab.min_explore);
@@ -835,6 +870,32 @@ void write_stats_file(afl_state_t *afl, u32 t_bytes, double bitmap_cvg,
   fprintf(f, "ss_cov_max2      : %llu\n", (unsigned long long)ss_cov_max2);
   fprintf(f, "ss_selected_max  : %llu\n", (unsigned long long)ss_sel_max);
   fprintf(f, "ss_prob_max      : %.6f\n", ss_prob_max);
+
+  fprintf(f, "seed_audit_enabled : %u\n",
+          (unsigned)(afl->seed_audit_enabled ||
+                     (getenv("NV_SEED_SELECTION_AUDIT_PATH") &&
+                      *getenv("NV_SEED_SELECTION_AUDIT_PATH"))));
+  fprintf(f, "seed_audit_error_count : %llu\n",
+          (unsigned long long)afl->seed_audit_error_count);
+  fprintf(f, "seed_audit_invalid : %u\n", (unsigned)afl->seed_audit_invalid);
+  fprintf(f, "seed_audit_record_count : %llu\n",
+          (unsigned long long)afl->seed_audit_record_count);
+  fprintf(f, "seed_audit_expected_selection_count : %llu\n",
+          (unsigned long long)afl->seed_audit_expected_selection_count);
+  if (afl->seed_audit_enabled ||
+      (getenv("NV_SEED_SELECTION_AUDIT_PATH") &&
+       *getenv("NV_SEED_SELECTION_AUDIT_PATH"))) {
+
+    for (u32 i = 0; i < afl->queued_items; ++i) {
+
+      struct queue_entry *q = afl->queue_buf[i];
+      if (!q) continue;
+      fprintf(f, "ss_selected_queue_%u : %llu\n", q->id,
+              (unsigned long long)q->ss_selected_cnt);
+
+    }
+
+  }
   
   if (afl->san_binary_length) {
 

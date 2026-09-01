@@ -3792,6 +3792,9 @@ int main(int argc, char **argv_orig, char **envp) {
 
         }
 
+        afl->queue_cur->ss_selected_cnt++;
+        nv_seed_selection_audit_record(afl, afl->queue_cur);
+
       }
 
       /* If we had a full queue cycle with no new finds, try
@@ -4031,6 +4034,8 @@ int main(int argc, char **argv_orig, char **envp) {
         } else {
 
           afl->queue_cur = afl->queue_buf[afl->current_entry];
+          afl->queue_cur->ss_selected_cnt++;
+          nv_seed_selection_audit_record(afl, afl->queue_cur);
 
         }
 

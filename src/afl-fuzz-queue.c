@@ -46,6 +46,86 @@ void run_afl_custom_queue_new_entry(afl_state_t *afl, struct queue_entry *q,
 /* ss_calc_prob() now lives in src/afl-fuzz-nv-sched.c so it can be unit
    tested in isolation. */
 
+static nv_seed_selection_audit_open_hook_t ss_audit_open_hook;
+static nv_seed_selection_audit_write_hook_t ss_audit_write_hook;
+static nv_seed_selection_audit_close_hook_t ss_audit_close_hook;
+
+void nv_seed_selection_audit_set_hooks(
+    nv_seed_selection_audit_open_hook_t open_hook,
+    nv_seed_selection_audit_write_hook_t write_hook,
+    nv_seed_selection_audit_close_hook_t close_hook) {
+
+  ss_audit_open_hook = open_hook;
+  ss_audit_write_hook = write_hook;
+  ss_audit_close_hook = close_hook;
+
+}
+
+static int ss_selection_audit_failure(afl_state_t *afl, const char *path) {
+
+  afl->seed_audit_error_count++;
+  afl->seed_audit_invalid = 1;
+  afl->stop_soon = 1;
+  fprintf(stderr, "NV_SEED_SELECTION_AUDIT_ERROR path=%s errno=%d\n", path,
+          errno);
+  return 0;
+
+}
+
+/* Optional run-scoped audit evidence for bounded multi-seed validation.  This
+   is deliberately after the choice has been made and contains no testcase
+   material, filenames, request paths, or credentials. */
+int nv_seed_selection_audit_record(afl_state_t *afl,
+                                    const struct queue_entry *q) {
+
+  const char *path = getenv("NV_SEED_SELECTION_AUDIT_PATH");
+  if (!path || !*path || !q) return 1;
+  afl->seed_audit_enabled = 1;
+  afl->seed_audit_expected_selection_count++;
+
+  char line[512];
+  int n = snprintf(
+      line, sizeof(line),
+      "{\"queue_id\":%u,\"depth\":%llu,\"ss_cov_cnt\":%llu,"
+      "\"ss_selected_cnt\":%llu,\"ss_prob\":%.17g}\n",
+      q->id, (unsigned long long)q->depth,
+      (unsigned long long)q->ss_cov_cnt,
+      (unsigned long long)q->ss_selected_cnt, q->ss_prob);
+  if (n < 0 || (size_t)n >= sizeof(line)) {
+
+    return ss_selection_audit_failure(afl, path);
+
+  }
+
+  FILE *f = ss_audit_open_hook ? ss_audit_open_hook(path, "a") : fopen(path, "a");
+  if (!f) return ss_selection_audit_failure(afl, path);
+
+  int written = ss_audit_write_hook ? ss_audit_write_hook(f, line, (size_t)n)
+                                    : fprintf(f, "%s", line);
+  if (written != n) {
+
+    int saved_errno = errno;
+    if (ss_audit_close_hook) {
+
+      (void)ss_audit_close_hook(f);
+
+    } else {
+
+      (void)fclose(f);
+
+    }
+    errno = saved_errno;
+    return ss_selection_audit_failure(afl, path);
+
+  }
+
+  int closed = ss_audit_close_hook ? ss_audit_close_hook(f) : fclose(f);
+  if (closed != 0) return ss_selection_audit_failure(afl, path);
+  afl->seed_audit_record_count++;
+  return 1;
+
+}
+
 /* select next queue entry based on alias algo - fast! */
 inline u32 select_next_queue_entry(afl_state_t *afl) {
 
@@ -69,6 +149,7 @@ inline u32 select_next_queue_entry(afl_state_t *afl) {
     /* fallback: uniform random */
     u32 id = rand_below(afl, afl->queued_items);
     afl->queue_buf[id]->ss_selected_cnt++;
+    nv_seed_selection_audit_record(afl, afl->queue_buf[id]);
     return id;
 
   }
@@ -86,6 +167,7 @@ inline u32 select_next_queue_entry(afl_state_t *afl) {
     if (acc >= r) {
 
       q->ss_selected_cnt++;
+      nv_seed_selection_audit_record(afl, q);
       return i;
 
     }
@@ -95,6 +177,7 @@ inline u32 select_next_queue_entry(afl_state_t *afl) {
   /* 3) numeric edge fallback */
   u32 last = afl->queued_items - 1;
   afl->queue_buf[last]->ss_selected_cnt++;
+  nv_seed_selection_audit_record(afl, afl->queue_buf[last]);
   return last;
 
 }
@@ -1811,4 +1894,3 @@ inline void queue_testcase_store_mem(afl_state_t *afl, struct queue_entry *q,
   }
 
 }
-

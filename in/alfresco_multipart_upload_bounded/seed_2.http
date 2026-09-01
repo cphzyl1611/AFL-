@@ -1,0 +1,23 @@
+POST /alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children HTTP/1.1
+Host: 127.0.0.1:8080
+Content-Type: multipart/form-data; boundary=nv-canonical-2
+Accept: application/json
+
+--nv-canonical-2
+Content-Disposition: form-data; name="name"
+
+nv-afl-multipart-canonical-2.txt
+--nv-canonical-2
+Content-Disposition: form-data; name="nodeType"
+
+cm:content
+--nv-canonical-2
+Content-Disposition: form-data; name="autoRename"
+
+true
+--nv-canonical-2
+Content-Disposition: form-data; name="filedata"; filename="nv-afl-multipart-canonical-2.txt"
+Content-Type: text/plain
+
+canonical multipart payload two with symbols !@#
+--nv-canonical-2--

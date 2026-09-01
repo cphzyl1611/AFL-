@@ -1,0 +1,23 @@
+POST /alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children HTTP/1.1
+Host: 127.0.0.1:8080
+Content-Type: multipart/form-data; boundary=nv-negative-declared
+Accept: application/json
+
+--nv-negative-actual
+Content-Disposition: form-data; name="name"
+
+nv-afl-negative-boundary.txt
+--nv-negative-actual
+Content-Disposition: form-data; name="nodeType"
+
+cm:content
+--nv-negative-actual
+Content-Disposition: form-data; name="autoRename"
+
+true
+--nv-negative-actual
+Content-Disposition: form-data; name="filedata"; filename="nv-afl-negative-boundary.txt"
+Content-Type: text/plain
+
+must reject before HTTP
+--nv-negative-actual--

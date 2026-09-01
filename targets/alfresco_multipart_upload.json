@@ -1,0 +1,13 @@
+{
+  "scenario": "multipart_upload",
+  "method": "POST",
+  "endpoint": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/-my-/children",
+  "input_format": "full_http_multipart",
+  "target_kind": "creating_upload",
+  "readback": "created_node_content",
+  "mutation_scope": [
+    "field_value",
+    "boundary",
+    "structure"
+  ]
+}

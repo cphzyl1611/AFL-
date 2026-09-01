@@ -1,0 +1,23 @@
+{
+  "common": {
+    "max_bytes": 16384,
+    "max_depth": 8,
+    "max_keys": 128,
+    "max_string": 2048
+  },
+  "endpoints": {
+    "offline_feedback": {
+      "type": "object",
+      "required": ["name", "properties"],
+      "allow_unknown": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

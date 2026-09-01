@@ -141,6 +141,78 @@ class BodyOnlyRepresentationBridgeTest(unittest.TestCase):
         status = json.loads(self.status.read_text(encoding="utf-8"))
         self.assertGreater(status["exec_seq"], 0)
 
+    def test_status_is_written_when_state_accounting_raises_after_http_response(self) -> None:
+        testcase = (
+            b"PUT /alfresco/node/test-only HTTP/1.1\r\n"
+            b"Content-Type: application/json\r\n\r\n"
+            b'{"properties":{"cm:title":"state-error"}}'
+        )
+        validation_inputs: list[bytes] = []
+
+        def recording_body_validate(**kwargs):
+            validation_inputs.append(kwargs["raw_body"])
+            return real_body_validate(**kwargs)
+
+        stdin = types.SimpleNamespace(buffer=io.BytesIO(testcase))
+        env = {
+            "NV_TARGET_CONFIG": str(self.config),
+            "NV_BODY_RULES": str(self.rules),
+            "NV_BODY_VALID_STATS": str(self.stats),
+        }
+        with (
+            mock.patch.dict(harness.os.environ, env, clear=True),
+            mock.patch.object(harness, "STATUS_PATH", str(self.status)),
+            mock.patch.object(harness.sys, "stdin", stdin),
+            mock.patch.object(harness, "body_validate", recording_body_validate),
+            mock.patch.object(
+                harness,
+                "update_state",
+                side_effect=RuntimeError("state accounting failed"),
+            ),
+            mock.patch.object(harness.urllib.request, "urlopen", return_value=_Response()),
+        ):
+            return_code = harness.main()
+
+        self.assertEqual(return_code, 0)
+        self.assertEqual(len(validation_inputs), 1)
+        self.assertTrue(self.status.is_file())
+        status = json.loads(self.status.read_text(encoding="utf-8"))
+        self.assertGreater(status["exec_seq"], 0)
+        self.assertEqual(status["http_code"], 200)
+
+    def test_body_validation_reject_writes_non_target_terminal_status(self) -> None:
+        body = b'{"properties":{"cm:title":"reject-me"}}'
+        validation = {
+            "ok": False,
+            "reason": "score_reject",
+            "score": 2.0,
+            "score_rpc_ok": True,
+            "norm_body": body,
+        }
+        stdin = types.SimpleNamespace(buffer=io.BytesIO(body))
+        env = {
+            "NV_TARGET_CONFIG": str(self.config),
+            "NV_BODY_RULES": str(self.rules),
+            "NV_BODY_VALID_STATS": str(self.stats),
+            "NV_BODY_SCORE_ENDPOINT": "unix:///offline/not-used.sock",
+            "NV_BODY_SCORE_THRESHOLD": "1.0",
+        }
+        with (
+            mock.patch.dict(harness.os.environ, env, clear=True),
+            mock.patch.object(harness, "STATUS_PATH", str(self.status)),
+            mock.patch.object(harness.sys, "stdin", stdin),
+            mock.patch.object(harness, "body_validate", return_value=validation),
+            mock.patch.object(harness.urllib.request, "urlopen") as urlopen,
+        ):
+            return_code = harness.main()
+
+        self.assertEqual(return_code, 0)
+        urlopen.assert_not_called()
+        status = json.loads(self.status.read_text(encoding="utf-8"))
+        self.assertEqual(status["validation_reject"], 1)
+        self.assertGreater(status["exec_seq"], 0)
+        self.assertEqual(status["http_code"], 0)
+
     def test_malformed_http_envelope_fails_closed_before_body_validation(self) -> None:
         malformed = (
             b"PUT /alfresco/node/test-only HTTP/1.1\r\n"
@@ -156,14 +228,16 @@ class BodyOnlyRepresentationBridgeTest(unittest.TestCase):
         self.assertFalse(self.status.exists())
         self.assertFalse(Path(str(self.status) + ".seq").exists())
 
-    def test_malformed_body_only_input_still_fails_closed(self) -> None:
+    def test_malformed_body_only_input_writes_non_target_validation_reject(self) -> None:
         return_code, validation_inputs, urlopen = self.run_harness(b"not-json")
 
         self.assertEqual(return_code, 0)
         self.assertEqual(validation_inputs, [b"not-json"])
         urlopen.assert_not_called()
-        self.assertFalse(self.status.exists())
-        self.assertFalse(Path(str(self.status) + ".seq").exists())
+        status = json.loads(self.status.read_text(encoding="utf-8"))
+        self.assertEqual(status["validation_reject"], 1)
+        self.assertGreater(status["exec_seq"], 0)
+        self.assertEqual(status["http_code"], 0)
 
 
 if __name__ == "__main__":

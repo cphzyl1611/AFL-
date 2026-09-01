@@ -256,6 +256,15 @@ ifeq "$(PYTHON_INCLUDE)" ""
   endif
 endif
 
+# Python may be installed outside the system loader cache (for example in a
+# virtual environment or conda).  Keep the interpreter's library directory in
+# the binary RUNPATH so afl-fuzz is launchable without test-only environment
+# repair.  Empty/nonexistent directories are ignored by the linker.
+PYTHON_LIBDIR := $(strip $(shell python3 -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR") or "")' 2>/dev/null))
+ifneq "$(PYTHON_LIBDIR)" ""
+  override LDFLAGS += -Wl,-rpath,$(PYTHON_LIBDIR)
+endif
+
 ifdef SOURCE_DATE_EPOCH
     BUILD_DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "+%Y-%m-%d" 2>/dev/null || date -u -r "$(SOURCE_DATE_EPOCH)" "+%Y-%m-%d" 2>/dev/null || date -u "+%Y-%m-%d")
 else
