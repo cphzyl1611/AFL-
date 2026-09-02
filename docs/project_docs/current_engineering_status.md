@@ -5,7 +5,7 @@
 > - `docs/final_delivery/fuzz_component_final_acceptance_20260901.md`（最终验收报告）；
 > - `docs/project_docs/sefanogan_es_reference_contract.md`（SE-fAnoGAN-ES backend 选择器契约）。
 >
-> 当前工程结论为：AE v1 是默认/主要的轻量统计基线模型；canonical SE-fAnoGAN-ES reference 已实现并完成正式对比（formal comparison）；SE-fAnoGAN-ES 是可选的研究后端（optional research backend），非默认；真实服务上的 AE-vs-SE four-run A/B 扩展实验尚未完成（`NOT_COMPLETED`）。
+> 当前工程结论为：AE v1 是默认/主要的轻量统计基线模型；canonical SE-fAnoGAN-ES reference 已实现并完成正式对比（formal comparison）；SE-fAnoGAN-ES 是可选的研究后端（optional research backend），非默认；真实服务上的 AE-vs-SE four-run A/B 扩展实验已完整执行（`4/4 runs executed`），但复核确认两个场景均未发生真实 scorer 参与，因此不构成任何有效的 real-service model-effectiveness 结论（`REAL_AE_VS_SE_FOUR_RUN_AB = EXECUTED_BUT_NOT_VALID_FOR_MODEL_COMPARISON`）：`metadata_update` 虽然 `enable_validity=1`，但实际运行中 `body_score_rpc_ok=0`、`body_score_rpc_fail=0`、`task.json` 未配置 `validity_endpoint`、运行时未设置 `NV_BODY_SCORE_ENDPOINT`，score server 未被调用（`METADATA_SCORER_PARTICIPATION = NONE`，`REAL_METADATA_MODEL_SIGNAL = NOT_SUPPORTED_BY_EVIDENCE`）；`multipart_upload` 场景 `enable_validity=0`，backend label 传播仅为 orchestration 兼容，同样不构成 scorer 参与或 model-effectiveness 证据（`MULTIPART_SCORER_PARTICIPATION = NONE`，`MULTIPART_MODEL_COMPARISON = NOT_APPLICABLE_AS_MODEL_AB`），其 execution/readback 验证结果仍是独立有效的工程证据。详见 `docs/final_delivery/fuzz_component_final_acceptance_20260901.md` §8.1。
 
 ## 1. 当前阶段定位
 

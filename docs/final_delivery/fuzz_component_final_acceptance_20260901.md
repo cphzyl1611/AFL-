@@ -135,10 +135,28 @@ O2OA 的最终 post-fix bounded real gate 与 Alfresco 的 metadata、content、
 - SE warm latency mean 约 `0.249722 ms`，throughput mean 约 `4007.317 samples/s`。
 
 ```text
-REAL_AE_VS_SE_FOUR_RUN_AB = NOT_COMPLETED / POST_FREEZE_RESEARCH_EXTENSION
+REAL_AE_VS_SE_FOUR_RUN_AB = EXECUTED_BUT_NOT_VALID_FOR_MODEL_COMPARISON / POST_FREEZE_RESEARCH_EXTENSION
 ```
 
-上述真实服务上的 AE-vs-SE four-run A/B 扩展实验未完成，属于 post-freeze research extension，非阻塞项，不得表述为 PASS。已完成并冻结的是本节上方基于 holdout 数据集的 formal training/holdout comparison（`SE_FANOGAN_ES_FORMAL_COMPARISON = COMPLETE`），两者范围不同，不可互相替代。
+round-c-final 已实际执行全部四个计划中的真实服务运行（`4/4 runs executed`，明细见下方 §8.1）；该 four-run 协议属于 post-freeze research extension，非阻塞项。执行完成本身属实，但不等于产出了有效证据：复核确认两个场景在本轮运行中均未发生真实 scorer 参与（详见 §8.1），因此无法从这四次运行得出任何有效的 real-service model-effectiveness 结论，不得表述为 PASS，也不得作为 AE 与 SE 孰优孰劣的依据。已完成并冻结的是本节上方基于 holdout 数据集的 formal training/holdout comparison（`SE_FANOGAN_ES_FORMAL_COMPARISON = COMPLETE`），两者范围不同，不可互相替代。
+
+### 8.1 Four-run 协议口径澄清（human protocol decision, 2026-09-02）
+
+round-c-final 已实际执行全部四个计划中的真实服务运行（`4/4 runs executed`）：该 four-run 协议由两个场景 × 两个 backend 构成（`metadata_update` × {AE, SE}，`multipart_upload` × {AE, SE}）。执行完成本身不等于产出有效的 model-effectiveness 证据——复核确认两个场景均未发生真实 scorer 参与，但原因各不相同：
+
+- `multipart_upload`：`enable_validity=0`（见 `scripts/run_alfresco_bounded_feedback.py` 的 `build_task_payload`：`"enable_validity": 0 if scenario == "multipart_upload" else 1`，并由 `tests/test_alfresco_bounded_feedback.py::MultipartProfileTest` 断言保持），C 侧 `if (afl->nv_task.enable_validity)` gate（见 `src/afl-fuzz-run.c`）直接屏蔽 validity 调用。即使传播了 `alfresco_ae_v1` / `sefanogan_es_reference` backend label（供 orchestration/config 兼容），也不代表该 backend 在 multipart 执行期间实际参与了打分决策；此前带 AE/SE 标签的 multipart 运行不构成 model-effectiveness 证据。multipart_upload 的 execution/readback 验证结果（见 §6、§12 中 "Alfresco multipart" = PASS）是独立的工程有效性证据，不因排除 model-AB denominator 而失效。
+- `metadata_update`：任务配置 `enable_validity=1`，C 侧 `if (afl->nv_task.enable_validity)` gate 本身未屏蔽 validity/score 调用路径；但 round-c-final 实际运行记录显示该调用从未真正发生：`body_score_rpc_ok = 0`、`body_score_rpc_fail = 0`（RPC 既未成功也未失败，即从未被发起），且当轮 `task.json` 未配置 `validity_endpoint`，运行时也未设置 `NV_BODY_SCORE_ENDPOINT`，score server 未被调用。因此 `enable_validity=1` 仅说明 gate 未被屏蔽，不等于 scorer 已实际参与评分；此前带 AE/SE 标签的 metadata_update 运行同样不构成有效的 model-effectiveness 证据（此前版本曾写作 `REAL_METADATA_MODEL_SIGNAL = SE_BETTER`，现已确认该表述不成立并撤回）。
+
+```text
+FOUR_RUN_EXECUTION_STATUS = 4/4_RUNS_EXECUTED
+METADATA_SCORER_PARTICIPATION = NONE
+REAL_METADATA_MODEL_SIGNAL = NOT_SUPPORTED_BY_EVIDENCE
+MULTIPART_MODEL_AB_DENOMINATOR = EXCLUDED
+MULTIPART_SCORER_PARTICIPATION = NONE
+MULTIPART_MODEL_COMPARISON = NOT_APPLICABLE_AS_MODEL_AB
+```
+
+不得从 round-c-final 的任一场景推广出有效的 real-service model-effectiveness 结论。本条澄清不改写上方 §8 基于冻结 holdout 数据集的 formal training/holdout comparison，两者范围不同、彼此独立、均保持不变。`AE v1` 仍为工程默认 backend，`SE-fAnoGAN-ES` 仍为可选研究 backend；本次澄清未引入任何新的训练、阈值或模型产物变更。
 
 ## 9. 跨平台验证
 

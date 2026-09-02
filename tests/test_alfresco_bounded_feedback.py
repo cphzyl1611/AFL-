@@ -1349,6 +1349,49 @@ class MultipartClientContractTest(unittest.TestCase):
         self.assertTrue(hasattr(module, "read_multipart_content_bytes"))
 
 
+class MultipartReadbackRealFallbackTest(unittest.TestCase):
+    def test_real_fallback_reads_exact_bytes_via_urllib_opener(self) -> None:
+        """Exercise the non-delegated branch of read_multipart_content_bytes.
+
+        The fake client deliberately has no get_content_bytes, so production
+        code must fall through to its own urllib.request.Request(...) call.
+        We do not monkeypatch urllib itself -- only client.opener is fake --
+        so this fails with a bare NameError on unfixed source.
+        """
+
+        module = _load_runner_module("multipart_readback_real_fallback_test")
+
+        expected_bytes = b"real content bytes\n"
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc_info):
+                return False
+
+            def getcode(self):
+                return 200
+
+            def read(self):
+                return expected_bytes
+
+        class FakeOpener:
+            def open(self, request, timeout=None):
+                self.last_request = request
+                self.last_timeout = timeout
+                return FakeResponse()
+
+        class FakeClient:
+            base = "https://alfresco.example.test"
+            _auth = "Basic dGVzdDp0ZXN0"
+            opener = FakeOpener()
+            timeout = 30
+
+        content = module.read_multipart_content_bytes(FakeClient(), "node-real-1")
+        self.assertEqual(content, expected_bytes)
+
+
 class MultipartReadbackTest(unittest.TestCase):
     def test_created_upload_readback_requires_identity_and_exact_content(self) -> None:
         module = _load_runner_module("multipart_readback_test")

@@ -15,6 +15,8 @@ import sysconfig
 import tempfile
 import shutil
 import time
+import urllib.error
+import urllib.request
 import uuid
 from pathlib import Path
 from typing import Sequence

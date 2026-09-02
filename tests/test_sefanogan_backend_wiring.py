@@ -190,6 +190,100 @@ class BackendSelectorTest(unittest.TestCase):
         self.assertTrue(Path(scorer.metadata_path).is_file())
 
 
+class ScorerTraceTest(unittest.TestCase):
+    """Opt-in evidence that a specific backend actually scored a request.
+
+    NV_SCORER_TRACE_PATH is unset by every other test and by production
+    defaults, so these are the only tests exercising the trace mechanism.
+    """
+
+    def _read_trace(self, trace_path: Path) -> list[dict]:
+        if not trace_path.is_file():
+            return []
+        return [
+            json.loads(line)
+            for line in trace_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+    def test_ae_scorer_invocation_produces_trace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace_path = Path(tmp) / "scorer_trace.jsonl"
+            environment = {
+                "SEFANOGAN_MODE": "ae",
+                "SEFANOGAN_MODEL_PATH": str(ROOT / "model_stage/models/sefanogan_ae_model.pt"),
+                "SEFANOGAN_AE_META_PATH": str(ROOT / "model_stage/models/sefanogan_ae_meta.json"),
+                "NV_SCORER_TRACE_PATH": str(trace_path),
+            }
+            server = load_server_from(ROOT / "model_stage/nv_valid_server_real.py", environment)
+
+            result = server.score_and_trace(b'{"key": "value"}')
+
+            self.assertIn("score", result)
+            records = self._read_trace(trace_path)
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]["backend"], "ae")
+            self.assertEqual(records[0]["invocation"], 1)
+            self.assertTrue(records[0]["success"])
+            self.assertNotIn("body", records[0])
+            self.assertNotIn("score", records[0])
+            self.assertNotIn("token", json.dumps(records[0]).lower())
+
+    def test_se_reference_scorer_invocation_produces_trace(self):
+        checkpoint, metadata = reference_artifacts()
+        with tempfile.TemporaryDirectory() as tmp:
+            trace_path = Path(tmp) / "scorer_trace.jsonl"
+            environment = {
+                "SEFANOGAN_MODE": "se_fanogan_es_reference",
+                "SEFANOGAN_MODEL_PATH": str(checkpoint),
+                "SEFANOGAN_REFERENCE_META_PATH": str(metadata),
+                "NV_SCORER_TRACE_PATH": str(trace_path),
+            }
+            server = load_server_from(ROOT / "model_stage/nv_valid_server_real.py", environment)
+            # Confirm this really is the canonical reference scorer before
+            # trusting the trace it produces.
+            self.assertEqual(type(server.PREDICTOR.scorer).__module__, "model_stage.sefanogan_es_reference")
+            self.assertEqual(type(server.PREDICTOR.scorer).__name__, "ReferenceScorer")
+
+            result = server.score_and_trace(b'{"key": "value"}')
+
+            self.assertIn("score", result)
+            records = self._read_trace(trace_path)
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]["backend"], "se_fanogan_es_reference")
+            self.assertEqual(records[0]["invocation"], 1)
+            self.assertTrue(records[0]["success"])
+
+    def test_missing_artifact_fails_closed_without_false_trace(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace_path = Path(tmp) / "scorer_trace.jsonl"
+            environment = {
+                "NV_VALIDITY_BACKEND": "sefanogan_es_reference",
+                "SEFANOGAN_REFERENCE_CHECKPOINT": "/missing/checkpoint.pt",
+                "SEFANOGAN_REFERENCE_META_PATH": "/missing/meta.json",
+                "NV_SCORER_TRACE_PATH": str(trace_path),
+            }
+            with self.assertRaises(FileNotFoundError):
+                load_server_from(ROOT / "model_stage/nv_valid_server_real.py", environment)
+
+            # Fail-closed happens at load time, before any request is ever
+            # scored -- the trace must not record a phantom success.
+            self.assertEqual(self._read_trace(trace_path), [])
+
+    def test_trace_is_noop_when_path_unset(self):
+        """Default behavior (no NV_SCORER_TRACE_PATH) must be unchanged."""
+        environment = {
+            "SEFANOGAN_MODE": "ae",
+            "SEFANOGAN_MODEL_PATH": str(ROOT / "model_stage/models/sefanogan_ae_model.pt"),
+            "SEFANOGAN_AE_META_PATH": str(ROOT / "model_stage/models/sefanogan_ae_meta.json"),
+        }
+        server = load_server_from(ROOT / "model_stage/nv_valid_server_real.py", environment)
+        self.assertEqual(server.SCORER_TRACE_PATH, "")
+        # Must not raise and must not attempt any file write.
+        result = server.score_and_trace(b'{"key": "value"}')
+        self.assertIn("score", result)
+
+
 class RealRunnerPropagationTest(unittest.TestCase):
     def _layout(self, runner, directory: str):
         root = Path(directory)
@@ -233,10 +327,20 @@ class RealRunnerPropagationTest(unittest.TestCase):
     def test_metadata_runner_reaches_se_reference_production_scorer(self):
         self._assert_runner_reaches_exact_scorer("metadata_update", "sefanogan_es_reference")
 
-    def test_multipart_runner_reaches_ae_v1_production_scorer(self):
+    def test_multipart_backend_label_resolves_to_ae_v1_scorer_class(self):
+        """multipart_upload runs with enable_validity=0 (see MultipartProfileTest.
+        test_multipart_task_payload_preserves_scenario_contract): the score
+        service is never invoked during multipart execution. This only proves
+        that IF the propagated backend label were handed to the score service
+        directly (orchestration/config compatibility), it resolves to the
+        correct scorer class -- it is not evidence of per-execution scorer
+        participation in multipart traffic."""
         self._assert_runner_reaches_exact_scorer("multipart_upload", "alfresco_ae_v1")
 
-    def test_multipart_runner_reaches_se_reference_production_scorer(self):
+    def test_multipart_backend_label_resolves_to_se_reference_scorer_class(self):
+        """See test_multipart_backend_label_resolves_to_ae_v1_scorer_class:
+        label-resolution only, not scorer participation -- multipart runs
+        with enable_validity=0 and never calls the score service."""
         self._assert_runner_reaches_exact_scorer("multipart_upload", "sefanogan_es_reference")
 
     def test_metadata_real_runner_propagates_validity_backend(self):

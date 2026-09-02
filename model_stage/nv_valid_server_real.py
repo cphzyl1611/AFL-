@@ -46,6 +46,7 @@ SOCK = os.getenv("NV_VALID_SOCK", "/tmp/nv_valid_real.sock")
 FMT = os.getenv("NV_RPC_FMT", "text").strip().lower()   # text | binary
 MAX_IN = int(os.getenv("NV_RPC_MAX_IN", "262144"))      # 256KB
 SCORE_LOG_PATH = os.getenv("NV_SCORE_LOG_PATH", "").strip()
+SCORER_TRACE_PATH = os.getenv("NV_SCORER_TRACE_PATH", "").strip()
 
 SEFANOGAN_MODE = os.getenv("SEFANOGAN_MODE", "ae").strip().lower()
 
@@ -148,6 +149,10 @@ else:
     # No selector preserves the historical SEFANOGAN_MODE behavior exactly.
     PREDICTOR = build_infer_engine()
 
+# Single label answering "which backend actually loaded" -- used only by the
+# opt-in scorer trace below, never by scoring logic itself.
+SCORER_BACKEND_NAME = VALIDITY_BACKEND or SEFANOGAN_MODE
+
 
 def log_score_sample(body: bytes, result: Dict[str, Any]):
     if not SCORE_LOG_PATH:
@@ -166,6 +171,45 @@ def log_score_sample(body: bytes, result: Dict[str, Any]):
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+
+def record_scorer_trace(backend: str, success: bool) -> None:
+    """Opt-in evidence of scorer participation.
+
+    No-op unless NV_SCORER_TRACE_PATH is set, so default behavior (and every
+    existing deployment that does not set it) is unchanged. Records only the
+    backend label, an invocation marker, and success state -- never request
+    bodies, scores, or credentials.
+    """
+    if not SCORER_TRACE_PATH:
+        return
+    try:
+        rec = {
+            "ts": int(time.time() * 1000),
+            "backend": backend,
+            "invocation": 1,
+            "success": bool(success),
+        }
+        with open(SCORER_TRACE_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+def score_and_trace(body: bytes) -> Dict[str, Any]:
+    """Score one request and append an opt-in scorer-participation trace.
+
+    Wraps predict_score_from_body without changing its behavior or return
+    value; only records whether this specific backend was invoked and
+    whether that invocation succeeded.
+    """
+    try:
+        result = predict_score_from_body(body)
+    except Exception:
+        record_scorer_trace(SCORER_BACKEND_NAME, success=False)
+        raise
+    record_scorer_trace(SCORER_BACKEND_NAME, success=True)
+    return result
 
 
 def recv_exact(conn: socket.socket, n: int) -> bytes:
@@ -230,7 +274,7 @@ def serve():
                 buf = recv_one(conn)
                 print(f"[REQ] got payload bytes={len(buf)}", flush=True)
 
-                result = predict_score_from_body(buf)
+                result = score_and_trace(buf)
                 score = float(result["score"])
 
                 log_score_sample(buf, result)
