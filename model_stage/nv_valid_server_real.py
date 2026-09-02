@@ -16,6 +16,7 @@ if str(THIS_DIR) not in sys.path:
 
 from feature_extract import extract_features_from_bytes
 from model_stage.alfresco_ae_v1_scorer import AlfrescoAEV1Scorer
+from model_stage.alfresco_feature_extractor import extract_metadata_features
 
 
 DEFAULT_VALIDITY_BACKEND = "alfresco_ae_v1"
@@ -249,6 +250,19 @@ def predict_score_from_body(body: bytes) -> Dict[str, Any]:
             raise ValueError("AE v1 backend requires a JSON object")
         result = PREDICTOR.score_metadata_payload(payload)
         return {"mode": "alfresco_ae_v1", **result}
+    if VALIDITY_BACKEND == "sefanogan_es_reference":
+        # The production runner (scripts/run_alfresco_bounded_feedback.py)
+        # only ever routes the metadata_update scenario to this score RPC:
+        # enable_validity is forced to 0 for multipart_upload, and
+        # content_update is not a supported scenario for that runner. So
+        # the body here is always the raw metadata_update JSON payload,
+        # exactly like the alfresco_ae_v1 branch above.
+        payload = json.loads(body.decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("SE reference backend requires a JSON object")
+        vector = extract_metadata_features(payload)
+        score = PREDICTOR.score(vector)
+        return {"mode": "sefanogan_es_reference", "score": score, "recon_err": 0.0, "feat_err": 0.0}
     feat = extract_features_from_bytes(body)
     result = PREDICTOR.score(feat)
     return result
