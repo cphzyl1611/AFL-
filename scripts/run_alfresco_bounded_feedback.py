@@ -18,8 +18,9 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 LEVELC_METADATA_LAUNCHER = (
     Path(__file__).resolve().with_name("run_alfresco_levelc_metadata.py")
@@ -61,6 +62,8 @@ def build_harness_command_for_scenario(task_payload: dict) -> list[str]:
     if scenario == "multipart_upload" and input_format == "full_http_multipart":
         return [sys.executable, str(HARNESS_PATH)]
     if scenario == "metadata_update" and input_format == "full_http":
+        return [sys.executable, str(HARNESS_PATH)]
+    if scenario == "content_update" and input_format == "full_http":
         return [sys.executable, str(HARNESS_PATH)]
     raise ValueError("TASK_SCENARIO_CONTRACT_INVALID")
 
@@ -306,6 +309,104 @@ def render_multipart_runtime_config(parent_id: str, out_path: Path) -> Path:
     destination.write_text(json.dumps(config, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     return destination
 
+
+def render_content_update_runtime_config(node_id: str, out_path: Path) -> Path:
+    """Render a content_update profile bound to the existing dedicated file."""
+    import re
+    node_id = str(node_id).strip()
+    UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+    if not UUID_RE.match(node_id):
+        raise ValueError("INVALID_CONTENT_UPDATE_NODE_ID")
+    
+    profile_path = REPO_ROOT / "targets" / "alfresco_content_update.json"
+    try:
+        config = json.loads(profile_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        raise RuntimeError("CONTENT_UPDATE_PROFILE_INVALID") from exc
+    if not isinstance(config, dict):
+        raise RuntimeError("CONTENT_UPDATE_PROFILE_INVALID")
+    
+    endpoint = f"{ALFRESCO_API_BASE}/nodes/{node_id}/content"
+    config.update({
+        "platform": "alfresco",
+        "target_type": "http_api",
+        "base": ALFRESCO_BASE_URL,
+        "health": "/alfresco/service/api/server",
+        "auth": {
+            "type": "basic",
+            "username_env": "ALFRESCO_USER",
+            "password_env": "ALFRESCO_PASS",
+        },
+        "body_only_mode": 1,
+        "target_node_id": node_id,
+        "endpoints": [{
+            "name": "content_update",
+            "method": "PUT",
+            "path": endpoint,
+        }],
+        "biz_fields": ["statusCode", "errorKey", "code", "message"],
+    })
+    
+    destination = Path(out_path).resolve()
+    if destination.is_relative_to(REPO_ROOT):
+        raise ValueError("CONTENT_UPDATE_RUNTIME_CONFIG_IN_WORKTREE")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(config, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    return destination
+
+
+def resolve_existing_dedicated_content_node(client) -> dict:
+    """Resolve the existing dedicated file for content overwrite scenarios."""
+    levelc = _load_levelc_metadata_module()
+    siblings = client.list_children(levelc.DEDICATED_PARENT)
+    try:
+        folder = levelc._unique_match(siblings, levelc.DEDICATED_FOLDER_NAME, want_folder=True, kind="folder")
+    except levelc.LevelCAbort as exc:
+        raise RuntimeError("BOUNDED_DEDICATED_FOLDER_AMBIGUOUS") from exc
+    if folder is None:
+        raise RuntimeError("BOUNDED_DEDICATED_FOLDER_MISSING")
+    folder_id = str(folder.get("id", ""))
+    if not folder_id:
+        raise RuntimeError("BOUNDED_DEDICATED_FOLDER_INVALID")
+    
+    children = client.list_children(folder_id)
+    try:
+        node = levelc._unique_match(children, levelc.DEDICATED_FILE_NAME, want_folder=False, kind="file")
+    except levelc.LevelCAbort as exc:
+        raise RuntimeError("BOUNDED_DEDICATED_FILE_AMBIGUOUS") from exc
+    if node is None:
+        raise RuntimeError("BOUNDED_DEDICATED_FILE_MISSING")
+    file_id = str(node.get("id", ""))
+    if not file_id:
+        raise RuntimeError("BOUNDED_DEDICATED_FILE_INVALID")
+    parent_id = str(node.get("parentId", "") or folder_id)
+    return {"folder_id": folder_id, "file_id": file_id, "parent_id": parent_id, "target_name": str(node.get("name", ""))}
+
+
+def read_content_bytes(client, node_id: str) -> bytes:
+    """Read binary content for content_update readback."""
+    delegated = getattr(client, "get_content_bytes", None)
+    if callable(delegated):
+        content = delegated(node_id)
+        if not isinstance(content, bytes):
+            raise RuntimeError("CONTENT_UPDATE_READBACK_INVALID")
+        return content
+    request = urllib.request.Request(
+        client.base + f"/alfresco/api/-default-/public/alfresco/versions/1/nodes/{node_id}/content",
+        method="GET",
+        headers={"Authorization": client._auth, "Accept": "application/octet-stream"},
+    )
+    try:
+        with client.opener.open(request, timeout=client.timeout) as response:
+            if int(response.getcode()) != 200:
+                raise RuntimeError("CONTENT_UPDATE_READBACK_FAILED")
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError("CONTENT_UPDATE_READBACK_FAILED") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError("CONTENT_UPDATE_READBACK_FAILED") from exc
+
+
 def build_run_layout(
     run_root: Path,
     repo_root: Path,
@@ -411,9 +512,11 @@ def seed_request_metadata(config_path: Path) -> tuple[str, str]:
     if not isinstance(endpoints, list):
         raise RuntimeError("TARGET_CONFIG_ENDPOINTS_INVALID")
 
+    endpoint_name = str(cfg.get("default_endpoint", "metadata_update"))
+
     selected = None
     for endpoint in endpoints:
-        if isinstance(endpoint, dict) and str(endpoint.get("name", "")) == ENDPOINT_NAME:
+        if isinstance(endpoint, dict) and str(endpoint.get("name", "")) == endpoint_name:
             selected = endpoint
             break
     if not selected:
@@ -432,15 +535,42 @@ def seed_request_metadata(config_path: Path) -> tuple[str, str]:
     return method, path
 
 
-def write_initial_seed(config_path: Path, seed_dir: Path) -> Path:
-    """Write one full HTTP seed consumed through harness stdin."""
+def write_initial_seed(config_path: Path, seed_dir: Path, scenario: str = "metadata_update") -> Path:
+    """Write one full HTTP seed consumed through harness stdin.
+    
+    Selects seed body based on scenario to respect distinct seed contracts:
+    - content_update: plain text/file-content bytes from authoritative fixture
+    - metadata_update: JSON metadata from authoritative fixture  
+    - multipart_upload: not used with this function (uses manifest)
+    """
 
     method, path = seed_request_metadata(config_path)
-    body = INITIAL_SEED_BODY
+    
+    # Select scenario-appropriate seed body from authoritative fixtures
+    if scenario == "content_update":
+        # content_update contract: plain text/file-content bytes
+        content_seed_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "seed_ok_0.txt"
+        if not content_seed_path.is_file():
+            raise RuntimeError(f"CONTENT_UPDATE_SEED_FIXTURE_MISSING: {content_seed_path}")
+        body = content_seed_path.read_bytes()
+        content_type = "text/plain; charset=utf-8"
+    elif scenario == "metadata_update":
+        # metadata_update contract: JSON metadata
+        metadata_seed_path = REPO_ROOT / "in" / "alfresco_afl_metadata_update_smoke" / "seed_ok_0.json"
+        if not metadata_seed_path.is_file():
+            # Fallback to INITIAL_SEED_BODY for backward compatibility
+            body = INITIAL_SEED_BODY
+        else:
+            body = metadata_seed_path.read_bytes()
+        content_type = "application/json"
+    else:
+        # Unknown scenario - fail closed
+        raise ValueError(f"UNKNOWN_SCENARIO_FOR_SEED_SELECTION: {scenario}")
+    
     envelope = (
         f"{method} {path} HTTP/1.1\r\n"
         "Host: 127.0.0.1\r\n"
-        "Content-Type: application/json\r\n"
+        f"Content-Type: {content_type}\r\n"
         f"Content-Length: {len(body)}\r\n"
         "\r\n"
     ).encode("ascii")
@@ -449,6 +579,7 @@ def write_initial_seed(config_path: Path, seed_dir: Path) -> Path:
     seed_path = seed_dir / "seed.http"
     seed_path.write_bytes(envelope + body)
     return seed_path
+
 
 
 def _validate_manifest_seed_name(value: str) -> str:
@@ -490,9 +621,18 @@ def load_manifest_seed_names(manifest_path: Path) -> list[str]:
 
 
 def materialize_manifest_seed_dir(
-    manifest_path: Path, source_dir: Path, destination_dir: Path
+    manifest_path: Path,
+    source_dir: Path,
+    destination_dir: Path,
+    *,
+    config_path: Path | None = None,
+    scenario: str = "metadata_update",
 ) -> Path:
-    """Copy only manifest-listed regular files into a fresh run-scoped view."""
+    """Copy only manifest-listed regular files into a fresh run-scoped view.
+
+    When config_path is provided and scenario is content_update, wraps raw text
+    seeds in full HTTP envelopes to satisfy C-side validator requirements (R35 fix).
+    """
 
     names = load_manifest_seed_names(manifest_path)
     source = Path(source_dir).expanduser().resolve()
@@ -502,6 +642,17 @@ def materialize_manifest_seed_dir(
     if destination.exists():
         raise ValueError("MANIFEST_DESTINATION_NOT_FRESH")
 
+    # R35: Determine if HTTP wrapping is needed for content_update
+    wrap_http = False
+    method = "PUT"
+    path = "/"
+    content_type = "application/json"
+
+    if config_path and scenario == "content_update":
+        wrap_http = True
+        method, path = seed_request_metadata(config_path)
+        content_type = "text/plain; charset=utf-8"
+
     destination.mkdir(parents=True)
     try:
         for name in names:
@@ -510,12 +661,27 @@ def materialize_manifest_seed_dir(
             if source_path.is_symlink() or not source_path.is_file():
                 raise ValueError("MANIFEST_SEED_NOT_REGULAR")
             target_path = destination / name
-            shutil.copyfile(source_path, target_path, follow_symlinks=False)
+
+            if wrap_http:
+                # R35 fix: Wrap raw text body in full HTTP envelope
+                body = source_path.read_bytes()
+                envelope = (
+                    f"{method} {path} HTTP/1.1\r\n"
+                    "Host: 127.0.0.1\r\n"
+                    f"Content-Type: {content_type}\r\n"
+                    f"Content-Length: {len(body)}\r\n"
+                    "\r\n"
+                ).encode("ascii")
+                target_path.write_bytes(envelope + body)
+            else:
+                # Original behavior: byte-exact copy
+                shutil.copyfile(source_path, target_path, follow_symlinks=False)
+
             if target_path.is_symlink() or not target_path.is_file():
                 raise ValueError("MANIFEST_MATERIALIZED_NOT_REGULAR")
-            if target_path.read_bytes() != source_path.read_bytes():
+            if not wrap_http and target_path.read_bytes() != source_path.read_bytes():
                 raise ValueError("MANIFEST_SEED_BYTES_CHANGED")
-            if target_path.stat().st_size != source_stat.st_size:
+            if not wrap_http and target_path.stat().st_size != source_stat.st_size:
                 raise ValueError("MANIFEST_SEED_SIZE_CHANGED")
     except (OSError, ValueError):
         raise
@@ -552,7 +718,7 @@ def build_task_payload(
         raise ValueError("MANIFEST_AUTHORITY_MISSING")
     if seed_source == "seed_file" and seed_manifest is not None:
         raise ValueError("UNEXPECTED_MANIFEST_AUTHORITY")
-    if scenario not in {"metadata_update", "multipart_upload"}:
+    if scenario not in {"metadata_update", "multipart_upload", "content_update"}:
         raise ValueError("INVALID_SCENARIO")
     if input_format not in {"full_http", "full_http_multipart"}:
         raise ValueError("INVALID_INPUT_FORMAT")
@@ -560,6 +726,8 @@ def build_task_payload(
         raise ValueError("MULTIPART_INPUT_FORMAT_REQUIRED")
     if scenario == "metadata_update" and input_format != "full_http":
         raise ValueError("METADATA_INPUT_FORMAT_REQUIRED")
+    if scenario == "content_update" and input_format != "full_http":
+        raise ValueError("CONTENT_UPDATE_INPUT_FORMAT_REQUIRED")
     if scenario == "multipart_upload":
         parent = str(parent_node_id or "").strip()
         if not parent or any(char in parent for char in ("/", "\\", "?", "#")):
@@ -567,7 +735,7 @@ def build_task_payload(
     else:
         parent = None
 
-    target_endpoint = "multipart_upload" if scenario == "multipart_upload" else ENDPOINT_NAME
+    target_endpoint = ("multipart_upload" if scenario == "multipart_upload" else "content_update" if scenario == "content_update" else ENDPOINT_NAME)
     payload = {
         "target_type": "http_api",
         "target_endpoint": target_endpoint,
@@ -585,6 +753,13 @@ def build_task_payload(
             "target_kind": "creating_upload",
             "readback": "created_node_content",
             "parent_node_id": parent,
+        })
+    if scenario == "content_update":
+        payload.update({
+            "scenario": "content_update",
+            "input_format": "full_http",
+            "target_kind": "existing_file",
+            "readback": "byte_exact_content",
         })
     if seed_manifest is not None:
         payload["seed_manifest"] = str(Path(seed_manifest).expanduser().resolve())
@@ -1140,6 +1315,70 @@ def post_execution_readback(
             base, "identity_unavailable", layout=layout,
             target_identity=target_identity, snapshot=snapshot
         )
+    # Content update scenario: readback via byte-exact content comparison
+    try:
+        task_payload = json.loads(layout["task"].read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        task_payload = {}
+    
+    if task_payload.get("scenario") == "content_update":
+        base["attempted"] = True
+        try:
+            if event_log is not None:
+                event_log.append("content_readback_get")
+            content = read_content_bytes(client, node_id)
+            content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+            content_length = len(content)
+            
+            artifact = {
+                "schema_version": READBACK_SCHEMA_VERSION,
+                "event": READBACK_EVENT,
+                "correlation": {
+                    "mode": "final_run_state",
+                    "last_exec_seq": int(snapshot["last_exec_seq"]),
+                    "valid_execution_count": int(snapshot["valid_execution_count"]),
+                },
+                "target": {
+                    "node_identity": _identity_digest("node", node_id),
+                    "parent_identity": _identity_digest("parent", parent_id),
+                    "name": target_name,
+                },
+                "request": {"method": "GET", "status": 200},
+                "result": {
+                    "metadata_hash": content_hash,
+                    "field_presence": [],
+                    "version_label": None,
+                },
+                "ordering": {"run_completed": True, "timestamp_ms": int(time.time() * 1000)},
+                "privacy": {
+                    "credentials_included": False,
+                    "authorization_included": False,
+                    "raw_body_included": False,
+                },
+            }
+            base["node_identity"] = artifact["target"]["node_identity"]
+            base["parent_identity"] = artifact["target"]["parent_identity"]
+            base["target_name"] = artifact["target"]["name"]
+            base["content_hash"] = content_hash
+            base["content_length"] = content_length
+            base["last_exec_seq"] = artifact["correlation"]["last_exec_seq"]
+            write_readback_artifact(layout, artifact)
+            base["present"] = True
+            base["verdict"] = "pass"
+            base["reconciled"] = True
+            base["path"] = str(layout["readback"])
+            return base
+        except RuntimeError as exc:
+            return _readback_failure_result(
+                base, str(exc), layout=layout,
+                target_identity=target_identity, snapshot=snapshot
+            )
+        except (ConnectionError, OSError, TimeoutError) as exc:
+            return _readback_failure_result(
+                base, "content_readback_failed", layout=layout,
+                target_identity=target_identity, snapshot=snapshot
+            )
+    
     base["attempted"] = True
     try:
         if event_log is not None:
@@ -1341,6 +1580,9 @@ def artifact_contract(layout: dict[str, Path]) -> dict[str, dict[str, Path]]:
     }
     if task.get("scenario") == "multipart_upload":
         execution_required["multipart_uploads"] = layout["multipart_uploads"]
+    elif task.get("scenario") == "content_update":
+        # content_update uses text/plain, no JSON body validation
+        pass
     else:
         execution_required["body_valid_stats"] = layout["body_valid_stats"]
 
@@ -2226,6 +2468,7 @@ def launch_bounded_afl(
     *,
     max_test_cases: int,
     time_budget: int,
+    afl_seed: int | None = None,
 ) -> int:
     """Spawn a bounded afl-fuzz campaign over the production harness.
 
@@ -2234,12 +2477,31 @@ def launch_bounded_afl(
     production path mirrors ``scripts/run_p0_mab_feedback_experiment.sh`` but
     is bounded by ``max_test_cases`` (authoritative) and ``time_budget`` (a
     safety fuse only, never the primary budget).
+
+    afl_seed: Optional fixed AFL PRNG seed for reproducible runs (Phase 1B).
     """
 
     if isinstance(max_test_cases, bool) or int(max_test_cases) <= 0:
         raise ValueError("INVALID_MAX_TEST_CASES")
     if isinstance(time_budget, bool) or int(time_budget) <= 0:
         raise ValueError("INVALID_TIME_BUDGET")
+
+    # R40B: Pre-launch credential validation.  The harness will abort if
+    # ALFRESCO_USER or ALFRESCO_PASS are missing, but that produces zero
+    # target executions and an opaque artifact-contract failure.  Fail closed
+    # here so misconfigured launches are caught before AFL++ starts.
+    if not child_env.get("ALFRESCO_USER") or not child_env.get("ALFRESCO_USER").strip():
+        raise RuntimeError(
+            "ALFRESCO_USER must be set in child_env before launching AFL++; "
+            "the harness requires it for Basic authentication and will fail "
+            "during initialization if it is missing"
+        )
+    if not child_env.get("ALFRESCO_PASS") or not child_env.get("ALFRESCO_PASS").strip():
+        raise RuntimeError(
+            "ALFRESCO_PASS must be set in child_env before launching AFL++; "
+            "the harness requires it for Basic authentication and will fail "
+            "during initialization if it is missing"
+        )
 
     afl_bin = Path(AFL_BINARY)
     if not afl_bin.is_file():
@@ -2253,6 +2515,7 @@ def launch_bounded_afl(
         str(afl_bin),
         "-n",            # security-state coverage is the signal, not native edges
         "-m", "none",
+        "-t", "10000+",
     ]
     try:
         task_payload = json.loads(Path(layout["task"]).read_text(encoding="utf-8"))
@@ -2263,6 +2526,11 @@ def launch_bounded_afl(
         # A bounded manifest run must visit the initial queue entries in order
         # so its selection audit can prove that multiple manifest seeds ran.
         cmd.append("-Z")
+
+    # Phase 1B: insert fixed AFL seed if provided
+    if afl_seed is not None:
+        cmd.extend(["-s", str(afl_seed)])
+
     cmd.extend([
         "-i", str(seed_dir),
         "-o", str(layout["afl_output"]),
@@ -2278,7 +2546,16 @@ def launch_bounded_afl(
     env.setdefault("AFL_NO_UI", "1")
     env.setdefault("AFL_SKIP_CPUFREQ", "1")
     env.setdefault("AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES", "1")
-    env.setdefault("AFL_PYTHON_MODULE", "nv_json_mutator")
+
+    # R36: Scenario-based mutator routing
+    # content_update (raw text) → nv_text_mutator
+    # metadata_update (JSON) → nv_json_mutator
+    # multipart_upload (multipart) → nv_json_mutator with NV_MULTIPART_MODE
+    scenario = task_payload.get("scenario", "metadata_update")
+    if scenario == "content_update":
+        env.setdefault("AFL_PYTHON_MODULE", "nv_text_mutator")
+    else:
+        env.setdefault("AFL_PYTHON_MODULE", "nv_json_mutator")
 
     # afl-fuzz links libpython; point the loader at the same interpreter it
     # was built against, mirroring the audited P0 launcher.
@@ -2307,6 +2584,653 @@ def launch_bounded_afl(
     return proc.returncode
 
 
+# ============================================================================
+# Phase 1B: Model-Comparison Mode
+# ============================================================================
+
+EXPECTED_SE_ARTIFACT_SHA256 = (
+    "aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599"
+)
+
+
+def resolve_model_comparison_threshold(
+    backend: str, artifact_path: Path | None = None
+) -> dict[str, object]:
+    """Resolve threshold and provenance for model-comparison mode, fail-closed."""
+    backend = str(backend).strip().lower()
+
+    if backend == "alfresco_ae_v1":
+        ae_meta_path = REPO_ROOT / "model_stage" / "models" / "alfresco_ae_v1_meta.json"
+        if not ae_meta_path.is_file():
+            raise FileNotFoundError("AE_METADATA_MISSING")
+
+        try:
+            meta = json.loads(ae_meta_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            raise RuntimeError("AE_METADATA_INVALID") from exc
+
+        threshold = float(meta["threshold_high"])
+        return {
+            "backend": backend,
+            "threshold": threshold,
+            "threshold_source": "alfresco_ae_v1_meta.json::threshold_high",
+            "model_name": str(meta["model_name"]),
+        }
+
+    elif backend == "sefanogan_es_reference":
+        if artifact_path is None:
+            artifact_path = (
+                REPO_ROOT / "model_stage" / "models" / "sefanogan_es_realrun_threshold.json"
+            )
+
+        artifact_path = Path(artifact_path)
+        if not artifact_path.is_file():
+            raise FileNotFoundError("SE_THRESHOLD_ARTIFACT_MISSING")
+
+        # Verify SHA256
+        import hashlib
+        actual_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+        if actual_sha != EXPECTED_SE_ARTIFACT_SHA256:
+            raise ValueError("SE_THRESHOLD_ARTIFACT_SHA_MISMATCH")
+
+        try:
+            artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            raise RuntimeError("SE_THRESHOLD_ARTIFACT_INVALID") from exc
+
+        # Verify provenance
+        if artifact.get("se_backend") != "sefanogan_es_reference":
+            raise ValueError("SE_BACKEND_MISMATCH")
+        if artifact.get("policy") != "MATCHED_OPERATING_CRITERION":
+            raise ValueError("SE_POLICY_MISMATCH")
+
+        threshold = float(artifact["se_threshold"])
+        return {
+            "backend": backend,
+            "threshold": threshold,
+            "threshold_source": str(artifact_path.name),
+            "policy": artifact["policy"],
+            "se_checkpoint_hash": artifact.get("se_checkpoint_hash", ""),
+            "se_metadata_hash": artifact.get("se_metadata_hash", ""),
+        }
+
+    else:
+        raise ValueError(f"UNSUPPORTED_BACKEND: {backend}")
+
+
+def build_model_comparison_env(
+    layout: dict[str, Path],
+    backend: str,
+    threshold: float,
+    scorer_socket: Path,
+    scorer_trace: Path,
+    base_env: dict[str, str],
+) -> dict[str, str]:
+    """Build model-comparison environment with body-score RPC variables."""
+    env = dict(base_env)
+
+    env["NV_BODY_SCORE_ENDPOINT"] = f"unix://{scorer_socket}"
+    env["NV_BODY_SCORE_THRESHOLD"] = str(threshold)
+    env["NV_VALIDITY_BACKEND"] = backend
+    env["NV_SCORER_TRACE_PATH"] = str(scorer_trace)
+
+    return env
+
+
+def validate_model_comparison_scenario(scenario: str) -> None:
+    """Reject multipart in model-comparison mode."""
+    if scenario == "multipart_upload":
+        raise ValueError("MULTIPART_NOT_SUPPORTED_IN_MODEL_COMPARISON")
+
+
+def build_afl_argv_with_seed(
+    afl_binary: Path,
+    seed_dir: Path,
+    output_dir: Path,
+    harness_cmd: list[str],
+    afl_seed: int | None,
+    manifest_mode: bool,
+) -> list[str]:
+    """Build AFL argv with optional fixed seed."""
+    cmd = [
+        str(afl_binary),
+        "-n",
+        "-m", "none",
+    ]
+
+    if manifest_mode:
+        cmd.append("-Z")
+
+    if afl_seed is not None:
+        cmd.extend(["-s", str(afl_seed)])
+
+    cmd.extend([
+        "-i", str(seed_dir),
+        "-o", str(output_dir),
+        "--",
+    ])
+    cmd.extend(harness_cmd)
+
+    return cmd
+
+
+def validate_model_comparison_config(
+    model_comparison: bool, afl_seed: int | None, backend: str
+) -> None:
+    """Validate model-comparison configuration, fail-closed."""
+    if model_comparison and afl_seed is None:
+        raise ValueError("MODEL_COMPARISON_REQUIRES_AFL_SEED")
+
+    if model_comparison and backend not in VALIDITY_BACKENDS:
+        raise ValueError("INVALID_MODEL_COMPARISON_BACKEND")
+
+
+def should_start_scorer(model_comparison: bool) -> bool:
+    """Determine if scorer lifecycle is needed."""
+    return model_comparison
+
+
+class ScorerLifecycleManager:
+    """Manage scorer process lifecycle."""
+
+    def __init__(
+        self,
+        scorer_python: str,
+        scorer_script: Path,
+        socket_path: Path,
+        backend: str,
+        timeout: float,
+        trace_path: Path | None = None,
+        evidence_dir: Path | None = None,
+    ):
+        self.scorer_python = scorer_python
+        self.scorer_script = scorer_script
+        self.socket_path = socket_path
+        self.backend = backend
+        self.timeout = timeout
+        self.trace_path = trace_path
+        self.evidence_dir = evidence_dir
+        self.proc: subprocess.Popen | None = None
+        self.stdout_path: Path | None = None
+        self.stderr_path: Path | None = None
+        self.exit_code: int | None = None
+
+    def start(self) -> subprocess.Popen:
+        """Start scorer and wait for readiness."""
+        import socket as sock_module
+
+        env = dict(os.environ)
+        env["NV_VALID_SOCK"] = str(self.socket_path)
+        env["NV_VALIDITY_BACKEND"] = self.backend
+        if self.trace_path:
+            env["NV_SCORER_TRACE_PATH"] = str(self.trace_path)
+
+        # R38C fix: Inject exact canonical 32D Alfresco artifact paths
+        if self.backend == "sefanogan_es_reference":
+            # Canonical authority: external audit artifacts (R38B reconciliation)
+            canonical_base = Path.home() / "alfresco-audit-artifacts" / "sefanogan-es-round3-20260901-" / "training_runs" / "seed-20260519"
+            env["SEFANOGAN_REFERENCE_CHECKPOINT"] = str(
+                canonical_base / "sefanogan_es_reference.pt"
+            )
+            env["SEFANOGAN_REFERENCE_META_PATH"] = str(
+                canonical_base / "sefanogan_es_reference.json"
+            )
+
+        # Inject REPO_ROOT into PYTHONPATH for model_stage imports
+        existing = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = (
+            str(REPO_ROOT)
+            if not existing
+            else str(REPO_ROOT) + os.pathsep + existing
+        )
+
+        # R39 fix: Persist stdout/stderr to files instead of PIPE
+        stdout_handle = subprocess.PIPE
+        stderr_handle = subprocess.PIPE
+
+        if self.evidence_dir:
+            self.evidence_dir.mkdir(parents=True, exist_ok=True)
+            self.stdout_path = self.evidence_dir / "scorer_stdout.txt"
+            self.stderr_path = self.evidence_dir / "scorer_stderr.txt"
+            stdout_handle = open(self.stdout_path, "w", encoding="utf-8")
+            stderr_handle = open(self.stderr_path, "w", encoding="utf-8")
+
+        # Start process
+        self.proc = subprocess.Popen(
+            [self.scorer_python, str(self.scorer_script)],
+            env=env,
+            stdout=stdout_handle,
+            stderr=stderr_handle,
+            text=True,
+        )
+
+        # Wait for socket
+        start = time.time()
+        while time.time() - start < self.timeout:
+            if self.socket_path.exists():
+                # Try to connect
+                try:
+                    s = sock_module.socket(sock_module.AF_UNIX, sock_module.SOCK_STREAM)
+                    s.settimeout(0.5)
+                    s.connect(str(self.socket_path))
+                    s.close()
+                    return self.proc
+                except (ConnectionRefusedError, FileNotFoundError):
+                    pass
+
+            if self.proc.poll() is not None:
+                raise RuntimeError("SCORER_PROCESS_DIED_DURING_STARTUP")
+
+            time.sleep(0.1)
+
+        self.stop()
+        raise TimeoutError("SCORER_READY_TIMEOUT")
+
+    def stop(self) -> None:
+        """Stop scorer process and capture exit code."""
+        if self.proc is None:
+            return
+
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+                self.proc.wait()
+
+        # Capture exit code
+        self.exit_code = self.proc.returncode
+
+        # Close file handles if opened
+        if self.stdout_path and self.proc.stdout and hasattr(self.proc.stdout, 'close'):
+            try:
+                self.proc.stdout.close()
+            except Exception:
+                pass
+        if self.stderr_path and self.proc.stderr and hasattr(self.proc.stderr, 'close'):
+            try:
+                self.proc.stderr.close()
+            except Exception:
+                pass
+
+        if self.socket_path.exists():
+            try:
+                self.socket_path.unlink()
+            except OSError:
+                pass
+
+
+def start_scorer_process(
+    scorer_python: str,
+    scorer_script: Path,
+    socket_path: Path,
+    backend: str,
+    timeout: float,
+    evidence_dir: Path | None = None,
+) -> ScorerLifecycleManager:
+    """Start scorer process and wait for readiness. Returns manager for lifecycle control."""
+    manager = ScorerLifecycleManager(
+        scorer_python, scorer_script, socket_path, backend, timeout,
+        evidence_dir=evidence_dir
+    )
+    manager.start()
+    return manager
+
+
+def parse_scorer_trace(trace_path: Path) -> list[dict]:
+    """Parse scorer trace JSONL."""
+    if not trace_path.is_file():
+        return []
+
+    records = []
+    try:
+        for line in trace_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                records.append(json.loads(line))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return []
+
+    return records
+
+
+def parse_nv_body_valid_stats(stats_path: Path) -> dict[str, int]:
+    """Parse nv_body_valid_stats.json, fail-closed."""
+    if not stats_path.exists():
+        return {}
+    
+    try:
+        with open(stats_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Extract RPC counters, default to 0
+        return {
+            "body_score_rpc_ok": int(data.get("body_score_rpc_ok", 0)),
+            "body_score_rpc_fail": int(data.get("body_score_rpc_fail", 0)),
+            "body_score_pass": int(data.get("body_score_pass", 0)),
+            "body_score_reject": int(data.get("body_score_reject", 0)),
+        }
+    except (json.JSONDecodeError, ValueError, KeyError):
+        # Malformed or invalid - return empty dict
+        return {}
+
+
+def validate_model_comparison_participation(
+    stats: dict[str, int],
+    trace: list[dict],
+    expected_backend: str,
+) -> dict[str, object]:
+    """Validate scorer participation, fail-closed."""
+    reason_codes = []
+
+    rpc_ok = int(stats.get("body_score_rpc_ok", 0))
+    rpc_fail = int(stats.get("body_score_rpc_fail", 0))
+
+    if rpc_ok == 0:
+        reason_codes.append("ZERO_SCORER_INVOCATIONS")
+
+    if rpc_fail > 0:
+        reason_codes.append("SCORER_RPC_FAILURE")
+
+    if not trace:
+        reason_codes.append("TRACE_MISSING")
+
+    # Check backend consistency
+    for record in trace:
+        if record.get("backend") != expected_backend:
+            reason_codes.append("TRACE_BACKEND_MISMATCH")
+            break
+
+    # Check count consistency
+    if trace and len(trace) != rpc_ok:
+        reason_codes.append("TRACE_COUNT_MISMATCH")
+
+    verdict = "PASS" if not reason_codes else "INVALID_FOR_MODEL_COMPARISON"
+
+    return {
+        "verdict": verdict,
+        "reason_codes": reason_codes,
+        "scorer_rpc_ok": rpc_ok,
+        "scorer_rpc_fail": rpc_fail,
+        "trace_invocations": len(trace),
+        "trace_success": len([r for r in trace if "score" in r]),
+        "trace_backend": trace[0].get("backend") if trace else None,
+    }
+
+
+def write_model_comparison_validity(
+    layout: dict[str, Path], validity: dict[str, object]
+) -> Path:
+    """Write model-comparison validity artifact."""
+    evidence = Path(layout["evidence"])
+    evidence.mkdir(parents=True, exist_ok=True)
+
+    path = evidence / "model_comparison_validity.json"
+    path.write_text(
+        json.dumps(validity, ensure_ascii=False, sort_keys=True, indent=2),
+        encoding="utf-8",
+    )
+    return path
+
+
+def verify_target_baseline(client, node_id: str, canonical: dict) -> dict:
+    """Verify target has canonical baseline."""
+    node = client.get_node(node_id)
+    properties = node.get("properties", {})
+
+    for key, expected_value in canonical.items():
+        if properties.get(key) != expected_value:
+            return {"status": "MISMATCH", "node": node}
+
+    return {"status": "PASS", "node": node}
+
+
+def restore_target_baseline(client, node_id: str, canonical: dict) -> None:
+    """Restore target to canonical baseline."""
+    client.update_node(node_id, {"properties": canonical})
+
+
+def prelaunch_runtime_source_attestation(
+    repo_root: Path,
+    run_root: Path,
+    runtime_baseline_files: list[str],
+) -> dict[str, Any]:
+    """
+    Fail-closed runtime source attestation.
+
+    Executed before AFL++ launch to prove runtime-critical files
+    match the intended baseline and cannot silently differ.
+
+    Returns attestation record with PASS/FAIL.
+    Raises on any check failure.
+    """
+    import hashlib
+    import importlib.util
+
+    attestation = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "head": None,
+        "checks": [],
+        "overall": "PENDING",
+    }
+
+    # Check 1: HEAD commit
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        attestation["head"] = head
+        attestation["checks"].append({
+            "check": "git_head",
+            "result": "PASS",
+            "value": head,
+        })
+    except Exception as e:
+        attestation["checks"].append({
+            "check": "git_head",
+            "result": "FAIL",
+            "error": str(e),
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    # Check 2: Harness realpath
+    expected_harness = repo_root / "nv_http_harness.py"
+    if not expected_harness.exists():
+        attestation["checks"].append({
+            "check": "harness_realpath",
+            "result": "FAIL",
+            "error": f"Harness not found: {expected_harness}",
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    harness_realpath = expected_harness.resolve()
+    attestation["checks"].append({
+        "check": "harness_realpath",
+        "result": "PASS",
+        "expected": str(expected_harness),
+        "actual": str(harness_realpath),
+    })
+
+    # Check 3: Body validate import resolution
+    sys.path.insert(0, str(repo_root))
+    try:
+        spec = importlib.util.find_spec("nv_body_valid")
+        if spec is None or spec.origin is None:
+            attestation["checks"].append({
+                "check": "body_valid_import",
+                "result": "FAIL",
+                "error": "nv_body_valid not found in import path",
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+        body_valid_path = Path(spec.origin).resolve()
+        expected_body_valid = (repo_root / "nv_body_valid.py").resolve()
+
+        if body_valid_path != expected_body_valid:
+            attestation["checks"].append({
+                "check": "body_valid_realpath",
+                "result": "FAIL",
+                "expected": str(expected_body_valid),
+                "actual": str(body_valid_path),
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+        attestation["checks"].append({
+            "check": "body_valid_realpath",
+            "result": "PASS",
+            "expected": str(expected_body_valid),
+            "actual": str(body_valid_path),
+        })
+
+        # Compute SHA256
+        sha256_hash = hashlib.sha256()
+        with open(body_valid_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(chunk)
+        body_valid_sha256 = sha256_hash.hexdigest()
+
+        attestation["checks"].append({
+            "check": "body_valid_sha256",
+            "result": "PASS",
+            "sha256": body_valid_sha256,
+        })
+
+    except Exception as e:
+        attestation["checks"].append({
+            "check": "body_valid_import",
+            "result": "FAIL",
+            "error": str(e),
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    # Check 4: Content update raw text acceptance
+    try:
+        from nv_body_valid import body_validate
+
+        # Test with Chinese UTF-8 plain text (R42 seed type)
+        test_body = "关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。\n".encode("utf-8")
+
+        result = body_validate(
+            scenario="content_update",
+            endpoint_name="content_update",
+            raw_body=test_body,
+            rules_path="",
+            score_endpoint=None,
+            score_threshold=None,
+        )
+
+        if result.get("ok") is True:
+            attestation["checks"].append({
+                "check": "content_update_raw_text",
+                "result": "PASS",
+                "validation_result": result.get("reason"),
+            })
+        else:
+            attestation["checks"].append({
+                "check": "content_update_raw_text",
+                "result": "FAIL",
+                "validation_result": result.get("reason"),
+                "error": "Content update raw text rejected by validator",
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+    except Exception as e:
+        attestation["checks"].append({
+            "check": "content_update_raw_text",
+            "result": "FAIL",
+            "error": str(e),
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    # Check 5: Harness passes scenario parameter
+    try:
+        with open(expected_harness, "r", encoding="utf-8") as f:
+            harness_content = f.read()
+
+        # Look for the specific call pattern
+        if 'scenario=cfg.get("scenario"' in harness_content and 'body_validate(' in harness_content:
+            attestation["checks"].append({
+                "check": "harness_scenario_propagation",
+                "result": "PASS",
+            })
+        else:
+            attestation["checks"].append({
+                "check": "harness_scenario_propagation",
+                "result": "FAIL",
+                "error": "Harness does not pass scenario parameter to body_validate",
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+    except Exception as e:
+        attestation["checks"].append({
+            "check": "harness_scenario_propagation",
+            "result": "FAIL",
+            "error": str(e),
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    # Check 6: Runtime baseline files clean vs HEAD
+    try:
+        for rel_path in runtime_baseline_files:
+            file_path = repo_root / rel_path
+
+            # Check if file differs from HEAD
+            result = subprocess.run(
+                ["git", "diff", "--quiet", "HEAD", "--", rel_path],
+                cwd=repo_root,
+                capture_output=True,
+            )
+
+            if result.returncode != 0:
+                # File differs from HEAD
+                attestation["checks"].append({
+                    "check": f"baseline_clean_{rel_path}",
+                    "result": "FAIL",
+                    "error": f"File modified vs HEAD: {rel_path}",
+                })
+                attestation["overall"] = "FAIL"
+                return attestation
+
+        attestation["checks"].append({
+            "check": "runtime_baseline_files_clean",
+            "result": "PASS",
+            "files_checked": len(runtime_baseline_files),
+        })
+
+    except Exception as e:
+        attestation["checks"].append({
+            "check": "runtime_baseline_files_clean",
+            "result": "FAIL",
+            "error": str(e),
+        })
+        attestation["overall"] = "FAIL"
+        return attestation
+
+    # All checks passed
+    attestation["overall"] = "PASS"
+
+    # Write attestation to run evidence
+    attestation_path = run_root / "evidence" / "prelaunch_attestation.json"
+    attestation_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(attestation_path, "w", encoding="utf-8") as f:
+        json.dump(attestation, f, indent=2)
+
+    return attestation
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Bounded Alfresco metadata real-feedback orchestrator.",
@@ -2314,7 +3238,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument(
         "--scenario",
-        choices=("metadata_update", "multipart_upload"),
+        choices=("metadata_update", "multipart_upload", "content_update"),
         default="metadata_update",
     )
     parser.add_argument("--run-root", default=None)
@@ -2354,11 +3278,47 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Directory containing the regular files listed by --seed-manifest.",
     )
+    # Phase 1B: Model-comparison mode CLI
+    parser.add_argument(
+        "--model-comparison",
+        action="store_true",
+        help="Enable model-comparison mode (requires --afl-seed).",
+    )
+    parser.add_argument(
+        "--afl-seed",
+        type=int,
+        default=None,
+        help="Fixed AFL PRNG seed for reproducible runs (required for model-comparison).",
+    )
+    parser.add_argument(
+        "--scorer-python",
+        default=None,
+        help="Python interpreter path for scorer process (required for model-comparison).",
+    )
+    parser.add_argument(
+        "--scorer-ready-timeout",
+        type=float,
+        default=10.0,
+        help="Scorer readiness timeout in seconds (default: 10.0).",
+    )
     args = parser.parse_args(argv)
 
     # Scope gate: fail-closed before credentials, client creation,
     # preflight, node resolution, or any file/AFL launch.
     try:
+        # Phase 1B: validate model-comparison config early
+        model_comparison = args.model_comparison
+        afl_seed = args.afl_seed
+        scorer_python = args.scorer_python
+        scorer_ready_timeout = args.scorer_ready_timeout
+
+        validate_model_comparison_config(model_comparison, afl_seed, args.validity_backend)
+        if model_comparison:
+            validate_model_comparison_scenario(args.scenario)
+            if scorer_python is None:
+                raise ValueError("MODEL_COMPARISON_REQUIRES_SCORER_PYTHON")
+
+
         mutation_scope = parse_mutation_scope(args.mutation_scope)
         target_file_name = validate_target_file_name(args.target_file_name)
         if args.scenario == "multipart_upload" and args.target_file_name is not None:
@@ -2427,6 +3387,8 @@ def main(argv: list[str] | None = None) -> int:
                 "parent_id": str(parent_identity["parentId"]),
                 "name": str(parent_identity["name"]),
             }
+        elif args.scenario == "content_update":
+            resolved = resolve_existing_dedicated_content_node(client)
         elif args.target_file_name is None:
             resolved = resolve_existing_dedicated_node(client)
         else:
@@ -2460,7 +3422,23 @@ def main(argv: list[str] | None = None) -> int:
             config_path = render_multipart_runtime_config(
                 resolved["folder_id"], layout["target_config"]
             )
+        elif args.scenario == "content_update":
+            if preflight_identity["id"] != str(resolved["file_id"]):
+                raise RuntimeError("DEDICATED_TARGET_IDENTITY_MISMATCH")
+            if preflight_identity["parentId"] != expected_parent_id:
+                raise RuntimeError("DEDICATED_TARGET_PARENT_IDENTITY_MISMATCH")
+            if preflight_identity["name"] != expected_target_name:
+                raise RuntimeError("DEDICATED_TARGET_NAME_IDENTITY_MISMATCH")
+            target_identity = {
+                "node_id": preflight_identity["id"],
+                "parent_id": preflight_identity["parentId"],
+                "name": preflight_identity["name"],
+            }
+            config_path = render_content_update_runtime_config(
+                resolved["file_id"], layout["target_config"]
+            )
         else:
+            # metadata_update scenario (default)
             if preflight_identity["id"] != str(resolved["file_id"]):
                 raise RuntimeError("DEDICATED_TARGET_IDENTITY_MISMATCH")
             if preflight_identity["parentId"] != expected_parent_id:
@@ -2482,7 +3460,7 @@ def main(argv: list[str] | None = None) -> int:
         initialize_seed_selection_audit(layout)
         layout["err_dir"].mkdir(parents=True, exist_ok=True)
         if args.seed_manifest is None:
-            write_initial_seed(config_path, layout["seed_dir"])
+            write_initial_seed(config_path, layout["seed_dir"], args.scenario)
             seed_source = "seed_file"
             seed_manifest = None
         else:
@@ -2490,6 +3468,8 @@ def main(argv: list[str] | None = None) -> int:
                 Path(args.seed_manifest),
                 Path(args.seed_source_dir),
                 layout["seed_dir"],
+                config_path=config_path,
+                scenario=args.scenario,
             )
             seed_source = "manifest"
             seed_manifest = Path(args.seed_manifest)
@@ -2523,18 +3503,109 @@ def main(argv: list[str] | None = None) -> int:
             print(ARTIFACT_CONTRACT_FAILED, file=sys.stderr)
             return ARTIFACT_CONTRACT_FAILURE
 
-        child_env = runtime_environment(
-            layout, config_path, layout["task"], credentials,
-            validity_backend=args.validity_backend,
-        )
+        # Phase 1B: model-comparison orchestration
+        scorer_manager = None
+        threshold_info = None
+        if model_comparison:
+            # Resolve threshold and provenance
+            threshold_info = resolve_model_comparison_threshold(
+                args.validity_backend, artifact_path=None
+            )
 
-        rc = launch_bounded_afl(
-            layout,
-            config_path,
-            child_env,
-            max_test_cases=args.max_test_cases,
-            time_budget=args.time_budget,
-        )
+            # Start scorer lifecycle
+            scorer_script = REPO_ROOT / "model_stage" / "nv_valid_server_real.py"
+            scorer_socket = layout["run_root"] / "scorer.sock"
+            scorer_trace = layout["run_root"] / "scorer_trace.jsonl"
+
+            scorer_manager = ScorerLifecycleManager(
+                scorer_python=scorer_python,
+                scorer_script=scorer_script,
+                socket_path=scorer_socket,
+                backend=args.validity_backend,
+                timeout=scorer_ready_timeout,
+                trace_path=scorer_trace,
+                evidence_dir=evidence_dir,
+            )
+            try:
+                scorer_manager.start()
+            except (RuntimeError, TimeoutError) as exc:
+                if scorer_manager:
+                    scorer_manager.stop()
+                raise RuntimeError(f"SCORER_STARTUP_FAILED: {exc}") from exc
+
+            # Update task.json with scorer endpoint (R29 fix)
+            # AFL expects validity_endpoint in task.json to invoke the scorer
+            task_dict = json.loads(layout["task"].read_text(encoding="utf-8"))
+            task_dict["validity_endpoint"] = f"unix://{scorer_socket}"
+            layout["task"].write_text(
+                json.dumps(task_dict, ensure_ascii=False, sort_keys=True),
+                encoding="utf-8"
+            )
+
+        try:
+            # R42C: Fail-closed runtime source attestation
+            # Execute before AFL++ launch to prove runtime-critical files
+            # match intended baseline and cannot silently differ.
+            runtime_baseline_files = [
+                "scripts/run_alfresco_bounded_feedback.py",
+                "nv_http_harness.py",
+                "nv_body_valid.py",
+                "nv_valid_server_mock.py",
+                "model_stage/nv_valid_server_real.py",
+                "src/afl-fuzz-run.c",
+            ]
+
+            attestation = prelaunch_runtime_source_attestation(
+                repo_root=REPO_ROOT,
+                run_root=layout["run_root"],
+                runtime_baseline_files=runtime_baseline_files,
+            )
+
+            if attestation["overall"] != "PASS":
+                print(
+                    f"PRELAUNCH_ATTESTATION_FAILED: {attestation['overall']}",
+                    file=sys.stderr,
+                )
+                for check in attestation["checks"]:
+                    if check["result"] == "FAIL":
+                        print(
+                            f"  {check['check']}: {check.get('error', 'FAIL')}",
+                            file=sys.stderr,
+                        )
+                raise RuntimeError("PRELAUNCH_ATTESTATION_FAILED")
+
+            # Build environment (model-comparison or baseline)
+            if model_comparison and threshold_info:
+                base_env = runtime_environment(
+                    layout, config_path, layout["task"], credentials,
+                    validity_backend=args.validity_backend,
+                )
+                child_env = build_model_comparison_env(
+                    layout,
+                    args.validity_backend,
+                    threshold_info["threshold"],
+                    scorer_socket,
+                    scorer_trace,
+                    base_env,
+                )
+            else:
+                child_env = runtime_environment(
+                    layout, config_path, layout["task"], credentials,
+                    validity_backend=args.validity_backend,
+                )
+
+            rc = launch_bounded_afl(
+                layout,
+                config_path,
+                child_env,
+                max_test_cases=args.max_test_cases,
+                time_budget=args.time_budget,
+                afl_seed=afl_seed if model_comparison else None,
+            )
+        finally:
+            # Cleanup scorer
+            if scorer_manager:
+                scorer_manager.stop()
         if args.scenario == "multipart_upload":
             upload_report = inspect_multipart_artifacts(
                 layout, launch_returncode=int(rc)
@@ -2578,6 +3649,49 @@ def main(argv: list[str] | None = None) -> int:
                 "parent_identity": _identity_digest("parent", target_identity["parent_id"]),
             }
         report["feedback_source"] = "real_alfresco_feedback"
+
+        # Phase 1B: model-comparison post-run validation
+        if model_comparison and rc == 0:
+            try:
+                stats_path = layout["afl_output"] / "fuzzer_stats"
+                stats = parse_fuzzer_stats(stats_path)
+                
+                # Merge RPC counters from nv_body_valid_stats.json (authoritative)
+                rpc_stats_path = layout["body_valid_stats"]
+                rpc_stats = parse_nv_body_valid_stats(rpc_stats_path)
+                stats.update(rpc_stats)
+                
+                trace = parse_scorer_trace(scorer_trace)
+
+                participation = validate_model_comparison_participation(
+                    stats, trace, args.validity_backend
+                )
+
+                validity_artifact = {
+                    "mode": "model_comparison",
+                    "backend": args.validity_backend,
+                    "threshold": threshold_info["threshold"],
+                    "threshold_source": threshold_info["threshold_source"],
+                    "afl_seed": afl_seed,
+                    "participation": participation,
+                }
+
+                write_model_comparison_validity(layout, validity_artifact)
+                report["model_comparison_validity"] = participation
+
+                if participation["verdict"] != "PASS":
+                    report["missing_required"].append("model_comparison_participation")
+                    report["final_result"] = "artifact_contract_failed"
+                    report["ok"] = False
+            except Exception as exc:
+                report["model_comparison_validity"] = {
+                    "verdict": "VALIDATION_FAILED",
+                    "error": exc.__class__.__name__,
+                }
+                report["missing_required"].append("model_comparison_participation")
+                report["final_result"] = "artifact_contract_failed"
+                report["ok"] = False
+
         if rc != 0:
             runner_exit_code = int(rc)
         elif not report["ok"]:
@@ -2597,6 +3711,16 @@ def main(argv: list[str] | None = None) -> int:
                 "readback_failed" if runner_exit_code == READBACK_CONTRACT_FAILURE else None
             ),
         )
+
+        # R39 fix: Add scorer subprocess evidence to report
+        if scorer_manager:
+            scorer_evidence = {
+                "exit_code": scorer_manager.exit_code,
+                "stdout_path": str(scorer_manager.stdout_path) if scorer_manager.stdout_path else None,
+                "stderr_path": str(scorer_manager.stderr_path) if scorer_manager.stderr_path else None,
+            }
+            report.setdefault("scorer_subprocess", {}).update(scorer_evidence)
+
         try:
             _publish_runner_report(layout, report)
         except (OSError, TypeError, ValueError) as exc:

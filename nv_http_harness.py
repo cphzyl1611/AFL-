@@ -1006,10 +1006,22 @@ def main():
             try:
                 validation_body = extract_http_body(data)
             except HttpBodyAdapterError:
+                # HttpBodyAdapterError is a validation rejection: the seed envelope
+                # is malformed (no delimiter, empty body, invalid request line).
+                # Must publish exec identity before returning so C-side can associate
+                # this rejection with the seed that caused it.
                 bump_body_valid_stat("body_rule_reject")
+                write_status(
+                    method,
+                    path,
+                    0,
+                    body_hash16=int(zlib.crc32(data) & 0xffff),
+                    validation_reject=1,
+                )
                 return 0
 
         vr = body_validate(
+            scenario=cfg.get("scenario", "metadata_update"),
             endpoint_name=endpoint_name,
             raw_body=validation_body,
             rules_path=rules_path,
@@ -1068,6 +1080,47 @@ def main():
 
         if ALLOWED_PATHS and path not in ALLOWED_PATHS:
             path = default_path
+
+        # Model-comparison scorer invocation for full-HTTP mode (body_only_mode=0)
+        # This enables content_update to participate in model-comparison validation
+        # by invoking the scorer RPC with raw body bytes, mirroring the
+        # body_only_mode=1 flow but without JSON rule validation.
+        score_endpoint = os.getenv("NV_BODY_SCORE_ENDPOINT", "").strip() or None
+        if score_endpoint and body:
+            score_threshold = None
+            sth = os.getenv("NV_BODY_SCORE_THRESHOLD", "").strip()
+            if sth:
+                try:
+                    score_threshold = float(sth)
+                except Exception:
+                    score_threshold = None
+
+            # Derive endpoint_name from environment or config (same as body_only_mode=1)
+            endpoint_name = os.getenv("NV_ENDPOINT_NAME", str(cfg.get("default_endpoint", "")).strip())
+            if not endpoint_name:
+                endpoint_name = "unknown"
+
+            from nv_body_valid import rpc_score_unix
+            # Extract scenario from cfg to match the 4-argument RPC signature
+            scenario = cfg.get("scenario", "metadata_update")
+            rpc_ok, score = rpc_score_unix(score_endpoint, scenario, endpoint_name, body)
+
+            if rpc_ok:
+                bump_body_valid_stat("body_score_rpc_ok")
+                if score_threshold is not None and score is not None and score >= score_threshold:
+                    bump_body_valid_stat("body_score_reject")
+                    write_status(
+                        method,
+                        path,
+                        0,
+                        body_hash16=int(zlib.crc32(body) & 0xffff),
+                        validation_reject=1,
+                    )
+                    return 0
+                else:
+                    bump_body_valid_stat("body_score_pass")
+            else:
+                bump_body_valid_stat("body_score_rpc_fail")
 
         # --- ctx placeholder injection (legacy/mock doc flow only) ---
         # 对真实 O2OA body-only 模式不启用

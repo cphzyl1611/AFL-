@@ -774,6 +774,48 @@ static int nv_parse_unix_path(const char *endpoint, char *out, size_t out_sz) {
  *     - text: ASCII like "0.123\n" (server can just send a string)
  *     - bin : IEEE754 double (8 bytes)
  */
+/* Base64 encoding lookup table for Protocol V2 */
+static const char nv_b64_table[] =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/* Base64 encode: returns malloc'd string, caller must free */
+static char *nv_base64_encode(const u8 *data, size_t len) {
+  if (!data || len == 0) {
+    char *empty = malloc(1);
+    if (empty) empty[0] = '\0';
+    return empty;
+  }
+
+  size_t out_len = ((len + 2) / 3) * 4;
+  char *out = malloc(out_len + 1);
+  if (!out) return NULL;
+
+  size_t i = 0, j = 0;
+  while (i < len) {
+    uint32_t octet_a = i < len ? data[i++] : 0;
+    uint32_t octet_b = i < len ? data[i++] : 0;
+    uint32_t octet_c = i < len ? data[i++] : 0;
+    uint32_t triple = (octet_a << 16) + (octet_b << 8) + octet_c;
+
+    out[j++] = nv_b64_table[(triple >> 18) & 0x3F];
+    out[j++] = nv_b64_table[(triple >> 12) & 0x3F];
+    out[j++] = nv_b64_table[(triple >> 6) & 0x3F];
+    out[j++] = nv_b64_table[triple & 0x3F];
+  }
+
+  /* Add padding */
+  size_t mod = len % 3;
+  if (mod == 1) {
+    out[j - 2] = '=';
+    out[j - 1] = '=';
+  } else if (mod == 2) {
+    out[j - 1] = '=';
+  }
+
+  out[j] = '\0';
+  return out;
+}
+
 static double nv_validity_rpc_score_unix(afl_state_t *afl,
                                          const u8 *buf, u32 len,
                                          int *ok) {
@@ -789,6 +831,12 @@ static double nv_validity_rpc_score_unix(afl_state_t *afl,
   int fd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (fd < 0) return 0.0;
 
+  /* Set receive timeout to prevent indefinite blocking (R39 fix) */
+  struct timeval tv;
+  tv.tv_sec = 2;
+  tv.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
@@ -799,16 +847,82 @@ static double nv_validity_rpc_score_unix(afl_state_t *afl,
     return 0.0;
   }
 
-  /* send request */
-  uint32_t n = (uint32_t)len;
-  uint8_t hdr[4];
-  hdr[0] = (uint8_t)(n & 0xff);
-  hdr[1] = (uint8_t)((n >> 8) & 0xff);
-  hdr[2] = (uint8_t)((n >> 16) & 0xff);
-  hdr[3] = (uint8_t)((n >> 24) & 0xff);
+  /* Extract HTTP body and determine scenario (Protocol V2 alignment) */
+  const u8 *http_body = NULL;
+  size_t body_len = 0;
+  char scenario[64] = "metadata_update";  /* default */
 
-  int ok_send = nv_sendall(fd, hdr, sizeof(hdr)) &&
-                (len == 0 ? 1 : nv_sendall(fd, buf, len));
+  /* Find body separator */
+  const u8 *sep = memmem(buf, len, "\n\n", 2);
+  if (!sep) sep = memmem(buf, len, "\r\n\r\n", 4);
+
+  if (sep) {
+    http_body = sep + ((sep[0] == '\r') ? 4 : 2);
+    body_len = (size_t)(buf + len - http_body);
+
+    /* Determine scenario from path: if ends with /content → content_update */
+    const u8 *first_line_end = memchr(buf, '\n', len);
+    if (first_line_end) {
+      char line[512];
+      size_t lsz = (size_t)(first_line_end - buf);
+      if (lsz < sizeof(line)) {
+        memcpy(line, buf, lsz);
+        line[lsz] = 0;
+
+        char method[16], path[256];
+        if (sscanf(line, "%15s %255s", method, path) >= 2) {
+          size_t path_len = strlen(path);
+          if (path_len >= 8 && strcmp(path + path_len - 8, "/content") == 0) {
+            strncpy(scenario, "content_update", sizeof(scenario) - 1);
+          }
+        }
+      }
+    }
+  } else {
+    /* No body separator - treat entire buffer as body */
+    http_body = buf;
+    body_len = len;
+  }
+
+  /* Base64 encode body for Protocol V2 */
+  char *body_b64 = nv_base64_encode(http_body, body_len);
+  if (!body_b64) {
+    close(fd);
+    return 0.0;
+  }
+
+  /* Build Protocol V2 JSON envelope using cJSON */
+  cJSON *envelope = cJSON_CreateObject();
+  if (!envelope) {
+    free(body_b64);
+    close(fd);
+    return 0.0;
+  }
+
+  cJSON_AddStringToObject(envelope, "scenario", scenario);
+  cJSON_AddStringToObject(envelope, "endpoint", "");
+  cJSON_AddStringToObject(envelope, "body", body_b64);
+
+  char *json_str = cJSON_PrintUnformatted(envelope);
+  cJSON_Delete(envelope);
+  free(body_b64);
+
+  if (!json_str) {
+    close(fd);
+    return 0.0;
+  }
+
+  /* Send Protocol V2 request: [4-byte length][JSON envelope] */
+  uint32_t json_len = (uint32_t)strlen(json_str);
+  uint8_t hdr[4];
+  hdr[0] = (uint8_t)(json_len & 0xff);
+  hdr[1] = (uint8_t)((json_len >> 8) & 0xff);
+  hdr[2] = (uint8_t)((json_len >> 16) & 0xff);
+  hdr[3] = (uint8_t)((json_len >> 24) & 0xff);
+
+  int ok_send = nv_sendall(fd, hdr, sizeof(hdr)) && nv_sendall(fd, (const u8*)json_str, json_len);
+  free(json_str);
+
   if (!ok_send) { close(fd); return 0.0; }
 
   const char *fmt = getenv("NV_RPC_FMT");
@@ -943,8 +1057,29 @@ static inline nv_vreason_t nv_validity_check(afl_state_t *afl, const u8 *buf,
       blen--;
     }
 
-    /* for JSON-oriented harnesses, body can be empty; if non-empty, keep it roughly JSON-like */
-    if (blen > 0 && (*body != '{' && *body != '[')) return NV_V_REJ_BODY;
+    /* R35B fix: Allow text/plain bodies ONLY for content_update endpoint.
+       Scope the exemption to paths ending with /content (the Alfresco content_update pattern). */
+    int is_json_content = 1;  /* default: assume JSON */
+    const u8 *ct_header = memmem(buf, (size_t)(sep - buf), "Content-Type:", 13);
+    if (ct_header) {
+      const u8 *ct_eol = memchr(ct_header, '\n', (size_t)(sep - ct_header));
+      if (ct_eol) {
+        /* Check if Content-Type contains "text/plain" */
+        if (memmem(ct_header, (size_t)(ct_eol - ct_header), "text/plain", 10)) {
+          /* R35B scope gate: text/plain exemption applies ONLY to content_update.
+             The Alfresco content_update endpoint pattern is PUT .../nodes/{id}/content
+             We verify the path ends with "/content" to prevent metadata_update bypass. */
+          size_t path_len = strlen(path);
+          if (path_len >= 8 && strcmp(path + path_len - 8, "/content") == 0) {
+            is_json_content = 0;
+          }
+          /* Otherwise: text/plain on non-content_update endpoint → still requires JSON body */
+        }
+      }
+    }
+
+    /* for JSON-oriented harnesses, body can be empty; if non-empty and JSON expected, keep it JSON-like */
+    if (is_json_content && blen > 0 && (*body != '{' && *body != '[')) return NV_V_REJ_BODY;
 
   }
 

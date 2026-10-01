@@ -6,11 +6,32 @@ import json
 import hashlib
 import re
 from typing import Any
+import time
 
 SOCK = os.getenv("NV_VALID_SOCK", "/tmp/nv_valid.sock")
 FMT = os.getenv("NV_RPC_FMT", "text").strip().lower()          # text | binary
 MAX_IN = int(os.getenv("NV_RPC_MAX_IN", "262144"))             # 256KB
 CFG_PATH = os.getenv("NV_TARGET_CONFIG", "").strip()
+
+# ---------------- trace logging ----------------
+TRACE_PATH = os.getenv("NV_SCORER_TRACE_PATH", "").strip()
+BACKEND = os.getenv("NV_VALIDITY_BACKEND", "unknown").strip()
+
+def write_trace_record(score: float, backend: str = BACKEND):
+    """Write one JSONL trace record."""
+    if not TRACE_PATH:
+        return
+    try:
+        record = {
+            "backend": backend,
+            "score": float(score),
+            "timestamp_ms": int(time.time() * 1000),
+        }
+        with open(TRACE_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
 
 # ---------------- allowlist / config ----------------
 ALLOW = set()
@@ -531,6 +552,7 @@ def serve():
             try:
                 buf = recv_one(conn)
                 sc = score_mock(buf)
+                write_trace_record(sc)
                 send_score(conn, sc)
             except Exception:
                 # 让客户端按 rpc_fail 处理

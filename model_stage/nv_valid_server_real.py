@@ -16,7 +16,7 @@ if str(THIS_DIR) not in sys.path:
 
 from feature_extract import extract_features_from_bytes
 from model_stage.alfresco_ae_v1_scorer import AlfrescoAEV1Scorer
-from model_stage.alfresco_feature_extractor import extract_metadata_features
+from model_stage.alfresco_feature_extractor import extract_metadata_features, extract_text_content_features
 
 
 DEFAULT_VALIDITY_BACKEND = "alfresco_ae_v1"
@@ -197,7 +197,7 @@ def record_scorer_trace(backend: str, success: bool) -> None:
         pass
 
 
-def score_and_trace(body: bytes) -> Dict[str, Any]:
+def score_and_trace(scenario: str, body: bytes) -> Dict[str, Any]:
     """Score one request and append an opt-in scorer-participation trace.
 
     Wraps predict_score_from_body without changing its behavior or return
@@ -205,7 +205,7 @@ def score_and_trace(body: bytes) -> Dict[str, Any]:
     whether that invocation succeeded.
     """
     try:
-        result = predict_score_from_body(body)
+        result = predict_score_from_body(scenario, body)
     except Exception:
         record_scorer_trace(SCORER_BACKEND_NAME, success=False)
         raise
@@ -223,17 +223,34 @@ def recv_exact(conn: socket.socket, n: int) -> bytes:
     return data
 
 
-def recv_one(conn: socket.socket) -> bytes:
+def recv_one(conn: socket.socket):
     """
-    协议：
-      [u32_le length][payload bytes]
+    Protocol v2:
+      [u32_le length][JSON envelope: {"scenario": "...", "endpoint": "...", "body": "base64..."}]
+    Returns: (scenario, endpoint, body_bytes)
     """
     conn.settimeout(1.0)
     hdr = recv_exact(conn, 4)
     n = struct.unpack("<I", hdr)[0]
     if n <= 0 or n > MAX_IN:
         raise ValueError(f"invalid payload length: {n}")
-    return recv_exact(conn, n)
+    
+    envelope_bytes = recv_exact(conn, n)
+    
+    try:
+        envelope = json.loads(envelope_bytes.decode('utf-8'))
+        scenario = str(envelope.get("scenario", "metadata_update"))
+        endpoint = str(envelope.get("endpoint", ""))
+        body_b64 = str(envelope.get("body", ""))
+        
+        import base64
+        body = base64.b64decode(body_b64)
+        
+        return scenario, endpoint, body
+    except Exception:
+        # Fallback: treat as raw body for backward compat (shouldn't happen)
+        return "metadata_update", "", envelope_bytes
+
 
 
 def send_score(conn: socket.socket, score: float):
@@ -243,7 +260,25 @@ def send_score(conn: socket.socket, score: float):
         conn.sendall(f"{float(score):.6f}\n".encode("ascii"))
 
 
-def predict_score_from_body(body: bytes) -> Dict[str, Any]:
+def predict_score_from_body(scenario: str, body: bytes) -> Dict[str, Any]:
+    # Scenario dispatch (fail-closed for unknown scenarios)
+    if scenario not in ("metadata_update", "content_update"):
+        raise ValueError(f"UNSUPPORTED_SCENARIO_FOR_RPC: {scenario}")
+    
+    # content_update uses text/plain body bytes
+    if scenario == "content_update":
+        if VALIDITY_BACKEND == "alfresco_ae_v1":
+            raise ValueError("AE v1 backend does not support content_update scenario")
+        if VALIDITY_BACKEND == "sefanogan_es_reference":
+            vector = extract_text_content_features(body)
+            score = PREDICTOR.score(vector)
+            return {"mode": "sefanogan_es_reference", "score": score, "recon_err": 0.0, "feat_err": 0.0}
+        # Legacy SEFANOGAN_MODE path
+        feat = extract_features_from_bytes(body)
+        result = PREDICTOR.score(feat)
+        return result
+    
+    # metadata_update uses JSON body
     if VALIDITY_BACKEND == "alfresco_ae_v1":
         payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
@@ -285,10 +320,10 @@ def serve():
         conn, _ = s.accept()
         with conn:
             try:
-                buf = recv_one(conn)
-                print(f"[REQ] got payload bytes={len(buf)}", flush=True)
+                scenario, endpoint, buf = recv_one(conn)
+                print(f"[REQ] scenario={scenario} endpoint={endpoint} bytes={len(buf)}", flush=True)
 
-                result = score_and_trace(buf)
+                result = score_and_trace(scenario, buf)
                 score = float(result["score"])
 
                 log_score_sample(buf, result)
