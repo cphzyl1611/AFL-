@@ -3182,12 +3182,74 @@ def prelaunch_runtime_source_attestation(
         attestation["overall"] = "FAIL"
         return attestation
 
-    # Check 6: Runtime baseline files clean vs HEAD
+    # Check 6: Runtime baseline files match frozen hash manifest
     try:
-        for rel_path in runtime_baseline_files:
+        manifest_path = repo_root / "runtime_baseline_manifest.json"
+
+        # Verify manifest itself is unmodified vs HEAD
+        manifest_check = subprocess.run(
+            ["git", "diff", "--quiet", "HEAD", "--", "runtime_baseline_manifest.json"],
+            cwd=repo_root,
+            capture_output=True,
+        )
+
+        if manifest_check.returncode != 0:
+            attestation["checks"].append({
+                "check": "frozen_manifest_unmodified",
+                "result": "FAIL",
+                "error": "runtime_baseline_manifest.json modified vs HEAD",
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+        # Load frozen manifest
+        if not manifest_path.exists():
+            attestation["checks"].append({
+                "check": "frozen_manifest_exists",
+                "result": "FAIL",
+                "error": "runtime_baseline_manifest.json not found",
+            })
+            attestation["overall"] = "FAIL"
+            return attestation
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        # Verify each file against frozen hash
+        for entry in manifest.get("files", []):
+            rel_path = entry["path"]
+            expected_sha256 = entry["sha256"]
             file_path = repo_root / rel_path
 
-            # Check if file differs from HEAD
+            if not file_path.exists():
+                attestation["checks"].append({
+                    "check": f"baseline_exists_{rel_path}",
+                    "result": "FAIL",
+                    "error": f"File not found: {rel_path}",
+                })
+                attestation["overall"] = "FAIL"
+                return attestation
+
+            # Compute actual SHA256
+            sha256_hash = hashlib.sha256()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(chunk)
+            actual_sha256 = sha256_hash.hexdigest()
+
+            if actual_sha256 != expected_sha256:
+                attestation["checks"].append({
+                    "check": f"baseline_hash_{rel_path}",
+                    "result": "FAIL",
+                    "error": f"SHA256 mismatch: {rel_path}",
+                    "expected": expected_sha256,
+                    "actual": actual_sha256,
+                })
+                attestation["overall"] = "FAIL"
+                return attestation
+
+        # Secondary check: files also match HEAD (defense in depth)
+        for rel_path in runtime_baseline_files:
             result = subprocess.run(
                 ["git", "diff", "--quiet", "HEAD", "--", rel_path],
                 cwd=repo_root,
@@ -3195,9 +3257,8 @@ def prelaunch_runtime_source_attestation(
             )
 
             if result.returncode != 0:
-                # File differs from HEAD
                 attestation["checks"].append({
-                    "check": f"baseline_clean_{rel_path}",
+                    "check": f"baseline_vs_head_{rel_path}",
                     "result": "FAIL",
                     "error": f"File modified vs HEAD: {rel_path}",
                 })
@@ -3205,14 +3266,15 @@ def prelaunch_runtime_source_attestation(
                 return attestation
 
         attestation["checks"].append({
-            "check": "runtime_baseline_files_clean",
+            "check": "frozen_hash_manifest_verified",
             "result": "PASS",
-            "files_checked": len(runtime_baseline_files),
+            "files_checked": len(manifest.get("files", [])),
+            "checkpoint_commit": manifest.get("checkpoint_commit"),
         })
 
     except Exception as e:
         attestation["checks"].append({
-            "check": "runtime_baseline_files_clean",
+            "check": "frozen_hash_manifest_verification",
             "result": "FAIL",
             "error": str(e),
         })

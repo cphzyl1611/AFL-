@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "description": "Frozen runtime baseline manifest for R42C checkpoint",
+  "checkpoint_commit": "2a2b87b3d8544ff7c5d64941fbda7ae3822d2632",
+  "created": "2026-10-01T14:42:14+0000",
+  "files": [
+    {
+      "path": "scripts/run_alfresco_bounded_feedback.py",
+      "sha256": "cbace54cc764ca0c6e810f36a35204a9e0f23482f7b56cbe5110df32285ef0ec"
+    },
+    {
+      "path": "nv_http_harness.py",
+      "sha256": "5e59e9df44fb76363dc32997fb4695757853ec01812d2a8c56b826f702f56dcb"
+    },
+    {
+      "path": "nv_body_valid.py",
+      "sha256": "7793719d66aeb673bd3b3a82dbdbf8ffc7c9e923f1890beaa30b9772e4aad913"
+    },
+    {
+      "path": "nv_valid_server_mock.py",
+      "sha256": "4bf838126035f952b204842dc619ebacb90f0065ca216a8b764cad1b56a1f079"
+    },
+    {
+      "path": "model_stage/nv_valid_server_real.py",
+      "sha256": "1b81276bc21519508295247571334a6eae39f5e411daa1f088a0d1db52d0d98d"
+    },
+    {
+      "path": "src/afl-fuzz-run.c",
+      "sha256": "2f8684601cb5d9e2084e584a316bbc78086c2a470e0f0840213f5ff9fdcf70a6"
+    }
+  ]
+}
