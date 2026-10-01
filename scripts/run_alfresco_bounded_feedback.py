@@ -3579,6 +3579,7 @@ def main(argv: list[str] | None = None) -> int:
             scorer_script = REPO_ROOT / "model_stage" / "nv_valid_server_real.py"
             scorer_socket = layout["run_root"] / "scorer.sock"
             scorer_trace = layout["run_root"] / "scorer_trace.jsonl"
+            evidence_dir = layout["evidence"]
 
             scorer_manager = ScorerLifecycleManager(
                 scorer_python=scorer_python,
