@@ -2569,6 +2569,23 @@ def launch_bounded_afl(
     existing_pp = env.get("PYTHONPATH")
     env["PYTHONPATH"] = str(REPO_ROOT) + (":" + existing_pp if existing_pp else "")
 
+    # R44B: Propagate credentials to harness via AFL_TARGET_ENV.
+    # AFL++ does not automatically propagate arbitrary environment variables to
+    # the target harness for security isolation. Custom application variables
+    # must be explicitly declared via AFL_TARGET_ENV, which extract_and_set_env()
+    # parses at AFL++ startup (src/afl-common.c:896-973).
+    #
+    # The prelaunch validation above ensures ALFRESCO_USER and ALFRESCO_PASS are
+    # present in child_env (and thus in env), but they will not reach the harness
+    # subprocess unless explicitly listed in AFL_TARGET_ENV.
+    #
+    # Use shlex.quote() for shell-safe quoting in case credentials contain spaces
+    # or special characters.
+    import shlex
+    user_quoted = shlex.quote(env["ALFRESCO_USER"])
+    pass_quoted = shlex.quote(env["ALFRESCO_PASS"])
+    env["AFL_TARGET_ENV"] = f"ALFRESCO_USER={user_quoted} ALFRESCO_PASS={pass_quoted}"
+
     hard_timeout = time_budget + 60
     try:
         proc = subprocess.run(
