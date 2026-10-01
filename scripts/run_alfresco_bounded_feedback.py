@@ -330,6 +330,7 @@ def render_content_update_runtime_config(node_id: str, out_path: Path) -> Path:
     config.update({
         "platform": "alfresco",
         "target_type": "http_api",
+        "scenario": "content_update",
         "base": ALFRESCO_BASE_URL,
         "health": "/alfresco/service/api/server",
         "auth": {
