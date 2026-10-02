@@ -555,6 +555,46 @@ def run_multipart_seed(data: bytes, *, client, status_writer=None) -> dict:
     except UnicodeDecodeError:
         return reject("MULTIPART_FILEDATA_INVALID_UTF8", path=parsed["path"], body_hash16=body_hash16)
 
+    # Scorer RPC invocation for model-comparison mode (multipart_upload scenario)
+    score_endpoint = os.getenv("NV_BODY_SCORE_ENDPOINT", "").strip() or None
+    score_threshold = None
+    sth = os.getenv("NV_BODY_SCORE_THRESHOLD", "").strip()
+    if sth:
+        try:
+            score_threshold = float(sth)
+        except Exception:
+            score_threshold = None
+
+    if score_endpoint:
+        from nv_body_valid import rpc_score_unix
+        import base64
+
+        # Build multipart scorer envelope (alfresco_ae_v1 and sefanogan_es_reference contracts)
+        scorer_envelope = {
+            "filename": filename,
+            "content": base64.b64encode(file_bytes).decode("ascii"),
+            "fields": dict(fields),
+        }
+        scorer_body = json.dumps(scorer_envelope, ensure_ascii=False).encode("utf-8")
+
+        rpc_ok, score = rpc_score_unix(
+            score_endpoint, "multipart_upload", "multipart_upload", scorer_body
+        )
+
+        if rpc_ok and score is not None:
+            bump_body_valid_stat("body_rule_pass")
+            bump_body_valid_stat("body_score_rpc_ok")
+
+            if score_threshold is not None and score >= score_threshold:
+                bump_body_valid_stat("body_score_reject")
+                return reject("MULTIPART_SCORE_REJECT", path=parsed["path"], body_hash16=body_hash16)
+            else:
+                bump_body_valid_stat("body_score_pass")
+        else:
+            # RPC failure = validation reject (fail-closed)
+            bump_body_valid_stat("body_score_rpc_fail")
+            return reject("MULTIPART_SCORE_RPC_FAIL", path=parsed["path"], body_hash16=body_hash16)
+
     response = client.upload_multipart(
         fields=dict(fields), filename=filename, file_bytes=file_bytes
     )

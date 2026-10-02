@@ -11,7 +11,7 @@
     },
     {
       "path": "nv_http_harness.py",
-      "sha256": "4ff07aca8122ab72720afba1eca8eb1422a80b9374c384f59400f600eb130d06"
+      "sha256": "f6e31e040705cac007e529759d53f4757b294e49aa0ff3deb1ec016e79917d07"
     },
     {
       "path": "nv_body_valid.py",
