@@ -2986,7 +2986,8 @@ def validate_model_comparison_participation(
             break
 
     # Check count consistency
-    if trace and len(trace) != rpc_ok:
+    # Trace includes dry-run invocations, rpc_ok counts only fuzz-phase
+    if trace and len(trace) < rpc_ok:
         reason_codes.append("TRACE_COUNT_MISMATCH")
 
     verdict = "PASS" if not reason_codes else "INVALID_FOR_MODEL_COMPARISON"
