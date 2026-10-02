@@ -2580,11 +2580,18 @@ def launch_bounded_afl(
     # present in child_env (and thus in env), but they will not reach the harness
     # subprocess unless explicitly listed in AFL_TARGET_ENV.
     #
-    # Use shlex.quote() for shell-safe quoting in case credentials contain spaces
-    # or special characters.
+    # extract_and_set_env requires values with special chars (/, .) to be quoted.
+    # Force single quotes around all values so paths are parsed correctly.
     import shlex
-    user_quoted = shlex.quote(env["ALFRESCO_USER"])
-    pass_quoted = shlex.quote(env["ALFRESCO_PASS"])
+
+    def quote_for_afl_target_env(val: str) -> str:
+        """Quote value for AFL_TARGET_ENV. Always use single quotes for consistency."""
+        # Escape single quotes in the value by ending quote, adding escaped quote, reopening quote
+        escaped = val.replace("'", "'\\''")
+        return f"'{escaped}'"
+
+    user_quoted = quote_for_afl_target_env(env["ALFRESCO_USER"])
+    pass_quoted = quote_for_afl_target_env(env["ALFRESCO_PASS"])
 
     # R47: Add NV runtime paths so harness can write status/probe/state files
     nv_vars = []
@@ -2592,7 +2599,7 @@ def launch_bounded_afl(
                 "NV_CTX_PATH", "NV_ERR_DIR", "NV_BODY_VALID_STATS", "NV_MAB_JOURNAL_PATH",
                 "NV_EXECUTION_LEDGER_PATH", "NV_MULTIPART_UPLOADS_PATH"]:
         if key in env:
-            nv_vars.append(f"{key}={shlex.quote(env[key])}")
+            nv_vars.append(f"{key}={quote_for_afl_target_env(env[key])}")
 
     env["AFL_TARGET_ENV"] = f"ALFRESCO_USER={user_quoted} ALFRESCO_PASS={pass_quoted} {' '.join(nv_vars)}"
 
