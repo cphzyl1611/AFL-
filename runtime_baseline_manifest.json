@@ -27,7 +27,7 @@
     },
     {
       "path": "src/afl-fuzz-run.c",
-      "sha256": "a4a89d29f47192832f9555cd285c0943d4d9217b7dc3bc30dabda244533b809f"
+      "sha256": "3bec3c99c43222cffc00aa6d6ba9006a6704b9fb62e3c14788c2afa65a9d4baa"
     }
   ]
 }
