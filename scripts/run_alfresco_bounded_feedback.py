@@ -2722,9 +2722,14 @@ def build_model_comparison_env(
 
 
 def validate_model_comparison_scenario(scenario: str) -> None:
-    """Reject multipart in model-comparison mode."""
-    if scenario == "multipart_upload":
-        raise ValueError("MULTIPART_NOT_SUPPORTED_IN_MODEL_COMPARISON")
+    """Validate scenario support for model-comparison mode.
+
+    All three scenarios now supported:
+    - metadata_update: JSON payload scoring
+    - content_update: text/plain content scoring
+    - multipart_upload: multipart envelope scoring (filename + content + fields)
+    """
+    pass  # All scenarios supported
 
 
 def build_afl_argv_with_seed(
