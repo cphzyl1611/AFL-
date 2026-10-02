@@ -3,11 +3,43 @@ import sys, json, urllib.request, urllib.error,time,os,zlib
 import base64
 import hashlib
 import fcntl
+import shlex
 from nv_state_probe import update_state
 from urllib.parse import urlparse
 from nv_body_valid import body_validate
 from nv_http_body_adapter import HttpBodyAdapterError, extract_http_body
-STATUS_PATH = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
+
+# R48: Parse AFL_TARGET_ENV before any getenv() calls.
+# AFL++ sets AFL_TARGET_ENV with space-separated KEY='value' pairs.
+# We need to parse it and set those variables in os.environ so subsequent
+# os.getenv() calls can find them.
+def parse_afl_target_env():
+    afl_env = os.environ.get("AFL_TARGET_ENV")
+    if not afl_env:
+        return
+
+    # Use shlex to properly handle quoted values
+    try:
+        parts = shlex.split(afl_env)
+        for part in parts:
+            if '=' in part:
+                key, value = part.split('=', 1)
+                os.environ[key] = value
+    except Exception:
+        # If parsing fails, don't crash - just continue with defaults
+        pass
+
+parse_afl_target_env()
+
+# R48: Defer environment variable reads until after AFL++ parses AFL_TARGET_ENV.
+# Module-level os.getenv() happens at import time, before extract_and_set_env()
+# runs in the AFL++ parent. Use lazy getters so variables are read on first use.
+_STATUS_PATH = None
+def get_status_path():
+    global _STATUS_PATH
+    if _STATUS_PATH is None:
+        _STATUS_PATH = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
+    return _STATUS_PATH
 
 DEFAULT_CFG = {
     "base": "http://127.0.0.1:8080",
@@ -202,7 +234,7 @@ ALLOWED_PATHS = {
 }
 
 def status_ledger_path() -> str:
-    return os.getenv("NV_STATUS_LEDGER_PATH", STATUS_PATH + ".jsonl")
+    return os.getenv("NV_STATUS_LEDGER_PATH", get_status_path() + ".jsonl")
 
 
 def append_status_record(record: dict) -> None:
@@ -235,7 +267,7 @@ def seq_sidecar_path() -> str:
     (see fuzz_gui.py, which gives every instance its own) never share a
     counter.
     """
-    return STATUS_PATH + ".seq"
+    return get_status_path() + ".seq"
 
 
 def next_exec_seq() -> int:
@@ -349,6 +381,7 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
     }
 
     # atomic write
+    STATUS_PATH = get_status_path()
     tmp = STATUS_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(st, f, ensure_ascii=False)
@@ -627,9 +660,15 @@ def bump_body_valid_stat(kind: str) -> None:
 # 配置：你平台地址
 BASE = "http://127.0.0.1:8080"
 
-ERR_DIR = os.getenv("NV_ERR_DIR", "/tmp/nv_err_cases")
+_ERR_DIR = None
+def get_err_dir():
+    global _ERR_DIR
+    if _ERR_DIR is None:
+        _ERR_DIR = os.getenv("NV_ERR_DIR", "/tmp/nv_err_cases")
+    return _ERR_DIR
 
 def save_err_case(raw_input: bytes, cls: str, code: int):
+    ERR_DIR = get_err_dir()
     os.makedirs(ERR_DIR, exist_ok=True)
     ts = int(time.time() * 1000)
     fn = f"{ts}_{cls}_{code}.http"
@@ -638,7 +677,7 @@ def save_err_case(raw_input: bytes, cls: str, code: int):
         f.write(raw_input)
 
     # 复现命令（stdin 重放）
-    cmd = f'NV_STATUS_PATH="{os.getenv("NV_STATUS_PATH","/tmp/nv_http_status.json")}" ' \
+    cmd = f'NV_STATUS_PATH="{get_status_path()}" ' \
           f'NV_PROBE_PATH="{os.getenv("NV_PROBE_PATH","/tmp/nv_probe.json")}" ' \
           f'NV_STATE_DB="{os.getenv("NV_STATE_DB","/tmp/nv_state_db.json")}" ' \
           f'python3 "{os.path.abspath(__file__)}" < "{p}"\n'
@@ -836,16 +875,22 @@ def extract_biz_code(resp_body: bytes, http_code: int, cls: str, biz_fields) -> 
         pass
     return f"http_{http_code}_{cls}"
 
-CTX_PATH = os.getenv("NV_CTX_PATH", "/tmp/nv_ctx.json")
+_CTX_PATH = None
+def get_ctx_path():
+    global _CTX_PATH
+    if _CTX_PATH is None:
+        _CTX_PATH = os.getenv("NV_CTX_PATH", "/tmp/nv_ctx.json")
+    return _CTX_PATH
 
 def ctx_load() -> dict:
     try:
-        with open(CTX_PATH, "r", encoding="utf-8") as f:
+        with open(get_ctx_path(), "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
 
 def ctx_save(d: dict):
+    CTX_PATH = get_ctx_path()
     tmp = CTX_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False)
@@ -1270,7 +1315,7 @@ if __name__ == "__main__":
         # records proper execution identity instead of treating as crash.
         # This handles missing NV_TOKEN, ALFRESCO_USER, ALFRESCO_PASS, etc.
         if "must be supplied" in str(e):
-            status_path = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
+            status_path = get_status_path()
             with open(status_path, "w") as f:
                 json.dump({
                     "exec_seq": 0,

@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "description": "Frozen runtime baseline manifest for R45 checkpoint (post-R44B repair, post-R45 harness observability, R47 NV env propagation with forced quotes)",
+  "description": "Frozen runtime baseline manifest for R45 checkpoint (post-R44B repair, post-R45 harness observability, R47 NV env propagation with forced quotes, R48 lazy env reading fix)",
   "checkpoint_commit": "e293205c1fae228354bd55279cc6d319c67a0668",
   "created": "2026-10-02T00:00:00+0000",
-  "updated": "2026-10-02T15:25:00+0000",
+  "updated": "2026-10-02T15:58:00+0000",
   "files": [
     {
       "path": "scripts/run_alfresco_bounded_feedback.py",
@@ -11,7 +11,7 @@
     },
     {
       "path": "nv_http_harness.py",
-      "sha256": "c9c9260f7c66a83a64dc0abbc47013ac7a216a855311afcd7b7cdb5b6db26e5a"
+      "sha256": "4ff07aca8122ab72720afba1eca8eb1422a80b9374c384f59400f600eb130d06"
     },
     {
       "path": "nv_body_valid.py",
