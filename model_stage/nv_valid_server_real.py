@@ -16,7 +16,11 @@ if str(THIS_DIR) not in sys.path:
 
 from feature_extract import extract_features_from_bytes
 from model_stage.alfresco_ae_v1_scorer import AlfrescoAEV1Scorer
-from model_stage.alfresco_feature_extractor import extract_metadata_features, extract_text_content_features
+from model_stage.alfresco_feature_extractor import (
+    extract_metadata_features,
+    extract_text_content_features,
+    extract_multipart_upload_features,
+)
 
 
 DEFAULT_VALIDITY_BACKEND = "alfresco_ae_v1"
@@ -262,9 +266,36 @@ def send_score(conn: socket.socket, score: float):
 
 def predict_score_from_body(scenario: str, body: bytes) -> Dict[str, Any]:
     # Scenario dispatch (fail-closed for unknown scenarios)
-    if scenario not in ("metadata_update", "content_update"):
+    if scenario not in ("metadata_update", "content_update", "multipart_upload"):
         raise ValueError(f"UNSUPPORTED_SCENARIO_FOR_RPC: {scenario}")
-    
+
+    # multipart_upload uses JSON envelope with filename, content_b64, fields
+    if scenario == "multipart_upload":
+        envelope = json.loads(body.decode("utf-8"))
+        if not isinstance(envelope, dict):
+            raise ValueError("multipart_upload requires JSON envelope")
+
+        filename = str(envelope.get("filename", "sample.txt"))
+        content_b64 = str(envelope.get("content", ""))
+        fields = envelope.get("fields", {})
+        if not isinstance(fields, dict):
+            fields = {}
+
+        import base64
+        content = base64.b64decode(content_b64) if content_b64 else b""
+
+        if VALIDITY_BACKEND == "alfresco_ae_v1":
+            result = PREDICTOR.score_multipart_upload(filename, content, fields)
+            return {"mode": "alfresco_ae_v1", **result}
+        if VALIDITY_BACKEND == "sefanogan_es_reference":
+            vector = extract_multipart_upload_features(filename, content, fields)
+            score = PREDICTOR.score(vector)
+            return {"mode": "sefanogan_es_reference", "score": score, "recon_err": 0.0, "feat_err": 0.0}
+        # Fallback for legacy backends
+        vector = extract_multipart_upload_features(filename, content, fields)
+        result = PREDICTOR.score(vector)
+        return result
+
     # content_update uses text/plain body bytes
     if scenario == "content_update":
         if VALIDITY_BACKEND == "alfresco_ae_v1":
@@ -277,7 +308,7 @@ def predict_score_from_body(scenario: str, body: bytes) -> Dict[str, Any]:
         feat = extract_features_from_bytes(body)
         result = PREDICTOR.score(feat)
         return result
-    
+
     # metadata_update uses JSON body
     if VALIDITY_BACKEND == "alfresco_ae_v1":
         payload = json.loads(body.decode("utf-8"))
