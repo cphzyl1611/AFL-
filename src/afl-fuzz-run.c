@@ -160,9 +160,22 @@ static void nv_observe_security_state_once(afl_state_t *afl,
 
   if (ledger_path && *ledger_path) {
 
+    DEBUGF("LEDGER_DEBUG: Reading ledger_path=%s ledger_offset=%lld",
+           ledger_path, (long long)ledger_offset);
     FILE *ledger = fopen(ledger_path, "rb");
-    if (!ledger) { afl->nv_http_status_fail++; return; }
+    if (!ledger) {
+      DEBUGF("LEDGER_DEBUG: fopen failed: %s", strerror(errno));
+      afl->nv_http_status_fail++;
+      return;
+    }
+
+    /* Check file size to diagnose EOF issues */
+    fseek(ledger, 0, SEEK_END);
+    long file_size = ftell(ledger);
+    DEBUGF("LEDGER_DEBUG: file_size=%ld bytes", file_size);
+
     if (fseeko(ledger, ledger_offset, SEEK_SET) != 0) {
+      DEBUGF("LEDGER_DEBUG: fseeko failed");
       fclose(ledger);
       afl->nv_http_status_fail++;
       return;
@@ -173,25 +186,28 @@ static void nv_observe_security_state_once(afl_state_t *afl,
     char *cand = NULL;
     size_t cand_len = 0;
     off_t cand_end = -1;
-    for (;;) {
 
-      ssize_t n = getline(&line, &line_cap, ledger);
-      if (n <= 0) break;
+    /* Read only the FIRST complete line, not all remaining lines.
+       The old logic read all lines and kept the last one, causing the offset
+       to overshoot past multiple observations in one read. */
+    ssize_t n = getline(&line, &line_cap, ledger);
+    if (n > 0) {
       off_t line_end = ftello(ledger);
-      if (line[n - 1] != '\n') break;  /* partial tail: wait for completion */
-      if (cand) ck_free(cand);
-      cand = ck_alloc((size_t)n + 1);
-      memcpy(cand, line, (size_t)n);
-      cand[n] = 0;
-      cand_len = (size_t)n;
-      cand_end = line_end;
-
+      if (line[n - 1] == '\n') {  /* complete line */
+        cand = ck_alloc((size_t)n + 1);
+        memcpy(cand, line, (size_t)n);
+        cand[n] = 0;
+        cand_len = (size_t)n;
+        cand_end = line_end;
+      }
     }
     free(line);
     fclose(ledger);
+    DEBUGF("LEDGER_DEBUG: After getline loop: cand=%p cand_len=%zu", cand, cand_len);
     if (!cand || cand_len <= 0 || cand_len > 65536) {
 
       if (cand) ck_free(cand);
+      DEBUGF("LEDGER_DEBUG: No valid candidate line");
       return;
 
     }
@@ -436,10 +452,10 @@ static void nv_observe_security_state_after_execution(
     afl_state_t *afl, const char *path, nv_state_obs_t *obs) {
 
   u64 baseline = afl->nv_last_exec_seq;
-  for (u32 attempt = 0; attempt < 500; ++attempt) {
+  for (u32 attempt = 0; attempt < 1000; ++attempt) {
     nv_observe_security_state_once(afl, path, obs, baseline);
     if (obs->has && (!baseline || obs->exec_seq > baseline)) return;
-    usleep(2000);
+    usleep(5000);
   }
   memset(obs, 0, sizeof(*obs));
   afl->nv_http_status_fail++;
@@ -603,11 +619,18 @@ fsrv_run_result_t __attribute__((hot)) fuzz_run_target(afl_state_t      *afl,
          non-persistent mode (e.g. multipart_upload). This mirrors the
          observation call in common_fuzz_stuff() but runs for every
          fuzz_run_target() completion, ensuring state_trace emission
-         regardless of execution mode. */
-      const char *status_path = getenv("NV_STATUS_PATH");
-      if (status_path && *status_path) {
-        nv_state_obs_t obs;
-        nv_observe_security_state_once(afl, status_path, &obs, 0);
+         regardless of execution mode.
+
+         IMPORTANT: Skip this during fuzzing phase (nv_counted == 1) because
+         common_fuzz_stuff() already reads the observation with proper baseline
+         filtering. Reading twice causes ledger_offset to advance past the
+         observation, making the second read (in common_fuzz_stuff) see EOF. */
+      if (!nv_counted) {
+        const char *status_path = getenv("NV_STATUS_PATH");
+        if (status_path && *status_path) {
+          nv_state_obs_t obs;
+          nv_observe_security_state_once(afl, status_path, &obs, 0);
+        }
       }
 
     }
@@ -2483,7 +2506,15 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
 
     }
 
+    /* Allow harness time to write and flush observation after target exits.
+       The harness process takes 50-150ms to write the ledger entry after the
+       HTTP request completes. Without this delay, AFL++ polls an incomplete
+       ledger and times out with obs.exec_seq=0, triggering invalid_exec_identity. */
+    usleep(150000);  /* 150ms */
+
     nv_observe_security_state_after_execution(afl, sp, &obs);
+    DEBUGF("MAB_DEBUG: After observe: obs.has=%d obs.exec_seq=%llu obs.new_states=%d baseline=%llu",
+           obs.has, obs.exec_seq, obs.new_states, afl->nv_last_exec_seq);
 
   }
 
@@ -2589,6 +2620,8 @@ u8 __attribute__((hot)) common_fuzz_stuff(afl_state_t *afl, u8 *out_buf,
        pending arm that did not complete a verifiable target execution. */
     if (obs.exec_seq == 0) {
 
+      DEBUGF("MAB_DEBUG: obs.exec_seq=0 has=%d new_states=%d validation_reject=%d baseline=%llu",
+             obs.has, obs.new_states, obs.validation_reject, afl->nv_last_exec_seq);
       nv_mab_journal_clear_pending(afl, "invalid_exec_identity");
       return 0;
 
