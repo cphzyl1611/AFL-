@@ -2594,8 +2594,10 @@ def launch_bounded_afl(
     pass_quoted = quote_for_afl_target_env(env["ALFRESCO_PASS"])
 
     # R47: Add NV runtime paths so harness can write status/probe/state files
+    # R49: Add NV_TARGET_CONFIG, NV_ENDPOINT_NAME, NV_BODY_RULES to propagate config
     nv_vars = []
-    for key in ["NV_STATUS_PATH", "NV_PROBE_PATH", "NV_STATE_DB", "NV_STATE_TRACE_PATH",
+    for key in ["NV_TARGET_CONFIG", "NV_ENDPOINT_NAME", "NV_BODY_RULES",
+                "NV_STATUS_PATH", "NV_PROBE_PATH", "NV_STATE_DB", "NV_STATE_TRACE_PATH",
                 "NV_CTX_PATH", "NV_ERR_DIR", "NV_BODY_VALID_STATS", "NV_MAB_JOURNAL_PATH",
                 "NV_EXECUTION_LEDGER_PATH", "NV_MULTIPART_UPLOADS_PATH"]:
         if key in env:
