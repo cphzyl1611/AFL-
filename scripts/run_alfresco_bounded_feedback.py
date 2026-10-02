@@ -745,7 +745,7 @@ def build_task_payload(
         "mutation_scope": canonical_scope,
         "max_test_cases": int(max_test_cases),
         "time_budget": int(time_budget),
-        "enable_validity": 0 if scenario == "multipart_upload" else 1,
+        "enable_validity": 1,  # All scenarios now support validity filtering
     }
     if scenario == "multipart_upload":
         payload.update({
