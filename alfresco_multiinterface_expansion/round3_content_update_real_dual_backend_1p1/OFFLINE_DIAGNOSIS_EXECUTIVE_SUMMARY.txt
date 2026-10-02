@@ -1,0 +1,87 @@
+═══════════════════════════════════════════════════════════════════════════════
+OFFLINE SE DIAGNOSIS — EXECUTIVE SUMMARY
+Alfresco content_update Dual-Backend 1+1 Pilot SE Failure
+Generated: 2026-09-24
+═══════════════════════════════════════════════════════════════════════════════
+
+ROOT CAUSE: TRAINING DISTRIBUTION DEFECT
+═════════════════════════════════════════
+
+The canonical SE model (sefanogan_es_reference) has a zero-variance defect in
+feature dimension 10 (invalid_type_count) that causes catastrophic normalization
+failure when scoring content_update inputs.
+
+CLASSIFICATION: B — THRESHOLD MISMATCH / TRAINING DISTRIBUTION MISMATCH
+
+KEY FINDINGS
+════════════
+
+1. ZERO-VARIANCE FEATURE DIMENSION
+   - Training std[10] = 1e-8 (effectively zero)
+   - All 9 training samples had invalid_type_count=0.0
+   - Seed has invalid_type_count=1.0
+   - Normalization: z[10] = (1.0 - 0.0) / 1e-8 = 10^8
+
+2. CATASTROPHIC SCORING
+   - Seed score: 14,787,520
+   - Threshold: 1.28
+   - Margin: 10^7× above threshold (unbridgeable)
+   - All 5 SE candidates rejected (0 valid executions)
+
+3. MODEL OPERATIONAL STATUS
+   - Technical function: CORRECT (RPC succeeds, checkpoint loads)
+   - Mathematical capability: DEFECTIVE (cannot handle invalid_type_count≠0.0)
+   - Operational status: UNUSABLE for content_update scenario
+
+4. AE VS SE COMPARISON
+   - AE: 5/5 valid executions, HTTP 200, artifact contract PASS
+   - SE: 0/5 valid executions, all rejected, artifact contract FAIL
+
+IMMEDIATE VERDICT
+═════════════════
+
+ALFRESCO_CONTENT_UPDATE_REAL_DUAL_BACKEND_1P1_VERDICT = FAIL_SE_MODEL_TOO_RESTRICTIVE
+
+Cannot proceed with:
+  ✗ Threshold adjustment (gap is 10^7, mathematically unbridgeable)
+  ✗ Seed change (violates frozen protocol)
+  ✗ Quick fix (training data defect, not implementation bug)
+
+RECOMMENDED PATH FORWARD
+═════════════════════════
+
+PRIMARY: Accept AE-only validation (PATH 3) + Initiate SE retrain (PATH 1)
+
+PATH 3 (IMMEDIATE):
+  - Mark content_update as "SE incompatible" for current model
+  - Proceed with AE-validated results (5/5 executions verified)
+  - Document zero-variance defect in evidence package
+  - Preserve all evidence for post-retrain comparison
+
+PATH 1 (PARALLEL, 2-4 WEEKS):
+  - Expand training set with invalid_type_count ∈ [0, 1, 2+]
+  - Add variance floor (ε=1e-6) to normalization: σ_safe = max(σ, ε)
+  - Retrain f-AnoGAN on corrected distribution
+  - Generate new canonical checkpoint + threshold
+  - Re-freeze protocol with new SE authority
+
+RATIONALE:
+  - Frozen constraints prevent immediate fixes
+  - SE defect is fundamental (training data issue)
+  - AE validation complete and verified
+  - Blocking on SE retrain delays all downstream work
+  - SE retrain required for ANY operational deployment
+
+CONSTRAINT ADHERENCE
+════════════════════
+
+✓ All analysis performed OFFLINE (no reruns)
+✓ No model changes, seed changes, threshold changes
+✓ No source/test modifications, no commits/pushes
+✓ Used only preserved evidence + canonical artifacts
+
+NEXT GATE: ENGINEERING_DECISION_REQUIRED
+
+Full technical details in: OFFLINE_SE_ROOT_CAUSE_DIAGNOSIS_FINAL.txt
+
+═══════════════════════════════════════════════════════════════════════════════

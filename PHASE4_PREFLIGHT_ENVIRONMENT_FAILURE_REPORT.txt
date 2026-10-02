@@ -1,0 +1,103 @@
+PHASE 4 FORMAL EXECUTION — PREFLIGHT ENVIRONMENT FAILURE REPORT
+
+DATE: 2026-09-21
+EXECUTION_FREEZE_COMMITMENT: fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+=== PREFLIGHT VERIFICATION STATUS ===
+
+STEP 0 — EXECUTION FREEZE VERIFICATION: PASS
+  ✓ ALL_SHA256SUMS_VERIFY = PASS
+  ✓ ALL_JSON_PARSE = PASS
+  ✓ FORMAL_SEED_COUNT = 30
+  ✓ UNIQUE_FORMAL_SEEDS = 30
+  ✓ AE_FIRST_BLOCKS = 15
+  ✓ SE_FIRST_BLOCKS = 15
+  ✓ PAIR_SCHEDULE_SEED_SET_MATCH = YES
+
+STEP 1 — COMPOSITE SOURCE SNAPSHOT: PASS
+  ✓ HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+  ✓ RUNNER_SHA256 = 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+  ✓ TRACKED_DIFF_SHA256 = 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+
+STEP 2 — RUNTIME ENVIRONMENT: PASS
+  ✓ ALFRESCO_USER = present
+  ✓ ALFRESCO_PASS = present
+  ✓ SEFANOGAN_REFERENCE_CHECKPOINT = present
+  ✓ SEFANOGAN_REFERENCE_META_PATH = present
+  ✓ SE checkpoint SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  ✓ SE metadata SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  ✓ SE metadata input_dim = 32
+  ✓ AE backend = alfresco_ae_v1
+  ✓ AE threshold = 1.623614
+  ✓ SE backend = sefanogan_es_reference
+  ✓ SE threshold = 1.2847454080581664
+
+STEP 3 — TARGET READINESS: PASS
+  ✓ DOCKER_DAEMON_REACHABLE = YES
+  ✓ ALFRESCO_MAIN_CONTEXT_READY = YES
+  ✓ ALFRESCO_REAL_API_STATUS = HTTP_200
+
+STEP 4 — FROZEN SCHEDULE LOADED: PASS
+  ✓ 30 blocks loaded
+  ✓ Budget loaded: max_test_cases=5, time_budget=60s, scorer_ready_timeout=10s
+
+=== BLOCK 1 EXECUTION ATTEMPT ===
+
+Block: 1
+Seed: 1120356083
+Order: AE-first
+First backend: alfresco_ae_v1
+Run root: out/PHASE4_FORMAL_EXECUTION_20260921_151239/block_01/ae
+
+Command:
+python scripts/run_alfresco_bounded_feedback.py \
+  --scenario metadata_update \
+  --afl-seed 1120356083 \
+  --max-test-cases 5 \
+  --time-budget 60 \
+  --scorer-ready-timeout 10 \
+  --validity-backend alfresco_ae_v1 \
+  --model-comparison \
+  --run-root out/PHASE4_FORMAL_EXECUTION_20260921_151239/block_01/ae
+
+RESULT: EXIT CODE 2
+ERROR: MODEL_COMPARISON_REQUIRES_SCORER_PYTHON
+
+=== ROOT CAUSE ===
+
+The runner script requires the SCORER_PYTHON environment variable when --model-comparison is enabled.
+This variable must point to the Python interpreter that can import the scoring backend modules.
+
+MISSING ENVIRONMENT VARIABLE: SCORER_PYTHON
+
+This requirement was NOT explicitly documented in the execution freeze package.
+
+=== VERDICT ===
+
+PHASE4_FORMAL_EXECUTION_VERDICT = ABORTED_PREFLIGHT_ENVIRONMENT_FAILURE
+FORMAL_EXECUTION_STATUS = BLOCKED_PENDING_HUMAN_ADJUDICATION
+COMPLETED_BLOCKS = 0
+VALID_AE_RUNS = 0
+VALID_SE_RUNS = 0
+TOTAL_VALID_RUNS = 0
+FAIL_FAST_TRIGGERED = YES
+FAIL_FAST_BLOCK = 1
+FAIL_FAST_REASON = MISSING_REQUIRED_ENVIRONMENT_VARIABLE_SCORER_PYTHON
+
+=== REQUIRED ACTION ===
+
+Human must:
+1. Set SCORER_PYTHON environment variable to appropriate Python interpreter path
+2. Verify the variable is set correctly: echo $SCORER_PYTHON
+3. Re-authorize execution with corrected environment
+
+No source code changes required.
+No schedule changes required.
+No threshold changes required.
+Only environment configuration required.
+
+=== EXECUTION TIMELINE ===
+
+Preflight verification: PASS (Steps 0-4)
+Block 1 attempt: FAIL (preflight environment)
+Campaign status: ABORTED before first valid run

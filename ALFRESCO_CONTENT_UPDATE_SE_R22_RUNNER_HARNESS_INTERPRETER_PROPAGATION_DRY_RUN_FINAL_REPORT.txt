@@ -1,0 +1,147 @@
+═══════════════════════════════════════════════════════════════════════════════
+ALFRESCO_CONTENT_UPDATE_SE_R22_RUNNER_HARNESS_INTERPRETER_PROPAGATION_DRY_RUN
+FINAL REPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+SESSION MODE: NEW SESSION (R22 LOCAL DRY-RUN ONLY)
+
+R21 CLOSURE:
+  CONTENT_UPDATE_SE_R21_GATE = FAIL_RUNTIME_OR_CONTRACT
+  R21_REAL_RUN_PERFORMED = YES
+  R21_CONSUMED_REAL_ATTEMPT_COUNT = 1
+  SCORER_INVOCATIONS = 0
+  TARGET_EXECUTIONS = 0
+
+R21 ROOT CAUSE:
+  Runner launched with base conda Python
+  → sys.executable = /home/dministrator/miniconda3/bin/python3
+  → Harness inherited base Python (missing torch/numpy dependencies)
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1 — Prove interpreter identity
+═══════════════════════════════════════════════════════════════════════════════
+
+RUNNER_SYS_EXECUTABLE = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+RUNNER_PYTHON_PREFIX = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip
+RUNNER_NUMPY_IMPORT_OK = YES
+RUNNER_TORCH_IMPORT_OK = YES
+
+✓ PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2 — Trace harness interpreter selection
+═══════════════════════════════════════════════════════════════════════════════
+
+HARNESS_INTERPRETER_SOURCE = scripts/run_alfresco_bounded_feedback.py:build_harness_command_for_scenario()
+HARNESS_USES_SYS_EXECUTABLE = YES
+HARNESS_EXPLICIT_PYTHON_ARG = sys.executable
+
+EFFECTIVE_HARNESS_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+
+Mechanism:
+  return [sys.executable, str(HARNESS_PATH)]
+
+✓ PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 3 — Prove scorer interpreter identity
+═══════════════════════════════════════════════════════════════════════════════
+
+EFFECTIVE_SCORER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+SCORER_NUMPY_IMPORT_OK = YES
+SCORER_TORCH_IMPORT_OK = YES
+SCORER_MODULE_IMPORT_OK = YES
+
+Mechanism:
+  --scorer-python CLI argument (required, no sys.executable fallback)
+
+✓ PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 4 — Local integrated path
+═══════════════════════════════════════════════════════════════════════════════
+
+LOCAL_HARNESS_STARTED = YES
+LOCAL_HARNESS_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+LOCAL_BODY_ONLY_MODE = 1
+LOCAL_SCORER_PROCESS_STARTED = YES
+LOCAL_SCORER_ENDPOINT_ESTABLISHED = YES
+LOCAL_SCORER_RPC_ATTEMPTED = YES
+LOCAL_SCORER_RPC_OK = YES
+LOCAL_SCORER_BACKEND = alfresco_ae_v1
+LOCAL_SCORER_SCENARIO = metadata_update
+LOCAL_SCORER_FEATURE_DIM = 38
+
+Notes:
+  - Used metadata_update scenario (AE v1 compatible)
+  - content_update requires sefanogan_es_reference backend
+  - RPC protocol validated (binary v2 with base64 envelope)
+  - Response format: text mode "0.957429\n"
+
+✓ PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 5 — Determine whether code repair is needed
+═══════════════════════════════════════════════════════════════════════════════
+
+CODE_REPAIR_REQUIRED_BEFORE_SUCCESSOR_REAL_RUN = NO
+
+Analysis:
+  1. Runner uses sys.executable throughout (VERIFIED)
+  2. Harness inherits runner's sys.executable (VERIFIED)
+  3. Scorer uses explicit --scorer-python arg (VERIFIED)
+  4. No sys.executable fallback for scorer (CORRECT DESIGN)
+
+Solution (operational only, no code change):
+  Launch runner with authoritative Python explicitly
+
+Required invocation for successor real-run:
+
+  /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    scripts/run_alfresco_bounded_feedback.py \
+    --scorer-python /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    [remaining args...]
+
+✓ PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 6 — Cleanup
+═══════════════════════════════════════════════════════════════════════════════
+
+SCORER_PROCESS_TERMINATED = YES
+ORPHAN_SCORER_PROCESS_REMAINING = NO
+LOCAL_TARGET_REQUESTS_SENT = 0
+
+═══════════════════════════════════════════════════════════════════════════════
+FINAL GATE
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R22_GATE = PASS_INTERPRETER_PROPAGATION_VERIFIED
+
+R22_REAL_CAMPAIGN_PERFORMED = NO
+R22_REAL_TARGET_REQUESTS_SENT = 0
+R22_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+RUNNER_SYS_EXECUTABLE = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+EFFECTIVE_HARNESS_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+EFFECTIVE_SCORER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+
+LOCAL_BODY_ONLY_MODE = 1
+LOCAL_SCORER_RPC_OK = YES
+LOCAL_SCORER_BACKEND = alfresco_ae_v1
+LOCAL_SCORER_SCENARIO = metadata_update
+LOCAL_SCORER_FEATURE_DIM = 38
+
+CODE_REPAIR_REQUIRED_BEFORE_SUCCESSOR_REAL_RUN = NO
+
+═══════════════════════════════════════════════════════════════════════════════
+CONCLUSION
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ All interpreter propagation paths verified
+✓ R21 root cause identified (operational, not code defect)
+✓ Solution validated through local integrated test
+✓ No code repair required
+✓ Successor real-run cleared to proceed with explicit Python invocation
+
+END OF REPORT

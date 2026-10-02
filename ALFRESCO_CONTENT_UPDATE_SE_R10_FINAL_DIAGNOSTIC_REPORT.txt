@@ -1,0 +1,244 @@
+================================================================================
+ALFRESCO CONTENT_UPDATE SE R10 TARGET CONFIG AND SERVICE RECOVERY
+FINAL DIAGNOSTIC REPORT
+================================================================================
+
+EXECUTION DATE: 2026-09-25
+TASK: ALFRESCO_CONTENT_UPDATE_SE_TARGET_CONFIG_AND_SERVICE_RECOVERY_R10
+
+================================================================================
+STEP 1: PREDECESSOR R9B CONTEXT
+================================================================================
+
+R9B Final State (from ALFRESCO_CONTENT_UPDATE_SE_R9B_LIVE_ENVIRONMENT_GATE_REPORT.txt):
+  - CONTENT_UPDATE_SE_R9B_GATE = BLOCKED_LIVE_ENVIRONMENT
+  - HTTP_STATUS = 502 (Bad Gateway)
+  - ALFRESCO_TCP_REACHABLE = NO
+  - ALFRESCO_HTTP_CONTEXT_REACHABLE = YES (but 502)
+  - SE_SCORER_LAUNCH_CONFIGURATION_READY = NO
+  - REQUESTED_BACKEND = NOT_CONFIGURED
+
+R9B Diagnosis:
+  "SE configuration incomplete (validity_endpoint not configured, enable_validity=False)"
+
+R9B Recommended Resolution:
+  - Ensure Alfresco service running at 127.0.0.1:8080
+  - Configure SE parameters in targets/alfresco_content_update.json:
+    * Set "enable_validity": true
+    * Add "validity_endpoint": "<sefanogan_es_reference_socket_path>"
+    * Add "feature_dim": 32
+    * Add "feature_contract": "alfresco_fixed_32"
+
+STATUS: R9B premise was based on architectural misunderstanding
+
+================================================================================
+STEP 2: SERVICE BLOCKER STATUS
+================================================================================
+
+HTTP Status Check:
+  Endpoint: http://127.0.0.1:8080/alfresco/service/api/server
+  HTTP Response: 502 Bad Gateway
+  Root Cause: Alfresco service not running
+  Docker Status: Docker daemon NOT_RUNNING
+
+Service Blocker: CONFIRMED ACTIVE
+  The HTTP 502 response persists from R9B. The backend Alfresco service at
+  127.0.0.1:8080 is unavailable because Docker is not running in this WSL2
+  environment.
+
+Credential Status:
+  ALFRESCO_USER: PRESENT
+  ALFRESCO_PASS: PRESENT
+
+================================================================================
+STEP 3: AUTHORITATIVE SE TARGET-CONFIG CONTRACT
+================================================================================
+
+Architecture Investigation:
+
+1. Target Config Files Checked (5 files):
+   - targets/alfresco_content_update.json
+   - targets/alfresco_metadata_update.json
+   - targets/alfresco_multipart_upload.json
+   - targets/o2oa_query.json
+   - targets/o2oa_create.json
+
+   Finding: NONE contain enable_validity, validity_endpoint, feature_dim, or
+   feature_contract fields.
+
+2. Test Evidence (tests/test_real_alfresco_metadata_ae_se_runner.py):
+   Function: test_c_side_validity_endpoint_not_introduced()
+   Assertion: assert "NV_VALIDITY_ENDPOINT" not in env
+   Comment: "C-side validity_endpoint is NOT introduced as the experiment
+            scorer path. The canonical path is Python body-score RPC, not
+            C validity_endpoint"
+
+3. Runtime Configuration (scripts/run_alfresco_bounded_feedback.py):
+   
+   a) runtime_environment() function (line ~1457):
+      - Sets NV_VALIDITY_BACKEND environment variable
+      - Does NOT set NV_VALIDITY_ENDPOINT
+      - SE backend passed as function parameter, not read from target config
+
+   b) build_task_payload() function (line 711):
+      - Sets "enable_validity": 0 if scenario == "multipart_upload" else 1
+      - This field goes into task.json (runtime), not target config (static)
+
+   c) build_model_comparison_env() function:
+      - Sets NV_BODY_SCORE_ENDPOINT (Unix socket path)
+      - Sets NV_BODY_SCORE_THRESHOLD (score threshold)
+      - These are model-comparison runtime variables, not target config fields
+
+4. Phase 3 Evidence (PHASE3_FINAL_5PLUS5_CAMPAIGN_MANIFEST.json):
+   Configuration section shows backends defined at campaign level:
+   {
+     "backends": {
+       "ae": {"name": "alfresco_ae_v1", ...},
+       "se": {"name": "sefanogan_es_reference", ...}
+     }
+   }
+
+   No validity fields in target config references.
+
+AUTHORITATIVE CONTRACT ESTABLISHED:
+
+  SE Configuration Belongs In:
+    ✓ NV_VALIDITY_BACKEND environment variable (set by Python runner)
+    ✓ enable_validity field in task.json (generated at runtime)
+    ✓ NV_BODY_SCORE_ENDPOINT + NV_BODY_SCORE_THRESHOLD (model-comparison only)
+
+  SE Configuration Does NOT Belong In:
+    ✗ targets/alfresco_content_update.json (static target config)
+    ✗ validity_endpoint field anywhere
+    ✗ feature_dim field in target config
+    ✗ feature_contract field in target config
+
+Architectural Finding:
+  The two-file architecture separates concerns:
+  - targets/*.json: Static endpoint/auth definitions (HTTP API contract)
+  - task.json: Runtime fuzzing parameters (generated per run)
+
+  SE validity configuration is a runtime concern, handled entirely by the
+  Python orchestrator through environment variables and runtime task.json.
+
+CONTRACT VERDICT: targets/alfresco_content_update.json is architecturally
+                  CORRECT AS-IS. No SE fields belong in target configs.
+
+================================================================================
+STEP 4: MINIMAL TARGET-CONFIG REPAIR
+================================================================================
+
+STATUS: SKIPPED
+
+REASON: Step 3 established that the target config requires no modification.
+        The R9B diagnostic incorrectly suggested adding SE fields to the
+        target config. The SE validity path is configured entirely at runtime
+        by the Python orchestrator.
+
+CHANGES PERFORMED: NONE
+
+================================================================================
+STEP 5: OFFLINE CONFIG VALIDATION
+================================================================================
+
+Target Config Structure Check:
+  File: targets/alfresco_content_update.json
+  Required fields present: YES (platform, target_type, base, health, auth,
+                               endpoints, default_endpoint)
+  Incorrect SE fields present: NO
+  Endpoint count: 1
+  Default endpoint: content_update
+  Body-only mode: 0 (full HTTP request/response)
+
+JSON Parsing: VALID
+
+OFFLINE VALIDATION: PASS
+
+================================================================================
+STEP 6: FINAL NON-MUTATING LIVE READINESS
+================================================================================
+
+Non-Mutating Checks Performed:
+
+1. Credential Presence:
+   ALFRESCO_USER: PRESENT
+   ALFRESCO_PASS: PRESENT
+   STATUS: PASS
+
+2. Target Config:
+   File exists: YES
+   JSON valid: YES
+   STATUS: PASS
+
+3. Alfresco Service (health endpoint only, non-mutating):
+   Endpoint: http://127.0.0.1:8080/alfresco/service/api/server
+   HTTP Status: 502
+   Service Status: NOT_RUNNING
+   STATUS: BLOCKED
+
+4. Docker Status:
+   Docker CLI: AVAILABLE
+   Docker daemon: NOT_RUNNING
+   STATUS: BLOCKED
+
+5. SE Artifacts:
+   sefanogan_es_reference_checkpoint.pt: MISSING (wrong filename)
+   sefanogan_es_reference_meta.json: EXISTS
+   sefanogan_es_realrun_threshold.json: EXISTS
+   
+   Note: Checkpoint exists as sefanogan_gan_model.pt but metadata references
+         different SHA256 (205a6a20... vs Phase 3's 4eace87a...)
+   
+   STATUS: CHECKPOINT_MISMATCH
+
+Configuration Readiness: READY
+Service Readiness: BLOCKED
+
+================================================================================
+FINAL VERDICT
+================================================================================
+
+GATE_STATUS = BLOCKED_SERVICE_UNAVAILABLE_AND_CHECKPOINT_MISMATCH
+
+BLOCKING ISSUES:
+1. Alfresco service unavailable (HTTP 502) - Docker daemon not running
+2. SE reference checkpoint mismatch (metadata expects 205a6a20..., Phase 3 used
+   4eace87a...)
+
+PASS REQUIREMENTS MET:
+✓ Credentials present (ALFRESCO_USER, ALFRESCO_PASS)
+✓ Target config structurally valid
+✓ Target config architecturally correct (no SE fields, as intended)
+✓ Target config JSON parseable
+✓ SE metadata files present
+✓ SE threshold artifact present
+
+PASS REQUIREMENTS NOT MET:
+✗ Alfresco service not running (HTTP 502)
+✗ Docker daemon not running
+✗ SE checkpoint file missing or mismatched
+
+R10 TASK OUTCOME:
+
+The R10 task premise was based on an architectural misunderstanding from R9B.
+The target config does NOT require repair - it is correct as-is. SE validity
+configuration belongs in runtime task.json and environment variables, not in
+static target config files.
+
+However, two independent blockers remain:
+1. Service Blocker: Alfresco not running (requires Docker)
+2. Artifact Blocker: SE checkpoint SHA256 mismatch between repository state
+   and Phase 3 campaign evidence
+
+READY_FOR_REAL_SE_AUTHORIZATION = NO
+SOURCE_CHANGES_PERFORMED = NO
+TARGET_CONFIG_CHANGES_PERFORMED = NO
+
+RESOLUTION_REQUIRED:
+1. Start Docker daemon and bring up Alfresco service
+2. Reconcile SE checkpoint artifact provenance (repository has 205a6a20...,
+   Phase 3 campaign used 4eace87a...)
+
+================================================================================
+END OF REPORT
+================================================================================

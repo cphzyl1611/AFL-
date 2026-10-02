@@ -1,0 +1,131 @@
+================================================================================
+STEP 1: PROTOCOL IMPLEMENTATION COMPARISON
+================================================================================
+
+PYTHON PROTOCOL V2 PRODUCER (nv_body_valid.py lines 240-279)
+================================================================
+
+Location: nv_body_valid.py lines 248-258
+Function: Socket communication with scorer (called from validate_body_with_scorer)
+
+REQUEST FORMAT:
+--------------
+Line 248-254: JSON envelope construction
+  envelope = {
+      "scenario": scenario,           # e.g. "content_update"
+      "endpoint": endpoint_name,      # e.g. endpoint identifier
+      "body": base64.b64encode(norm_body).decode("ascii"),  # base64-encoded
+  }
+
+Line 255: JSON serialization
+  payload = json.dumps(envelope, ensure_ascii=True).encode('utf-8')
+
+Line 257-258: Socket send
+  fd.sendall(struct.pack("<I", len(payload)))  # 4-byte little-endian length
+  fd.sendall(payload)                          # JSON envelope
+
+RESPONSE FORMAT:
+--------------
+Line 260-268: Read text response
+  resp = b""
+  while True:
+      chunk = fd.recv(4096)
+      if not chunk: break
+      resp += chunk
+      if len(resp) > 128: break
+
+Line 271-275: Parse as float
+  text = resp.decode("utf-8", errors="ignore").strip()
+  return True, float(text)
+
+
+C LEGACY PRODUCER (src/afl-fuzz-run.c lines 777-856)
+================================================================
+
+Location: src/afl-fuzz-run.c lines 777-856
+Function: nv_validity_rpc_score_unix()
+
+REQUEST FORMAT:
+--------------
+Line 803-808: Length header construction
+  uint32_t n = (uint32_t)len;
+  uint8_t hdr[4];
+  hdr[0] = (uint8_t)(n & 0xff);
+  hdr[1] = (uint8_t)((n >> 8) & 0xff);
+  hdr[2] = (uint8_t)((n >> 16) & 0xff);
+  hdr[3] = (uint8_t)((n >> 24) & 0xff);
+
+Line 810-811: Socket send
+  nv_sendall(fd, hdr, sizeof(hdr))  # 4-byte little-endian length
+  nv_sendall(fd, buf, len)          # RAW BUFFER (entire HTTP request)
+
+RESPONSE FORMAT:
+--------------
+Line 838: Read text response (BLOCKING, NO TIMEOUT)
+  ssize_t r = recv(fd, resp, sizeof(resp) - 1, 0);
+
+Line 841-842: Check for data
+  if (r <= 0) return 0.0;
+  resp[r] = 0;
+
+Line 853-862: Parse as float
+  char *s = resp;
+  while (*s && isspace((unsigned char)*s)) s++;
+  errno = 0;
+  double val = strtod(s, &endp);
+  [validation logic...]
+  if (ok) *ok = 1;
+  return val;
+
+
+FIELD-BY-FIELD COMPARISON
+================================================================================
+
+FIELD                     PYTHON_V2                       C_PRE_REPAIR
+--------------------------------------------------------------------------------
+scenario                  Present in JSON envelope        ABSENT
+                         ("content_update")
+
+endpoint                  Present in JSON envelope        ABSENT
+                         (endpoint_name)
+
+body representation       norm_body (HTTP body only)      buf (entire HTTP request
+                                                          including headers)
+
+body encoding             base64.b64encode()              RAW BYTES (no encoding)
+
+JSON framing              JSON object with 3 fields       NO JSON FRAMING
+                         {"scenario":..., "endpoint":..., "body":...}
+
+socket request format     [4-byte length][JSON string]    [4-byte length][raw bytes]
+
+response format           Text score (same)               Text score (same)
+
+timeout                   fd.settimeout(1.0)              NO TIMEOUT (blocking recv)
+
+
+ROOT MISMATCH
+================================================================================
+
+C sends:
+  [4-byte length][PUT /alfresco/api/.../content HTTP/1.1\nHost: ...\n\n<body>]
+
+Scorer expects (Protocol V2):
+  [4-byte length][{"scenario":"content_update","endpoint":"...","body":"<base64>"}]
+
+Scorer recv_one() tries json.loads() on HTTP request text → JSONDecodeError
+Every RPC fails at deserialization, before any model scoring.
+
+
+PRE_REPAIR_PROTOCOL_MATCH = NO
+================================================================================
+
+Evidence:
+1. C sends raw HTTP request bytes with no JSON wrapper
+2. C does not include scenario field
+3. C does not include endpoint field
+4. C does not base64-encode body
+5. Python sends JSON envelope with all required fields
+6. Python base64-encodes body before transport
+7. Scorer expects Python Protocol V2 format
+8. C Protocol V1 format is incompatible

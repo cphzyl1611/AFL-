@@ -1,0 +1,38 @@
+{
+  "superseded_findings": [
+    {
+      "document": "PHASE3_POST_CAMPAIGN_AUDIT_REPORT.txt",
+      "original_verdict": "D) BLOCKED_SEMANTIC_WORKAROUND",
+      "original_blocking_reason": "SE model identity drift - runtime model differs from canonical",
+      "original_evidence": "Repo-local model files modified after threshold freeze (2026-09-19)",
+      "superseded_by": "PHASE3_FORENSIC_RUNTIME_PROVENANCE_FINAL_VERDICT.txt",
+      "superseding_verdict": "A) SCIENTIFICALLY_VALID",
+      "error_in_original_finding": "Inspected repo-local leftover files instead of verifying runtime environment",
+      "forensic_correction": "Environment variables point to external canonical files with correct hashes",
+      "final_disposition": "FALSE_POSITIVE - Campaign unblocked",
+      "preservation_note": "Original audit preserved as historical evidence showing validation gap"
+    },
+    {
+      "document": "PHASE3_BASELINE_INTEGRITY_FAILURE_REPORT.txt",
+      "issue": "Early preflight validation failures",
+      "resolution": "Resolved during campaign setup",
+      "relevance_to_final_campaign": "Historical record of preflight issues, not relevant to final accepted campaign",
+      "final_disposition": "SUPERSEDED_BY_SUCCESSFUL_CAMPAIGN"
+    },
+    {
+      "document": "PHASE3_PREFLIGHT_FAILURE_REPORT.txt",
+      "issue": "Initial preflight test failures",
+      "resolution": "Fixed before campaign execution",
+      "relevance_to_final_campaign": "Historical record of setup issues",
+      "final_disposition": "SUPERSEDED_BY_SUCCESSFUL_CAMPAIGN"
+    },
+    {
+      "document": "PHASE3_CORRECTED_BASELINE_ANALYSIS.txt",
+      "issue": "Baseline identity analysis during troubleshooting",
+      "resolution": "Established correct baseline identity used in final campaign",
+      "relevance_to_final_campaign": "Intermediate analysis leading to accepted baseline",
+      "final_disposition": "SUPERSEDED_BY_FROZEN_BASELINE_IDENTITY"
+    }
+  ],
+  "note": "These documents are preserved in repository for historical record but do not represent final accepted findings. The forensic audit supersedes the post-campaign audit's blocking verdict."
+}

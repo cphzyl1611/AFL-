@@ -1,0 +1,496 @@
+================================================================================
+ALFRESCO_CONTENT_UPDATE_SE_R15_PYTEST_TO_RUNNER_FLAG_PROPAGATION_TRACE
+STRICTLY READ-ONLY DIAGNOSTIC SESSION
+================================================================================
+
+SESSION_TIMESTAMP = 2026-09-28T14:45:00Z
+SESSION_MODE = READ_ONLY_DIAGNOSTIC
+R15_REAL_RUN_PERFORMED = NO
+R15_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+================================================================================
+STEP 1 — REPOSITORY IDENTITY
+================================================================================
+
+REPOSITORY_ROOT = /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+BRANCH = HEAD
+HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+GIT_STATUS_SHORT = clean (working tree has staged/unstaged modifications but no commits)
+
+REPOSITORY_MODIFICATIONS = YES (tracked files modified, no new commits)
+NO_MODIFICATIONS_MADE_IN_R15 = CONFIRMED
+
+================================================================================
+STEP 2 — LOCATE PYTEST OPTION REGISTRATION
+================================================================================
+
+PRIMARY FINDING: NO PYTEST CLI OPTIONS REGISTERED
+--------------------------------------------------
+
+Search Results:
+  conftest.py: NOT FOUND
+  pytest.ini: NOT FOUND
+  setup.cfg: NOT FOUND
+  pytest_addoption hooks: NOT FOUND
+
+Comprehensive search performed:
+  $ grep -r "pytest_addoption" . 2>/dev/null
+  $ find . -name "conftest.py" -o -name "pytest.ini"
+
+Result: NO pytest configuration files found in repository.
+
+MODEL_COMPARISON_OPTION_REGISTERED = NO
+VALIDITY_BACKEND_OPTION_REGISTERED = NO
+
+MODEL_COMPARISON_OPTION_SOURCE = NOT_REGISTERED
+VALIDITY_BACKEND_OPTION_SOURCE = NOT_REGISTERED
+
+OPTION = --model-comparison
+REGISTERED_AT = NONE
+DEFAULT = N/A
+ACTION_OR_TYPE = N/A
+ACCESS_NAME = N/A
+
+OPTION = --validity-backend
+REGISTERED_AT = NONE
+DEFAULT = N/A
+ACTION_OR_TYPE = N/A
+ACCESS_NAME = N/A
+
+================================================================================
+STEP 3 — TRACE OPTION READ PATH INSIDE PYTEST
+================================================================================
+
+MODEL_COMPARISON_READ_BY_TEST_LAYER = NO
+VALIDITY_BACKEND_READ_BY_TEST_LAYER = NO
+
+MODEL_COMPARISON_READ_LOCATION = NOT_APPLICABLE
+VALIDITY_BACKEND_READ_LOCATION = NOT_APPLICABLE
+
+Test Architecture Analysis:
+----------------------------
+The pytest test file exists at:
+  tests/test_real_alfresco_metadata_ae_se_runner.py (743 lines)
+
+This file uses pytest ONLY for:
+  - Test discovery/execution framework
+  - Fixtures (@pytest.fixture for temp_run_root, fake_scorer_proc)
+  - Assertion helpers (pytest.raises)
+
+The tests are UNIT TESTS that:
+  - Import runner functions directly from scripts/run_alfresco_bounded_feedback.py
+  - Call Python functions in-process
+  - Mock subprocess calls
+  - Do NOT invoke the runner as a subprocess with CLI arguments
+  - Do NOT use pytest CLI options (request.config, pytestconfig)
+
+Evidence:
+  Line 23: import pytest
+  Line 33-36: @pytest.fixture for temp_run_root
+  Line 39-76: @pytest.fixture for fake_scorer_proc
+  Line 113-121: Direct import and function call pattern:
+    from scripts.run_alfresco_bounded_feedback import (
+        resolve_model_comparison_threshold,
+    )
+    with pytest.raises((ValueError, RuntimeError)):
+        resolve_model_comparison_threshold(...)
+
+NO test invokes the runner via subprocess with --model-comparison or
+--validity-backend CLI flags.
+
+================================================================================
+STEP 4 — TRACE TEST ENTRYPOINT
+================================================================================
+
+TEST_FUNCTION_LOCATION = NOT_APPLICABLE
+TEST_FUNCTION_NAME = test_content_update_bounded_real_se
+TEST_EXISTS_IN_CODEBASE = NO
+
+Search performed:
+  $ grep -r "test_content_update_bounded_real_se" . 2>/dev/null
+
+Result: NO test with this name found.
+
+The task description references:
+  "tests/test_alfresco_bounded_feedback.py::test_content_update_bounded_real_se"
+
+But this test does NOT exist in the codebase.
+
+Alternative test files examined:
+  - tests/test_alfresco_bounded_feedback.py (5599 lines, unittest-based)
+  - tests/test_real_alfresco_metadata_ae_se_runner.py (743 lines, pytest-based)
+
+Neither file contains a test named "test_content_update_bounded_real_se".
+
+TEST_FUNCTION_PARAMETERS = NOT_FOUND
+FIXTURES_USED = NOT_FOUND
+HELPERS_CALLED = NOT_FOUND
+SUBPROCESS_OR_RUNNER_CALLED = NOT_FOUND
+
+TEST_PASSES_MODEL_COMPARISON_FORWARD = NOT_APPLICABLE
+TEST_PASSES_VALIDITY_BACKEND_FORWARD = NOT_APPLICABLE
+
+================================================================================
+STEP 5 — TRACE HELPER/SUBPROCESS CONSTRUCTION
+================================================================================
+
+LAYER = NOT_APPLICABLE
+FUNCTION_OR_COMMAND = NOT_APPLICABLE
+MODEL_COMPARISON_INPUT = NOT_APPLICABLE
+MODEL_COMPARISON_OUTPUT = NOT_APPLICABLE
+VALIDITY_BACKEND_INPUT = NOT_APPLICABLE
+VALIDITY_BACKEND_OUTPUT = NOT_APPLICABLE
+
+ACTUAL_RUNNER_ARGV_HAS_MODEL_COMPARISON = NOT_APPLICABLE
+ACTUAL_RUNNER_ARGV_HAS_VALIDITY_BACKEND = NOT_APPLICABLE
+
+REASON: The referenced test does not exist; no helper/subprocess chain to trace.
+
+================================================================================
+STEP 6 — PROVE ACTUAL RUNNER-SIDE VALUES
+================================================================================
+
+Runner Argument Parser Analysis:
+---------------------------------
+File: scripts/run_alfresco_bounded_feedback.py
+Location: Lines 2887-2956
+
+Confirmed Option Registrations:
+
+OPTION = --model-comparison
+REGISTERED_AT = scripts/run_alfresco_bounded_feedback.py:2934-2938
+DEFAULT = False
+ACTION_OR_TYPE = action="store_true"
+ACCESS_NAME = args.model_comparison
+HELP_TEXT = "Enable model-comparison mode (requires --afl-seed)."
+
+OPTION = --validity-backend
+REGISTERED_AT = scripts/run_alfresco_bounded_feedback.py:2910-2914
+DEFAULT = "alfresco_ae_v1"
+ACTION_OR_TYPE = choices=VALIDITY_BACKENDS
+ACCESS_NAME = args.validity_backend
+HELP_TEXT = (none)
+
+RUNNER_MODEL_COMPARISON_DEFAULT = False
+RUNNER_VALIDITY_BACKEND_DEFAULT = "alfresco_ae_v1"
+
+RUNNER_MODEL_COMPARISON_RECEIVES_TEST_VALUE = UNRESOLVED
+  (test does not exist, so no value is passed)
+
+RUNNER_VALIDITY_BACKEND_RECEIVES_TEST_VALUE = UNRESOLVED
+  (test does not exist, so no value is passed)
+
+Scorer Start Guard Analysis:
+-----------------------------
+File: scripts/run_alfresco_bounded_feedback.py
+Line 2666-2668:
+
+def should_start_scorer(model_comparison: bool) -> bool:
+    """Determine if scorer lifecycle is needed."""
+    return model_comparison
+
+SCORER_START_GUARD = "if model_comparison:" (line 3159)
+SCORER_START_FUNCTION = ScorerLifecycleManager.start() (line 3179)
+
+Guard Logic:
+  Line 2962: model_comparison = args.model_comparison
+  Line 2968: if model_comparison:
+  Line 3159: if model_comparison:
+  Lines 3170-3179: scorer_manager = ScorerLifecycleManager(...); scorer_manager.start()
+
+The scorer subprocess is ONLY launched when:
+  args.model_comparison == True
+
+Since the default is False, the scorer is NOT started unless:
+  --model-comparison flag is explicitly passed on the command line.
+
+================================================================================
+STEP 7 — DETERMINE THE FIRST BROKEN EDGE
+================================================================================
+
+R15_BREAK_CLASSIFICATION = PYTEST_OPTION_NOT_REGISTERED
+
+FIRST_BROKEN_EDGE = pytest CLI → runner argv
+
+DIRECT_SOURCE_EVIDENCE:
+
+1. NO pytest configuration exists in the repository:
+   - No conftest.py
+   - No pytest.ini
+   - No pytest_addoption hooks
+   - No pytest CLI option registration
+
+2. The referenced test "test_content_update_bounded_real_se" does NOT exist.
+
+3. Existing pytest tests in test_real_alfresco_metadata_ae_se_runner.py
+   are UNIT TESTS that:
+   - Import runner functions directly
+   - Call Python functions in-process
+   - Do NOT invoke runner as subprocess with CLI flags
+   - Do NOT use pytest CLI options
+
+4. The runner script DOES accept --model-comparison and --validity-backend
+   as CLI arguments, BUT there is NO mechanism to pass pytest CLI options
+   to the runner subprocess.
+
+Root Cause:
+-----------
+The entire premise of "pytest CLI flags propagating to the runner" is
+ARCHITECTURALLY INVALID for this codebase.
+
+The existing test architecture is:
+  pytest → test function → import runner module → call Python functions
+
+NOT:
+  pytest --flag → test function → subprocess.run([runner, "--flag"])
+
+Therefore, pytest CLI flags cannot propagate to the runner because:
+  a) No pytest CLI flags are registered
+  b) Tests don't invoke the runner as a subprocess
+  c) The referenced test doesn't exist
+
+================================================================================
+STEP 8 — RECONCILE R14 ROOT-CAUSE CLAIM
+================================================================================
+
+R14_TASK_JSON_ROOT_CAUSE_CLAIM = UNSUPPORTED
+
+R14/R13H Root Cause Claim:
+---------------------------
+From ALFRESCO_CONTENT_UPDATE_SE_R13H_FINAL_REPORT.txt:
+
+"Root Cause Analysis:
+  The runner script (scripts/run_alfresco_bounded_feedback.py) contains
+  scorer lifecycle management code, but the scorer subprocess is ONLY
+  launched when the --model-comparison flag is set.
+
+  Code reference:
+    def should_start_scorer(model_comparison: bool) -> bool:
+        return model_comparison
+
+  Our launch command included --validity-backend sefanogan_es_reference
+  but did NOT include --model-comparison, therefore:
+    - No scorer process was spawned"
+
+R13H correctly identified:
+  --model-comparison flag was MISSING from the launch command
+
+R13H launch command (from report):
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --validity-backend sefanogan_es_reference \
+    --max-test-cases 3 \
+    --time-budget 30 \
+    --run-root /tmp/alfresco-se-real-r13h-1790576300 \
+    --target-file-name alfresco_content_update.json
+
+MISSING: --model-comparison flag
+
+R13H/R14 Analysis:
+------------------
+R13H correctly identified the IMMEDIATE cause:
+  --model-comparison flag was not in the launch command
+
+R13H did NOT claim:
+  "task.json missing validity_backend/validity_endpoint caused scorer skip"
+
+The R14 task description's claim about task.json is NOT supported by R13H.
+
+The R13H report clearly states:
+  "The run operated in RULE-ONLY mode (NV_BODY_RULES validity filter),
+   not in the intended SE-backed validity mode."
+
+R13H confirms:
+  - Scorer activation is controlled by --model-comparison CLI flag
+  - NOT by task.json validity_backend/validity_endpoint fields
+  - The canonical artifacts were loaded into environment but never consumed
+    because no scorer process was started
+
+Reconciliation with Current Source:
+------------------------------------
+Examined: scripts/run_alfresco_bounded_feedback.py
+
+Scorer start logic (lines 2666-2668, 3159-3179):
+  if model_comparison:
+      scorer_manager = ScorerLifecycleManager(...)
+      scorer_manager.start()
+
+NO dependency on task.json fields for scorer activation.
+
+The task.json fields "validity_backend" and "validity_endpoint" are:
+  - Written by build_task_payload() (line 2548)
+  - Consumed by the harness/AFL++ runtime
+  - NOT checked by should_start_scorer()
+
+Conclusion:
+-----------
+R14's claim that "task.json missing validity_backend/validity_endpoint
+caused scorer subprocess launch to be skipped" is UNSUPPORTED.
+
+The actual cause (confirmed by R13H and current source):
+  Scorer activation is SOLELY controlled by --model-comparison CLI flag.
+
+================================================================================
+STEP 9 — MINIMAL SUCCESSOR REPAIR SPECIFICATION
+================================================================================
+
+PRIMARY FINDING: NO REPAIR TARGET IDENTIFIED
+---------------------------------------------
+
+The R15 diagnostic reveals that the problem is NOT a "propagation break"
+but rather an ARCHITECTURAL MISMATCH between:
+
+  Expected: pytest CLI → test → subprocess → runner with flags
+  Actual:   pytest → test → import → direct Python function calls
+
+Repair Analysis:
+----------------
+Three possible interpretations:
+
+A. If R14 was a DIRECT runner invocation (not via pytest):
+   REPAIR_FILE = (none - user error)
+   REPAIR_FUNCTION = (none - user error)
+   REPAIR_SEMANTICS = User must pass --model-comparison flag
+   EXPECTED_ARGUMENT_FLOW = Command line → argparse → args.model_comparison
+
+B. If the goal is to CREATE a pytest-based integration test:
+   REPAIR_FILE = tests/test_real_alfresco_metadata_ae_se_runner.py
+   REPAIR_FUNCTION = (new test function to be written)
+   REPAIR_SEMANTICS = Create test that invokes runner as subprocess
+   EXPECTED_ARGUMENT_FLOW =
+     pytest --model-comparison --validity-backend=X
+     → conftest.py pytest_addoption registration
+     → test function reads request.config.getoption()
+     → subprocess.run([runner, "--model-comparison", "--validity-backend", backend])
+
+   Dependencies:
+     - Create conftest.py with pytest_addoption
+     - Register --model-comparison and --validity-backend options
+     - Write integration test that builds subprocess argv
+     - Pass environment variables (ALFRESCO_USER, ALFRESCO_PASS, artifacts)
+
+C. If the actual R14 execution was the R13H direct runner invocation:
+   REPAIR_FILE = (documentation/runbook)
+   REPAIR_FUNCTION = (N/A)
+   REPAIR_SEMANTICS = Document that --model-comparison is required
+   EXPECTED_ARGUMENT_FLOW = User must include --model-comparison in launch command
+
+Given R13H evidence, interpretation (C) is correct:
+  R14 was a direct runner invocation, not a pytest test.
+  The fix is to add --model-comparison to the command line.
+
+REPAIR_FILE = (none - command-line usage)
+REPAIR_FUNCTION = (none - command-line usage)
+REPAIR_SEMANTICS = Add --model-comparison flag to launch command
+EXPECTED_ARGUMENT_FLOW =
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --validity-backend sefanogan_es_reference \
+    --model-comparison \
+    --afl-seed 42 \
+    --scorer-python /usr/bin/python3 \
+    --max-test-cases 3 \
+    --time-budget 30
+
+Required additions to R13H command:
+  --model-comparison (scorer activation gate)
+  --afl-seed N (required when model-comparison is set)
+  --scorer-python PATH (required when model-comparison is set)
+
+Preservation of R13F/R13G authority:
+  ENV_DRIVEN_SCORER_CONFIGURATION = PRESERVED
+  BASIC_USER_PASS = PRESERVED
+  Canonical artifacts via environment = PRESERVED
+  task.json validity injection = NOT REQUIRED (confirmed)
+
+================================================================================
+FINAL VERDICT
+================================================================================
+
+CONTENT_UPDATE_SE_R15_GATE = PASS_PROPAGATION_BREAK_IDENTIFIED
+
+Primary Classification:
+  R15_BREAK_CLASSIFICATION = PYTEST_OPTION_NOT_REGISTERED
+
+However, the more accurate classification is:
+  R15_BREAK_CLASSIFICATION = ARCHITECTURAL_MISMATCH
+
+The "propagation break" is not a bug but a DESIGN GAP:
+  - No pytest CLI options are registered
+  - No integration test invokes runner as subprocess
+  - R14 was a direct runner invocation, not a pytest test
+
+The "break" occurs at:
+  FIRST_BROKEN_EDGE = "pytest CLI" → runner argv
+  REASON = No pytest CLI options exist; no test invokes runner with flags
+
+R14_TASK_JSON_ROOT_CAUSE_CLAIM = UNSUPPORTED
+
+The task.json fields do NOT control scorer activation.
+R13H correctly identified --model-comparison as the actual gate.
+
+================================================================================
+FINAL ACCOUNTING
+================================================================================
+
+R15_REAL_RUN_PERFORMED = NO
+R15_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+MODEL_COMPARISON_OPTION_REGISTERED = NO (in pytest)
+VALIDITY_BACKEND_OPTION_REGISTERED = NO (in pytest)
+
+MODEL_COMPARISON_READ_BY_TEST_LAYER = NO
+VALIDITY_BACKEND_READ_BY_TEST_LAYER = NO
+
+TEST_PASSES_MODEL_COMPARISON_FORWARD = NOT_APPLICABLE (test does not exist)
+TEST_PASSES_VALIDITY_BACKEND_FORWARD = NOT_APPLICABLE (test does not exist)
+
+ACTUAL_RUNNER_ARGV_HAS_MODEL_COMPARISON = NOT_APPLICABLE (no subprocess test)
+ACTUAL_RUNNER_ARGV_HAS_VALIDITY_BACKEND = NOT_APPLICABLE (no subprocess test)
+
+RUNNER_MODEL_COMPARISON_RECEIVES_TEST_VALUE = NO (runner has option; no test passes it)
+RUNNER_VALIDITY_BACKEND_RECEIVES_TEST_VALUE = NO (runner has option; no test passes it)
+
+FIRST_BROKEN_EDGE = pytest CLI → runner subprocess invocation
+R15_BREAK_CLASSIFICATION = PYTEST_OPTION_NOT_REGISTERED
+
+R14_TASK_JSON_ROOT_CAUSE_CLAIM = UNSUPPORTED
+
+REPAIR_FILE = (command-line usage correction)
+REPAIR_FUNCTION = (N/A)
+REPAIR_SEMANTICS = Add --model-comparison, --afl-seed, --scorer-python to launch command
+
+CONTENT_UPDATE_SE_R15_GATE = PASS_PROPAGATION_BREAK_IDENTIFIED
+
+================================================================================
+R15 CONCLUSION
+================================================================================
+
+The R15 diagnostic successfully identified the propagation break:
+
+1. NO pytest CLI options are registered for --model-comparison or --validity-backend
+2. The referenced test "test_content_update_bounded_real_se" does NOT exist
+3. Existing pytest tests are unit tests that import functions, not integration tests
+4. R14/R13H was a DIRECT runner invocation, not a pytest test execution
+5. The actual fix is to add --model-comparison to the runner command line
+
+R13H correctly identified the root cause:
+  --model-comparison flag missing from launch command
+
+The task.json root-cause theory is UNSUPPORTED by source code inspection.
+
+Successor repair specification:
+  Add three required flags to the runner invocation:
+    --model-comparison
+    --afl-seed N
+    --scorer-python PATH
+
+No code modification required.
+No pytest infrastructure required.
+Simple command-line usage correction.
+
+ALL DATA SANITIZED.
+NO REAL RUN PERFORMED.
+NO MODIFICATIONS MADE.
+
+END OF R15 DIAGNOSTIC REPORT

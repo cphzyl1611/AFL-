@@ -1,0 +1,316 @@
+========================================================================
+PHASE 3 POST-CAMPAIGN AUDIT REPORT
+========================================================================
+
+Audit Date: 2026-09-21
+Campaign ID: phase3_5plus5_final_20260920_140206
+Audit Scope: Interruption impact and artifact workaround integrity
+Audit Mode: READ-ONLY (no runs, no edits, no commits)
+
+========================================================================
+FINAL VERDICT
+========================================================================
+
+POST_CAMPAIGN_AUDIT_VERDICT = D) BLOCKED_SEMANTIC_WORKAROUND
+
+INTERRUPTION_START = 2026-09-20 14:29:45 (after SE seed 20260916)
+INTERRUPTION_END = 2026-09-20 23:38:30 (before AE seed 20260917)
+INTERRUPTION_DURATION = 9h 8m (32925s)
+INTERRUPTION_OCCURRED_BETWEEN_RUNS = YES
+INTERRUPTION_OVERLAPPED_ACTIVE_RUN = NO
+
+ALL_10_BUDGETS_MATCH = YES
+ALL_10_RUNS_SINGLE_INVOCATION = YES
+ANY_RUN_RESUMED_AFTER_INTERRUPTION = NO
+
+ARTIFACT_WORKAROUND_DESCRIPTION = Manual creation of empty nv_probe.json and nv_state_db.json files after run completion, followed by artifact_report.json regeneration with target_binding preservation
+
+ARTIFACT_WORKAROUND_CLASSIFICATION = NON_SEMANTIC_EVIDENCE_WORKAROUND (but campaign blocked for different reason)
+
+ARTIFACT_WORKAROUND_CHANGED_RUNTIME_MODEL_IDENTITY = YES (indirectly - see below)
+ARTIFACT_WORKAROUND_CHANGED_THRESHOLD = NO
+ARTIFACT_WORKAROUND_CHANGED_SEED_OR_BUDGET = NO
+
+SE_100_PERCENT_REJECT_INTERPRETATION = SCORER_CLASSIFICATION_ONLY_EXECUTION_STILL_COUNTED
+SE_COUNTED_EXECUTIONS_ALL_NONZERO = YES
+SE_REJECTION_COMPATIBLE_WITH_VALID_RUN_CONTRACT = YES
+
+AE_AND_SE_SCORE_SCALES_DIRECTLY_COMPARABLE = NO
+THRESHOLD_NUMERIC_RESTRICTIVENESS_CLAIM = UNSUPPORTED
+
+PHASE3_FINAL_ACCEPTANCE = BLOCKED
+ENGINEERING_VARIANCE_PILOT = BLOCKED
+NEXT_FORMAL_EXPERIMENT_GATE = BLOCKED_UNTIL_MODEL_IDENTITY_RESOLVED
+
+CURRENT_WORKTREE_EDITED = NO
+REAL_ALFRESCO_REQUESTS = NO
+AFL_RUN_EXECUTED = NO
+AE_RUN_EXECUTED = NO
+SE_RUN_EXECUTED = NO
+COMMIT = NO
+PUSH = NO
+
+========================================================================
+BLOCKING ISSUE: MODEL IDENTITY DRIFT
+========================================================================
+
+The campaign is BLOCKED due to SE model identity drift between threshold
+calibration and campaign execution.
+
+Timeline of Critical Events:
+
+  2026-09-17 20:14:33 - Threshold artifact frozen
+                        Embedded canonical hashes:
+                        - se_checkpoint_hash: 4eace87...70dbf20d
+                        - se_metadata_hash: 2a73ccc...ab568226
+
+  2026-09-19 06:46:28 - sefanogan_es_reference.json MODIFIED
+                        New hash: 8d4223f...5d67e7
+                        (DIFFERS from canonical)
+
+  2026-09-19 15:31:33 - sefanogan_es_reference_meta.json MODIFIED
+                        New hash: 44ce99d...bfca5352
+                        (DIFFERS from canonical)
+
+  2026-09-20 14:02:07 - Campaign execution begins
+                        Scorer loads MODIFIED checkpoint/metadata
+
+Impact:
+
+The SE scorer at runtime loaded checkpoint/metadata files whose content
+DIFFERS from the canonical frozen reference embedded in the threshold
+artifact. This means the runtime SE model identity is DIFFERENT from
+the model that was used during threshold calibration.
+
+The validation process verified threshold artifact integrity (SHA256:
+aeae50b9...) but did NOT verify that the runtime-loaded model files
+matched the canonical frozen hashes. This is a validation gap.
+
+Root Cause:
+
+The scorer implementation loads models by FILENAME PATH, not by hash:
+  ReferenceScorer(checkpoint, metadata)
+
+When the checkpoint/metadata files on disk were modified after threshold
+freeze, the scorer loaded the NEW model weights, not the canonical ones.
+
+Why This Invalidates the Campaign:
+
+Model comparison requires that the SE backend uses the EXACT SAME model
+that was calibrated against the AE backend. If the SE model changed after
+calibration, then the threshold (1.2847454080581664) is no longer valid
+for the runtime model, and any comparison to AE is meaningless.
+
+The campaign's claim that "SE threshold more restrictive than AE" cannot
+be validated because we don't know if the runtime SE model is the same
+model that was calibrated to match AE's FRR.
+
+========================================================================
+INTERRUPTION ANALYSIS: NON-BLOCKING
+========================================================================
+
+The 9-hour interruption occurred cleanly BETWEEN completed runs:
+  - Last run before interruption: se_seed_20260916 (ended 14:29:45)
+  - First run after interruption: ae_seed_20260917 (started 23:38:30)
+
+No active fuzzer process was suspended during the interruption.
+All runs completed under single continuous invocations (fastresume.bin present).
+No runs were resumed after interruption.
+
+Interruption Impact: NONE
+
+The interruption does not affect campaign validity. Each run executed
+independently with correct budgets, and no run was interrupted mid-execution.
+
+========================================================================
+ARTIFACT WORKAROUND ANALYSIS: NON-SEMANTIC
+========================================================================
+
+The "artifact workaround" refers to manual creation of empty state probe
+files for all 5 SE runs:
+
+  nv_probe.json: {"ts_ms": 0, "ncov_total": 0, "ncov_delta": 0, "nall": 0}
+  nv_state_db.json: []
+
+This workaround was applied AFTER each SE run completed, to satisfy the
+artifact contract validation requirement.
+
+Root Cause of Workaround:
+
+When ALL executions are validation rejects (body_score_reject=5,
+body_score_pass=0), the state probe never writes files because
+update_state() is never called. The runner's artifact contract expects
+these files (execution_required artifacts), causing exit code 4.
+
+Workaround Impact: NON-SEMANTIC
+
+The workaround only affects EVIDENCE PACKAGING, not runtime behavior:
+  - Applied AFTER run completion (post-run repair)
+  - Did NOT modify source code
+  - Did NOT modify test code
+  - Did NOT modify threshold values
+  - Did NOT modify seeds or budgets
+  - Did NOT change what the fuzzer executed
+
+Classification: NON_SEMANTIC_EVIDENCE_WORKAROUND
+
+If the model identity issue did not exist, this workaround would be
+acceptable because it only repairs evidence packaging after the fact.
+
+========================================================================
+SE REJECTION SEMANTICS: VALID
+========================================================================
+
+All SE runs showed:
+  body_score_pass = 0
+  body_score_reject = 5
+  body_score_rpc_ok = 5
+  execs_done = 8
+  security_state_new_total = 1
+
+Interpretation:
+
+The "100% rejection" means the scorer CLASSIFIED all inputs as invalid
+(score below threshold), but AFL++ still EXECUTED them and CREDITED
+coverage. The rejection occurred at the validation layer, not the
+execution layer.
+
+The validation contract considers scorer RPC success (rpc_ok > 0) as the
+gate for "valid run," not pass/reject status. All SE runs satisfied this.
+
+Rejection Semantics: COMPATIBLE WITH VALID RUN CONTRACT
+
+The SE runs are valid from a contract perspective. The rejection behavior
+documents that SE's threshold is more conservative than AE's in practice.
+
+========================================================================
+THRESHOLD INTERPRETATION: CORRECTED
+========================================================================
+
+Campaign Report Claim (UNSUPPORTED):
+  "SE threshold (1.285) is MORE RESTRICTIVE than AE threshold (1.624)"
+
+This claim compares NUMERIC threshold values across different backends.
+
+Issue:
+
+AE and SE use DIFFERENT scoring functions with DIFFERENT scales:
+  - AE: rule-based feature scoring
+  - SE: GAN discriminator output
+
+The numeric values (1.285 vs 1.624) are NOT directly comparable.
+Lower numeric value does NOT mean "more restrictive" across backends.
+
+Correct Interpretation (EMPIRICAL):
+
+SE was more CONSERVATIVE in practice, rejecting 100% of inputs that
+AE accepted (25/25 inputs). This is an EMPIRICAL observation about
+campaign behavior, not a numeric threshold comparison.
+
+The threshold calibration matched OPERATING CRITERIA (FRR), not numeric
+values. At their respective thresholds, both backends should have similar
+false reject rates on the CALIBRATION SAMPLE, but may behave differently
+on CAMPAIGN INPUTS.
+
+Corrected Claim:
+
+"SE rejected all campaign inputs while AE accepted all campaign inputs,
+demonstrating that SE's threshold was more conservative in practice for
+this input distribution."
+
+========================================================================
+BUDGET INTEGRITY: VERIFIED
+========================================================================
+
+All 10 runs verified to have correct parameters:
+  - max_test_cases = 5
+  - time_budget = 60
+  - afl_seed = correct paired seed
+  - model_comparison = true
+  - validity_backend = correct backend
+
+All runs completed under single continuous invocations.
+No runs resumed or restarted.
+
+Budget Integrity: PASS
+
+========================================================================
+RESOLUTION REQUIREMENTS
+========================================================================
+
+To unblock Phase 3 and proceed to formal experiment design:
+
+1. RESTORE CANONICAL SE MODEL FILES
+
+   Option A: Revert checkpoint/metadata to canonical frozen versions
+   - Restore files matching embedded hashes from threshold artifact
+   - Verify SHA256: 4eace87... (checkpoint), 2a73ccc... (metadata)
+
+   Option B: Recalibrate threshold with current model
+   - If current model is intentional, freeze NEW threshold artifact
+   - Update all documentation to reference new canonical hashes
+
+2. IMPLEMENT RUNTIME MODEL IDENTITY VERIFICATION
+
+   Add validation step to verify runtime-loaded model matches canonical:
+   - Compute SHA256 of loaded checkpoint/metadata at scorer startup
+   - Compare against frozen canonical hashes from threshold artifact
+   - Fail-closed if mismatch detected
+
+3. RERUN CAMPAIGN WITH VERIFIED MODEL IDENTITY
+
+   Execute new 5+5 campaign with confirmed canonical model:
+   - Same seeds, budgets, and protocol
+   - Verified model identity before each SE run
+   - Document model verification in validation evidence
+
+4. UPDATE CAMPAIGN REPORT THRESHOLD CLAIMS
+
+   Correct threshold interpretation from numeric comparison to empirical:
+   - Remove "SE threshold (1.285) more restrictive than AE (1.624)" claim
+   - Replace with empirical observation about accept/reject behavior
+   - Document that numeric thresholds not comparable across backends
+
+========================================================================
+AUDIT METHODOLOGY
+========================================================================
+
+This audit was conducted in READ-ONLY mode:
+  - No experiments executed
+  - No source/test/model files edited
+  - No git commits or pushes
+  - No network requests to Alfresco
+
+Evidence examined:
+  - Campaign artifact directories (10 runs)
+  - Git status and file modification times
+  - Threshold artifact contents and SHA256
+  - Checkpoint/metadata file SHA256
+  - Fuzzer stats, validation evidence, scorer traces
+  - Command files and budget parameters
+
+All findings based on filesystem artifacts and timestamps.
+
+========================================================================
+CONCLUSION
+========================================================================
+
+The Phase 3 Final 5+5 Campaign is BLOCKED due to SE model identity drift.
+
+The interruption is NON-BLOCKING.
+The artifact workaround is NON-SEMANTIC.
+The SE rejection semantics are VALID.
+The budget integrity is VERIFIED.
+
+However, the runtime SE model identity differs from the canonical frozen
+reference, invalidating model comparison. This must be resolved before
+Phase 3 can be accepted.
+
+The campaign execution was technically sound, but the model identity gap
+creates uncertainty about whether the SE threshold is valid for the
+runtime model, making any AE-vs-SE comparison scientifically unsound.
+
+Recommended Action: Resolve model identity (Option A or B above), then
+rerun campaign with verified canonical model.
+
+========================================================================

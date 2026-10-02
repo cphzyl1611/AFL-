@@ -1,0 +1,32 @@
+{
+  "confirmatory_analysis_boundary": {
+    "frozen_confirmatory_analysis_method": "NOT_FROZEN",
+    "confirmatory_analysis_executed": false,
+    "status": "UNDECIDED_IN_FROZEN_DESIGN",
+    "evidence": {
+      "statistical_plan_file": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/06_STATISTICAL_ANALYSIS_PLAN.md",
+      "statistical_plan_content": "Document lists multiple test options (T1: paired t-test, T2: Wilcoxon, T4: Permutation, T5: Bootstrap) but does not freeze a specific method",
+      "human_decisions_file": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/10_HUMAN_DECISIONS_REQUIRED.md",
+      "human_decisions_content": "Multiple decisions marked UNDECIDED including sample size method, MPID, variance assumption, and inference method",
+      "predecessor_analysis": "PHASE4_R2_PREREGISTERED_ANALYSIS/03_CONFIRMATORY_ANALYSIS.json",
+      "predecessor_finding": "confirmatory_analysis_status: SKIPPED, reason: No frozen confirmatory analysis contract in R2 freeze package"
+    },
+    "zero_variance_special_case": {
+      "observed": true,
+      "note": "All 28 paired differences equal zero (sample SD = 0). This is a descriptive fact, not a statistical inference.",
+      "statistical_inference_validity": "INAPPLICABLE - zero variance precludes standard parametric and nonparametric tests",
+      "paired_delta_variance": 0.0
+    },
+    "confirmatory_claims_allowed": {
+      "p_value": "NOT_COMPUTED",
+      "confidence_interval": "NOT_COMPUTED",
+      "statistical_significance": "NO - no frozen method and zero variance case",
+      "equivalence": "NO - no frozen equivalence bounds",
+      "noninferiority": "NO - no frozen noninferiority margin",
+      "superiority": "NO - no frozen test and all deltas = 0",
+      "confidence_interval_reason": "No frozen confirmatory analysis method"
+    },
+    "factual_observation_allowed": true,
+    "factual_observation": "Across the 28 analysis-eligible paired blocks, the observed primary endpoint security_state_new_total was identical for AE and SE in every pair (all AE=1, all SE=1, all deltas=0)."
+  }
+}

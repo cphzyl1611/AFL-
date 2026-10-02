@@ -1,0 +1,121 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║                                                                       ║
+║  EXECUTIVE DECISION REQUIRED — SE Launch Cannot Proceed              ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+CAMPAIGN:    Alfresco content_update Final Authorized SE Launch (1+1 Pilot)
+DATE:        2026-09-23 20:05 UTC
+STATUS:      ⛔ BLOCKED AT STEP 2 (Canonical Provenance Gate)
+
+───────────────────────────────────────────────────────────────────────
+THE BLOCKER
+───────────────────────────────────────────────────────────────────────
+
+Your authorization specified SE checkpoint with SHA256:
+  4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+
+Repository contains ONLY this checkpoint:
+  205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+  (model_stage/models/sefanogan_gan_model.pt)
+
+The expected hash 4eace87a... does NOT exist:
+  ✗ Not in current filesystem (searched 6 checkpoint files)
+  ✗ Not in git history (checkpoint stable since commit 6fc82d8)
+  ✗ Not in any .pt/.pth file
+
+───────────────────────────────────────────────────────────────────────
+SOURCE OF MISMATCH
+───────────────────────────────────────────────────────────────────────
+
+The untracked calibration artifact declares the non-existent hash:
+  model_stage/models/sefanogan_es_realrun_threshold.json
+  
+This file contains:
+  "se_checkpoint_hash": "4eace87a..."  ← Does not match actual checkpoint
+  "se_metadata_hash": "2a73ccc3..."    ← Does not match actual metadata
+  "se_threshold": 1.2847454            ← Calibrated for different checkpoint
+
+Git status: UNTRACKED (created after checkpoint was committed)
+
+───────────────────────────────────────────────────────────────────────
+IMPACT
+───────────────────────────────────────────────────────────────────────
+
+Cannot execute STEP 3 (SE launch) because:
+  1. Using checkpoint 205a6a20... violates your authorization requirement
+  2. Using threshold calibrated for different checkpoint creates uncertainty
+  3. Provenance contract cannot be satisfied with current artifacts
+
+Downstream blocked:
+  • STEP 3: SE run execution
+  • STEP 4: AE vs SE comparison verdict
+  • STEP 5: Evidence package finalization
+
+───────────────────────────────────────────────────────────────────────
+DECISION REQUIRED
+───────────────────────────────────────────────────────────────────────
+
+Please select ONE option:
+
+┌───────────────────────────────────────────────────────────────────┐
+│ [A] USE ACTUAL CHECKPOINT (205a6a20...)                           │
+│                                                                   │
+│     Action: Update authorization to accept current checkpoint     │
+│     Result: Proceed with 205a6a20... + threshold 1.2847454       │
+│     Risk:   Threshold was calibrated for different checkpoint    │
+│             (may affect FRR/participation validation)            │
+└───────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────┐
+│ [B] PROVIDE EXPECTED CHECKPOINT (4eace87a...)                     │
+│                                                                   │
+│     Action: Locate and provide checkpoint file with hash 4eace87a│
+│     Result: Replace current checkpoint, proceed with threshold   │
+│     Risk:   Checkpoint may not exist (hash appears erroneous)    │
+└───────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────┐
+│ [C] RECALIBRATE THRESHOLD                                         │
+│                                                                   │
+│     Action: Generate new threshold for checkpoint 205a6a20...     │
+│     Result: New frozen artifact with matching provenance         │
+│     Risk:   VIOLATES "no model modifications" constraint         │
+│             May require offline calibration + new approval       │
+└───────────────────────────────────────────────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────
+RECOMMENDATION
+───────────────────────────────────────────────────────────────────────
+
+Option [A] appears most viable:
+
+  • Checkpoint 205a6a20... is git-tracked and stable since 2026-08-22
+  • Hash 4eace87a... likely an ERROR in untracked calibration artifact
+  • Threshold 1.2847454 may still be applicable (same input_dim=32)
+  • No source/model modifications required
+
+However, this requires:
+  1. Accepting checkpoint hash 205a6a20... as authoritative
+  2. Accepting risk that threshold calibration may not perfectly match
+  3. Updating expected provenance contract to reflect actual checkpoint
+
+───────────────────────────────────────────────────────────────────────
+AWAITING YOUR DECISION
+───────────────────────────────────────────────────────────────────────
+
+Please reply with:
+  • Selected option: [A], [B], or [C]
+  • Any additional constraints or requirements
+  • Authorization to proceed (if selecting [A])
+
+Until decision received:
+  ⛔ SE launch remains BLOCKED
+  ⏸️ Protocol execution remains SUSPENDED at STEP 2
+
+Supporting documentation:
+  • STEP2_FINAL_GATE_STATUS.txt (detailed provenance analysis)
+  • STEP2_PROVENANCE_RECONCILIATION.txt (forensic investigation)
+  • PROTOCOL_GATE_SUMMARY.txt (full 5-STEP status)
+
+═══════════════════════════════════════════════════════════════════════

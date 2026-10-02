@@ -1,0 +1,99 @@
+PHASE4 R1 FORMAL EXECUTION - EXECUTION SUMMARY
+==============================================
+
+EXECUTION STATUS: BLOCKED_AT_BLOCK_1
+DATE: 2026-09-21
+
+AUTHORIZED FREEZE
+-----------------
+Package: PHASE4_FORMAL_EXECUTION_FREEZE_R1
+Commitment: 5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52
+Authorization: Human approved execution of R1 freeze
+
+EXECUTION PARAMETERS
+-------------------
+Protocol: 30 paired blocks, counterbalanced AE/SE order (15+15)
+Seeds: 30 formal seeds (frozen in 04_FORMAL_SEED_LIST.json)
+Budget: max_test_cases=5, time_budget=60s, scorer_ready_timeout=10s
+Backends: alfresco_ae_v1 (threshold 1.623614), sefanogan_es_reference (threshold 1.2847454080581664)
+
+SOURCE IDENTITY VERIFICATION
+----------------------------
+git_head_commit: 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+runner_sha256: 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+tracked_diff_sha256: 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+canonical_12file_manifest_sha256: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+Verification: PASS
+
+EXECUTION RESULTS
+-----------------
+Blocks attempted: 1
+Blocks completed: 0
+Valid paired comparisons: 0
+Total valid runs: 1
+Total invalid runs: 1
+
+BLOCK 1 DETAILS
+--------------
+Seed: 1120356083
+Schedule: AE-first (alfresco_ae_v1 → sefanogan_es_reference)
+
+First run (AE): VALID
+  nv_total_valid_exec: 5
+  body_score_pass: 5
+  body_score_reject: 0
+  security_state_new_total: 1
+  nv_mab_total_pulls: 2
+  artifact_contract: PASS
+  model_comparison_validity: PASS
+
+Second run (SE): INVALID
+  nv_total_valid_exec: 0
+  body_score_pass: 0
+  body_score_reject: 5
+  security_state_new_total: 1 (seed only)
+  nv_mab_total_pulls: 0
+  artifact_contract: FAILED
+  missing_artifacts: nv_probe.json, nv_state_db.json
+  model_comparison_validity: FAILED
+
+FAILURE ROOT CAUSE
+------------------
+The SE validity backend rejected 100% of mutated inputs that the AE backend
+accepted. With zero valid executions, the SE run could not produce:
+- Primary endpoint observations beyond seed
+- State tracking artifacts
+- MAB reward updates
+
+This is a protocol-level incompatibility: the SE scorer's threshold is
+significantly more restrictive than AE's threshold for this seed's mutation space.
+
+FAIL-FAST CONTRACT COMPLIANCE
+-----------------------------
+✓ Invalid run detected via artifact contract failure
+✓ Campaign stopped immediately (no Block 2 execution)
+✓ No automatic rerun
+✓ No seed replacement
+✓ No protocol modification
+✓ Evidence frozen
+✓ Human adjudication invoked
+
+EVIDENCE PRESERVATION
+--------------------
+Evidence package: ./PHASE4_R1_BLOCK1_FAILURE_EVIDENCE_PACKAGE/
+Package commitment: 5b519874542be57f0431ebbbdeeff9e0104a12c36f693f1264d2e1e263a91506
+
+Full artifacts: /tmp/phase4_r1_formal_execution/
+
+NEXT STEPS
+----------
+BLOCKED_PENDING_HUMAN_ADJUDICATION
+
+Human decision required on resolution path:
+1. Recalibrate SE threshold to match AE acceptance rate
+2. Disable body score validation for SE backend
+3. Pre-screen seeds for backend compatibility
+4. Revise experimental design to account for acceptance differences
+5. Pursue alternative experimental approach
+
+No autonomous continuation permitted.

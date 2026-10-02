@@ -1,0 +1,75 @@
+{
+  "source_baseline_identity_type": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+  "nomenclature_correction": "Changed from '4-SHA256 identity' to '4-field source identity' because git_head_commit is a Git object ID (SHA-1 in Git, SHA-256 in newer Git), not one of the SHA256 provenance fields",
+  "composite_identity_components": {
+    "git_head_commit": {
+      "value": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+      "description": "Git commit object identifier (40-character hex)",
+      "type": "GIT_OBJECT_ID",
+      "status": "TRACKED"
+    },
+    "runner_sha256": {
+      "value": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650",
+      "file": "scripts/run_alfresco_bounded_feedback.py",
+      "description": "SHA256 hash of primary experiment runner script",
+      "type": "SHA256_HASH",
+      "status": "TRACKED_MODIFIED"
+    },
+    "tracked_diff_sha256": {
+      "value": "686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140",
+      "description": "SHA256 hash of git diff HEAD output (all tracked file modifications)",
+      "type": "SHA256_HASH",
+      "status": "DIRTY_WORKING_TREE"
+    },
+    "canonical_12file_manifest_sha256": {
+      "value": "26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b",
+      "description": "SHA256 manifest of 12 critical untracked files",
+      "type": "SHA256_HASH",
+      "files_included": [
+        "tests/test_alfresco_bounded_feedback.py",
+        "model_stage/models/sefanogan_es_reference.json",
+        "model_stage/models/sefanogan_es_reference_meta.json",
+        "model_stage/models/sefanogan_es_realrun_threshold.json",
+        "PHASE2_FINAL_PAIR_ACCEPTANCE_MANIFEST.json",
+        "PHASE3_FINAL_5PLUS5_CAMPAIGN_MANIFEST.json",
+        "PHASE3_FINAL_EVIDENCE_FREEZE/*"
+      ],
+      "status": "UNTRACKED"
+    }
+  },
+  "field_type_breakdown": {
+    "git_object_ids": 1,
+    "sha256_hashes": 3,
+    "total_fields": 4
+  },
+  "phase3_freeze_binding": {
+    "phase3_used_this_baseline": true,
+    "phase3_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "phase3_baseline_identity_file": "PHASE3_FINAL_EVIDENCE_FREEZE/01_BASELINE_IDENTITY.json",
+    "all_four_fields_match": true
+  },
+  "reproducibility_contract": {
+    "given_these_four_fields": "An independent party can reconstruct the exact source state",
+    "git_head_alone_insufficient": true,
+    "reason": "Critical untracked files (tests, models, thresholds) are not in Git history",
+    "snapshot_preservation": "Dirty working tree is the authoritative baseline, not a commit to be cleaned"
+  },
+  "decision_d10_framing": {
+    "correct_wording": "D10 = Composite 4-field source identity",
+    "incorrect_wording": "D10 = 4-SHA256 identity (inaccurate: git_head is not SHA256)",
+    "human_approval_required_for": "Approval of the complete composite 4-field identity as frozen source baseline",
+    "no_commit_or_cleanup_before_approval": true
+  },
+  "proposed_source_baseline_identity": {
+    "git_head_commit": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+    "runner_sha256": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650",
+    "tracked_diff_sha256": "686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140",
+    "canonical_12file_manifest_sha256": "26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b"
+  },
+  "verification_status": {
+    "all_fields_verified_against_phase3": true,
+    "baseline_integrity_status": "VERIFIED",
+    "working_tree_status": "DIRTY (intentionally preserved)",
+    "ready_for_human_approval": true
+  }
+}

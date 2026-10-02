@@ -1,0 +1,23 @@
+{
+  "seed_pair_contracts": {
+    "seed_20260915": "pass",
+    "seed_20260916": "pass",
+    "seed_20260917": "pass",
+    "seed_20260918": "pass",
+    "seed_20260919": "pass"
+  },
+  "all_five_seed_pairs": "pass",
+  "global_5plus5_contract": "pass",
+  "validation_gates": [
+    "rpc_validation",
+    "backend_participation",
+    "threshold_artifact_integrity",
+    "artifact_contract",
+    "model_comparison_validity",
+    "readback_correlation",
+    "seed_pair_contract_equality"
+  ],
+  "all_ae_validations": "pass",
+  "all_se_validations": "pass",
+  "all_seed_pair_contracts": "pass"
+}

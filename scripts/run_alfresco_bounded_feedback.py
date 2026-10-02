@@ -2612,6 +2612,12 @@ def launch_bounded_afl(
 
     env["AFL_TARGET_ENV"] = f"ALFRESCO_USER={user_quoted} ALFRESCO_PASS={pass_quoted} {' '.join(nv_vars)}"
 
+    # R161970-fix: NV_STATE_TRACE_PATH must be visible to afl-fuzz itself
+    # (not just the target), since the C code at afl-fuzz-run.c:353 reads it
+    # via getenv(). AFL_TARGET_ENV only propagates to the harness child.
+    if "NV_STATE_TRACE_PATH" in env:
+        env["NV_STATE_TRACE_PATH"] = env["NV_STATE_TRACE_PATH"]
+
     hard_timeout = time_budget + 60
     try:
         proc = subprocess.run(

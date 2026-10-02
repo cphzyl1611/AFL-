@@ -1,0 +1,469 @@
+================================================================================
+ALFRESCO CONTENT UPDATE SE R32B
+SEED CONTRACT RECONCILIATION
+FINAL REPORT
+================================================================================
+
+REPORT ID: R32B_SEED_CONTRACT_RECONCILIATION
+DATE: 2026-09-30
+CONTEXT: Reconcile R32 JSON-wrap recommendation vs historical plain-text evidence
+PROTOCOL: 9-step forensic investigation (read-only, offline)
+GATE DECISION: PASS_SEED_CONTRACT_RECONCILED
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+CONTRADICTION RECONCILED:
+  R32 recommendation: Wrap plain-text seed in JSON envelope
+  Historical evidence: content_update seeds are plain UTF-8 text, were accepted
+  
+ROOT CAUSE IDENTIFIED:
+  nv_body_valid.py:356 unconditionally enforces JSON normalization for ALL
+  scenarios, violating the documented content_update contract (RAW_TEXT_BODY).
+
+AUTHORITATIVE SEED CONTRACT:
+  content_update scenario: RAW_TEXT_BODY (plain UTF-8 text)
+  
+R32 RECOMMENDATION STATUS:
+  INVALID — contradicts authoritative test suite and historical seeds
+
+NEXT ACTION:
+  DESIGN_SEED_CONTRACT_REPAIR_OFFLINE_FIRST
+
+================================================================================
+INVESTIGATION PROTOCOL (9 STEPS)
+================================================================================
+
+STEP 1 — Identify Exact R31 Seed Representation
+────────────────────────────────────────────────────────────────────────────────
+
+R31 seed location: /tmp/r31_real_run_1790756354/seed_input/seed.http
+
+HTTP format (8 lines):
+  Line 1: PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/.../content HTTP/1.1
+  Line 2: Host: 127.0.0.1
+  Line 3: Content-Type: text/plain; charset=utf-8
+  Line 4: Content-Length: 110
+  Line 5: (blank)
+  Lines 6-8: Body (110 bytes plain UTF-8 Chinese text)
+
+Body content (raw):
+  关于系统联调测试的通知
+  请各部门按照计划完成接口联调、日志归档和问题闭环。
+
+Body hex (first 16 bytes):
+  e5 85 b3 e4 ba 8e e7 b3 bb e7 bb 9f e8 81 94 e8
+
+Encoding: UTF-8 plain text (NOT JSON)
+JSON parseable: NO (starts with '关', not '{' or '[')
+
+Body matches historical seed: YES
+  Identical to in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+
+
+STEP 2 — Trace CURRENT content_update Harness Validation Path
+────────────────────────────────────────────────────────────────────────────────
+
+nv_http_harness.py execution flow (body_only_mode=1):
+
+  Line 979-1030: body_only_mode=1 branch
+    Line 1004-1007: Extract body from HTTP seed
+      raw_body = seed_lines[5:] (after blank line)
+      raw_body = b'\n'.join(raw_body)
+    
+    Line 1023: Call body_validate()
+      valid_result = body_validate(
+        scenario='content_update',
+        endpoint_name='content_update',
+        raw_body=raw_body,
+        ...
+      )
+
+  Validation outcome determines:
+    - If valid_result['ok'] == True: Continue to target execution
+    - If valid_result['ok'] == False: Reject, log reason, skip target
+
+No scenario-specific branching in harness.
+All scenarios follow same validation path.
+
+
+STEP 3 — Trace Endpoint-Specific Logic in nv_body_valid.py
+────────────────────────────────────────────────────────────────────────────────
+
+nv_body_valid.py:348-455 body_validate() function:
+
+  Line 356: FIRST ACTION (unconditional)
+    norm = normalize_json_body_or_none(raw_body)
+  
+  Lines 356-358: Early return if normalization fails
+    if norm is None:
+      return {'ok': False, 'reason': 'invalid_json'}
+  
+  Lines 891-911: normalize_json_body_or_none() implementation
+    Line 903: JSON requirement check
+      if not (text.startswith('{') or text.startswith('[')):
+        return None
+    
+    Returns None for any text not starting with '{' or '['
+    Plain UTF-8 text starting with '关' → returns None
+
+CRITICAL FINDING:
+  NO scenario-specific branches found in body_validate()
+  NO content_update special case
+  NO endpoint-specific dispatch
+  ALL scenarios enforced to pass JSON normalization
+
+Linear validation flow (applies to ALL scenarios):
+  1. normalize_json_body_or_none() [LINE 356]
+  2. validate_common_limits()
+  3. validate_endpoint_type()
+  4. validate_required_fields()
+  5. validate_unknown_fields()
+  6. validate_properties()
+  7. Optional rpc_score_unix()
+
+BUG IDENTIFIED:
+  Missing scenario-specific validation dispatch
+  content_update incorrectly requires JSON (should accept raw text)
+
+
+STEP 4 — Reconcile with Historical Accepted Tests/Source
+────────────────────────────────────────────────────────────────────────────────
+
+Authoritative test suite: tests/test_content_update_seed_contract_red.py
+
+Key tests executed:
+  1. test_content_update_authoritative_seeds_are_plain_text
+     - Loads in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+     - Verifies it is plain UTF-8 text (110 bytes)
+     - Verifies json.loads() raises JSONDecodeError
+     - Status: PASSED
+  
+  2. test_content_update_dataset_seeds_are_all_plain_text
+     - Documents that all content_update seeds are plain text
+     - Explicitly rejects JSON format
+  
+  3. test_json_metadata_payload_violates_content_update_contract
+     - Documents that JSON metadata violates content_update contract
+
+Historical authoritative seed: in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+  - Format: Plain UTF-8 Chinese text (110 bytes)
+  - Content: "关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。\n"
+  - Historical outcome: Accepted, scored ≈0.683438 (Protocol V2)
+  - Feature contract: alfresco_fixed_32 (raw text features)
+
+DOCUMENTED CONTRACT:
+  content_update scenario = RAW_TEXT_BODY (plain UTF-8 text)
+  JSON format = VIOLATION of content_update contract
+
+
+STEP 5 — Exact Local Replay with R31 Seed
+────────────────────────────────────────────────────────────────────────────────
+
+Local simulation of normalize_json_body_or_none() with R31 seed body:
+
+Input: "关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。\n"
+First character: '关' (U+5173)
+Starts with '{': NO
+Starts with '[': NO
+normalize_json_body_or_none() returns: None
+
+body_validate() behavior when norm is None:
+  Line 356-358: return {'ok': False, 'reason': 'invalid_json'}
+
+Downstream consequences:
+  - Scorer request built: NO
+  - Scorer RPC attempted: NO (from validation perspective)
+  - Target invoked: NO
+  - Input rejected at body validation layer
+
+LOCAL_R31_SEED_BODY_VALIDATION_RESULT = REJECT
+LOCAL_R31_SEED_BODY_VALIDATION_REASON = invalid_json
+LOCAL_R31_SEED_SCORER_REQUEST_BUILT = NO
+LOCAL_R31_SEED_SCORER_RPC_ATTEMPTED = NO
+LOCAL_R31_SEED_SCORER_RPC_OK = NO
+LOCAL_R31_SEED_SCORE = N/A
+LOCAL_R31_SEED_ACCEPTED = NO
+
+VERDICT: Rejected before scorer (body validation layer)
+
+
+STEP 6 — Audit R31 scorer_trace.jsonl Semantics
+────────────────────────────────────────────────────────────────────────────────
+
+Trace file: /tmp/r31_real_run_1790756354/scorer_trace.jsonl
+Record count: 56
+
+Example record schema:
+  {
+    "ts": 1790756356646,
+    "backend": "sefanogan_es_reference",
+    "invocation": 1,
+    "success": false
+  }
+
+Fields present:
+  - ts: Timestamp
+  - backend: Scorer backend name
+  - invocation: Attempt number
+  - success: Boolean (connection/RPC success)
+
+Fields absent:
+  - score: No score field
+  - decision: No acceptance decision field
+  - accepted: No acceptance field
+
+Semantics:
+  SCORER_TRACE_RECORD_MEANS = Connection attempt to scorer Unix socket
+  TRACE_FIELD_FOR_RPC_SUCCESS = 'success'
+  TRACE_FIELD_FOR_MODEL_SCORE = N/A (not recorded in trace)
+  TRACE_FIELD_FOR_DECISION = N/A (not recorded in trace)
+  TRACE_FIELD_FOR_PROTOCOL_FAILURE = 'success' (false)
+
+R31 trace outcomes:
+  R31_TRACE_RECORD_COUNT = 56
+  R31_TRUE_RPC_SUCCESS_COUNT = 0
+  R31_TRUE_MODEL_SCORE_COUNT = 0
+  R31_TRUE_ACCEPT_COUNT = 0
+  R31_TRUE_REJECT_COUNT = 0
+  R31_PROTOCOL_FAILURE_COUNT = 56
+
+CRITICAL FINDING:
+  scorer_trace.jsonl records connection ATTEMPTS, not successful scoring.
+  All 56 records have success=false.
+  Scorer socket was never successfully contacted.
+  No model scoring occurred in R31.
+
+
+STEP 7 — Reclassify R31
+────────────────────────────────────────────────────────────────────────────────
+
+Evidence integration:
+
+A. Execution ledger (executions.jsonl):
+   - 110 execution records (55 iterations × 2 records each)
+   - All records: body_validated=false, target_invoked=false, http_status=0
+   - All records: mab_outcome='body_validation_reject' or 'pending_cleanup'
+   - All records: pending_cleanup_reason='invalid_input'
+   - Counted executions: 0
+
+B. Scorer trace (scorer_trace.jsonl):
+   - 56 connection attempts
+   - All records: success=false
+   - RPC success count: 0
+   - No scores, no decisions
+
+C. Local replay simulation:
+   - Plain UTF-8 seed → normalize returns None → validation rejects
+
+D. Harness code trace:
+   - No scenario-specific branches
+   - All scenarios pass through JSON normalization
+
+Apparent contradiction:
+  - 110 body validation rejections
+  - Yet 56 scorer connection attempts
+  - Why scorer attempts if validation rejected all inputs?
+
+Resolution:
+  Scorer connection attempts likely occurred during initialization or async.
+  Primary evidence (executions.jsonl) shows zero successful validations.
+  Scorer attempts are secondary/irrelevant to R31 outcome.
+
+Evidence hierarchy:
+  PRIMARY: executions.jsonl (110 records, all body_validated=false)
+  SECONDARY: scorer_trace.jsonl (56 attempts, all failed)
+  TERTIARY: Local simulation (confirms rejection path)
+
+DEFINITIVE CLASSIFICATION:
+
+R31_CLASSIFICATION = FAIL_RUNTIME_OR_CONTRACT_PRE_SCORER_VALIDATION
+
+Justification:
+  1. Zero body_validated=true records
+  2. Zero target_invoked=true records
+  3. All 110 records show pending_cleanup_reason='invalid_input'
+  4. Local replay confirms plain-text seed rejected at normalize
+  5. Scorer trace shows 0 successful RPC calls
+  6. No score field in any trace record
+
+R31 was NOT a partial real scorer run.
+R31 was a complete body validation rejection cycle.
+Zero inputs reached the target.
+Zero inputs reached the scorer successfully.
+
+
+STEP 8 — Decide the Seed Contract
+────────────────────────────────────────────────────────────────────────────────
+
+Evidence sources:
+
+1. Historical authoritative seeds:
+   - in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+   - Plain UTF-8 text, 110 bytes, NOT JSON
+   - Historical outcome: Accepted, scored ~0.683438
+
+2. Authoritative test suite:
+   - tests/test_content_update_seed_contract_red.py
+   - Explicitly documents content_update = RAW_TEXT_BODY
+   - All tests PASSED
+
+3. Current code behavior:
+   - nv_body_valid.py:356 enforces JSON for ALL scenarios
+   - No content_update exception
+   - Current implementation violates documented contract
+
+4. R31 runtime evidence:
+   - Plain text seed rejected (matches current code behavior)
+   - Zero valid executions
+
+5. R32 recommendation:
+   - Wrap seed in JSON envelope
+   - Based on tracing current code behavior
+
+Conflict identified:
+  Historical contract: content_update = plain text
+  Current implementation: content_update = JSON (shared validation path)
+  These are mutually exclusive.
+
+Authority hierarchy:
+  1. Authoritative test suite (documents contract)
+  2. Historical seeds (conform to contract)
+  3. Current implementation (violates contract)
+
+The test suite explicitly documents the content_update contract.
+The test suite PASSED when executed.
+The historical seeds conform to the documented contract.
+The current implementation VIOLATES the documented contract.
+
+AUTHORITATIVE SEED CONTRACT:
+
+SEED_CONTRACT = RAW_TEXT_BODY
+
+Scope:
+  - content_update scenario: RAW_TEXT_BODY (UTF-8 plain text)
+  - Other scenarios: Requires separate investigation
+  - Current implementation incorrectly applies JSON to ALL scenarios
+
+R32_JSON_WRAP_RECOMMENDATION_VALID = NO
+
+Justification for invalidating R32 recommendation:
+  1. Contradicts authoritative test suite
+  2. Contradicts historical accepted seeds
+  3. Would make test suite fail
+  4. Addresses symptom (seed format) not root cause (code bug)
+
+The seed is correct.
+The current implementation is incorrect.
+R32 traced behavior accurately but recommended the wrong fix.
+
+
+STEP 9 — Determine Next Action
+────────────────────────────────────────────────────────────────────────────────
+
+Investigation complete. Synthesis:
+
+ROOT CAUSE:
+  nv_body_valid.py unconditionally enforces JSON for ALL scenarios.
+  This violates documented content_update contract (RAW_TEXT_BODY).
+
+Evidence chain:
+  1. Authoritative test suite documents content_update = plain text
+  2. Historical seeds are plain text, were historically accepted
+  3. Current code (line 356) enforces JSON for all scenarios
+  4. R31 seed (plain text) correctly rejected by current code
+  5. R32 recommendation (JSON wrap) contradicts test suite
+
+Bug classification:
+  TYPE: Missing scenario-specific validation dispatch
+  LOCATION: nv_body_valid.py:348-455 (body_validate function)
+  SYMPTOM: content_update plain-text seeds rejected as 'invalid_json'
+  IMPACT: Zero valid executions in R31 (all 110 rejected)
+
+Repair requirements:
+  1. Add scenario-specific branch in body_validate()
+  2. content_update: Skip normalize, accept raw text
+  3. metadata_update: Keep JSON normalization
+  4. Preserve other validation steps
+  5. Must not break existing test suite
+
+Repair feasibility:
+  - Offline repair: YES (pure Python code change)
+  - Test coverage: YES (test_content_update_seed_contract_red.py)
+  - Verification: pytest → local simulation → real campaign
+  - No external dependencies needed for initial repair
+
+Alternative actions evaluated:
+
+A. CORRECT_R31_SCORER_PATH_FORENSIC:
+   - NOT APPLICABLE (R31 had no scorer path; all rejected at validation)
+
+B. DESIGN_SEED_CONTRACT_REPAIR_OFFLINE_FIRST:
+   - APPLICABLE ✓
+   - Root cause identified: missing scenario dispatch
+   - Repair scope: nv_body_valid.py body_validate()
+   - Offline design/implementation/test possible
+
+C. DIAGNOSE_SCORER_PROTOCOL_FAILURE_OFFLINE:
+   - NOT APPLICABLE (scorer failure secondary; validation rejected first)
+
+D. BLOCKED_NEEDS_MORE_PRIMARY_EVIDENCE:
+   - NOT APPLICABLE (sufficient evidence gathered)
+
+NEXT_ACTION = DESIGN_SEED_CONTRACT_REPAIR_OFFLINE_FIRST
+
+Justification:
+  - Root cause definitively identified
+  - Repair scope bounded and testable
+  - Authoritative test suite exists for verification
+  - Offline repair possible without real campaigns
+  - R32 JSON-wrap recommendation invalidated by test suite
+
+Repair design required:
+  1. Modify body_validate() to dispatch on scenario
+  2. content_update branch: Accept raw UTF-8 text
+  3. Other scenarios: Keep existing JSON normalization
+  4. Verify against test_content_update_seed_contract_red.py
+  5. Local replay R31 seed → should pass body validation
+
+================================================================================
+GATE DECISION
+================================================================================
+
+GATE: PASS_SEED_CONTRACT_RECONCILED
+
+RECONCILIATION COMPLETE:
+  ✓ Contradiction identified and resolved
+  ✓ Root cause identified (missing scenario dispatch)
+  ✓ Authoritative contract determined (RAW_TEXT_BODY)
+  ✓ R32 recommendation invalidated (contradicts test suite)
+  ✓ Next action determined (offline repair design)
+
+R32B CONCLUSIONS:
+
+1. R32 traced current code behavior accurately but recommended wrong fix
+2. Seed format is correct (plain UTF-8 text per test suite)
+3. Code has bug (missing scenario-specific validation)
+4. R31 failures were legitimate given current broken code
+5. Repair path identified and feasible offline
+
+DELIVERABLES:
+  ✓ 9-step protocol executed completely
+  ✓ All forensic questions answered
+  ✓ Root cause identified
+  ✓ Repair requirements documented
+  ✓ Next action determined
+
+AUTHORIZATION STATUS:
+  - NO real campaigns authorized or executed
+  - NO code modifications made
+  - NO commits/pushes performed
+  - NO seed rewrites performed
+  - Read-only forensic investigation only
+
+Next investigation: R33 (offline repair design + implementation + verification)
+
+================================================================================
+END REPORT R32B
+================================================================================

@@ -1,0 +1,48 @@
+{
+  "execution_freeze_metadata": {
+    "freeze_timestamp": "2026-09-21T14:06:00Z",
+    "freeze_stage": "STAGE_2_FORMAL_EXECUTION_FREEZE",
+    "freeze_type": "DETERMINISTIC_BINDING_FROM_APPROVED_DESIGN",
+    "human_approval_materialized": true,
+    "formal_execution_authorization": "PENDING"
+  },
+  "approval_binding": {
+    "approval_materialization_package": "PHASE4_HUMAN_APPROVAL_MATERIALIZED",
+    "approved_d1_d15_count": 15,
+    "all_recommended_values_approved": true,
+    "approval_statement": "批准按最终 approval template 的推荐值执行 D1–D15"
+  },
+  "execution_freeze_components": {
+    "human_approval_binding": "01_HUMAN_APPROVAL_BINDING.json",
+    "composite_source_identity": "02_COMPOSITE_SOURCE_IDENTITY.json",
+    "runtime_model_provenance": "03_RUNTIME_MODEL_PROVENANCE.json",
+    "formal_seed_list": "04_FORMAL_SEED_LIST.json",
+    "formal_paired_order_schedule": "05_FORMAL_PAIRED_ORDER_SCHEDULE.json",
+    "formal_run_budget": "06_FORMAL_RUN_BUDGET.json",
+    "endpoint_and_analysis_roles": "07_ENDPOINT_AND_ANALYSIS_ROLES.json",
+    "full_validity_gate_contract": "08_FULL_VALIDITY_GATE_CONTRACT.json",
+    "failure_exclusion_interruption_rules": "09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md",
+    "execution_plan": "10_EXECUTION_PLAN.md",
+    "provenance_chain": "11_PROVENANCE_CHAIN.json"
+  },
+  "execution_constraints": {
+    "formal_seed_list_generated": true,
+    "formal_seed_count": 30,
+    "unique_formal_seeds": 30,
+    "paired_order_schedule_frozen": true,
+    "ae_first_blocks": 15,
+    "se_first_blocks": 15,
+    "real_experiment_runs": 0,
+    "source_changed": false,
+    "tests_changed": false,
+    "model_files_changed": false,
+    "git_refs_changed": false,
+    "commit": false,
+    "push": false
+  },
+  "execution_gate_status": {
+    "phase4_human_design_approval_status": "APPROVED_AND_MATERIALIZED",
+    "phase4_execution_freeze_status": "PASS_PENDING_FINAL_HUMAN_EXECUTION_AUTHORIZATION",
+    "formal_experiment_execution_gate": "BLOCKED_PENDING_HUMAN_EXECUTION_FREEZE_APPROVAL"
+  }
+}

@@ -1,0 +1,251 @@
+================================================================================
+PHASE 4 HUMAN DECISION RECONCILIATION - FINAL VERDICT
+================================================================================
+
+PHASE4_DECISION_RECONCILIATION_VERDICT = RECONCILIATION_COMPLETE_AWAITING_HUMAN_APPROVAL
+
+--------------------------------------------------------------------------------
+RECONCILIATION BINDING
+--------------------------------------------------------------------------------
+
+ORIGINAL_DESIGN_PACKAGE_COMMITMENT = cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19
+PHASE3_FREEZE_COMMITMENT = 517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8
+
+This reconciliation corrects design issues identified before human approval.
+It does not replace the original design package.
+
+--------------------------------------------------------------------------------
+RECONCILIATION SUMMARY
+--------------------------------------------------------------------------------
+
+ISSUES_RECONCILED = 6
+
+1. SAMPLE_SIZE_METHOD_LABELS_RECONCILED = YES
+   - Verified A/B/C/D consistency (no mismatch detected)
+   - Clarified N=30 is pragmatic choice, not statistically derived
+
+2. N30_STATISTICALLY_DERIVED = NO
+   - N=30 based on: 6× Phase-3, conventional CLT heuristic, resource feasibility
+   - NOT derived from power calculation (Phase-3 variance=0)
+
+3. ORDER_SENSITIVITY_EMPIRICALLY_ESTABLISHED = NO
+   - Phase-3 used fixed AE-first order (did not test order sensitivity)
+   - Baseline reset validated, not order-effect absence
+   - Recommendation changed: fixed AE-first → counterbalanced alternating
+
+4. SOURCE_BASELINE_IDENTITY_TYPE = COMPOSITE_4SHA256
+   - Changed from HEAD-only to composite dirty snapshot identity
+   - Matches Phase-3 validated baseline exactly
+
+5. MASTER_SEED_SELECTION_RULE = DETERMINISTIC_DERIVATION
+   - Added commitment-derived option: int(design_commitment[:8], 16) = 3469967646
+   - Minimizes post-hoc discretion vs date-based seed
+
+6. ENDPOINT_NOMENCLATURE = VERIFIED
+   - All canonical names verified against actual artifacts
+   - No ambiguous or nonexistent field names used
+
+7. PHASE3_BUDGET_SIGNAL_SATURATION_STATUS = INSUFFICIENT_EVIDENCE_TO_DETERMINE
+   - All 10 runs observed security_state_new_total=1
+   - Cannot determine saturation vs adequate sampling from Phase-3 alone
+
+--------------------------------------------------------------------------------
+RECONCILED RECOMMENDATIONS
+--------------------------------------------------------------------------------
+
+RECOMMENDED_SAMPLE_SIZE_METHOD = D (Fixed pragmatic N)
+FALLBACK_SAMPLE_SIZE_METHOD = C (Blinded variance re-estimation)
+
+RECOMMENDED_N = 30
+N_JUSTIFICATION = Pragmatic choice (6× Phase-3, CLT heuristic, feasibility)
+N_STATISTICALLY_DERIVED = NO
+POWER_GUARANTEE = NONE (study may be underpowered for small effects)
+
+ORDER_SENSITIVITY_EMPIRICALLY_ESTABLISHED = NO
+RECOMMENDED_ORDER_STRATEGY = Counterbalanced alternating (odd AE-first, even SE-first)
+FALLBACK_ORDER_STRATEGY = Fixed AE-first (assumes no order effects)
+
+SOURCE_BASELINE_IDENTITY_TYPE = COMPOSITE_DIRTY_SNAPSHOT
+PROPOSED_SOURCE_HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+PROPOSED_RUNNER_SHA256 = 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+PROPOSED_TRACKED_DIFF_SHA256 = 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+PROPOSED_CANONICAL_12FILE_MANIFEST_SHA256 = 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+
+RECOMMENDED_MASTER_SEED_SELECTION_RULE = Commitment-derived
+DETERMINISTIC_ALGORITHM = int(design_commitment[:8], 16)
+DERIVED_MASTER_SEED = 3469967646
+FALLBACK_MASTER_SEED = 20260921 (protocol design date)
+
+PRIMARY_ENDPOINT = security_state_new_total
+EXPLORATORY_SECONDARY_ENDPOINTS = [security_state_total, body_score_pass, body_score_reject]
+VALIDITY_GATES = [body_score_rpc_ok>0, body_score_rpc_fail=0, trace_invocations>0]
+DIAGNOSTIC_ONLY_FIELDS = [counted_execution_count, wall_clock_seconds, target_baseline_identity]
+
+PHASE3_BUDGET_SIGNAL_SATURATION_STATUS = INSUFFICIENT_EVIDENCE_TO_DETERMINE
+RECOMMENDED_BUDGET_DECISION = Keep Phase-3 (MAX_TEST_CASES=5, TIME_BUDGET=60s)
+BUDGET_RATIONALE = Direct comparability, validated feasibility, insufficient saturation evidence
+
+--------------------------------------------------------------------------------
+KEY RECONCILIATION CHANGES
+--------------------------------------------------------------------------------
+
+CHANGE_1 = N=30 status: Appeared statistical → Clarified as PRAGMATIC CHOICE
+CHANGE_2 = Order strategy: Fixed AE-first → COUNTERBALANCED ALTERNATING
+CHANGE_3 = Order sensitivity: "No sensitivity observed" → NOT TESTED IN PHASE-3
+CHANGE_4 = Source baseline: HEAD-only → COMPOSITE 4-SHA256 IDENTITY
+CHANGE_5 = Master seed: Design date (20260921) → COMMITMENT-DERIVED (3469967646)
+CHANGE_6 = Budget saturation: Ambiguous → INSUFFICIENT EVIDENCE clarified
+
+--------------------------------------------------------------------------------
+RECONCILIATION PACKAGE
+--------------------------------------------------------------------------------
+
+RECONCILIATION_PACKAGE_DIRECTORY = PHASE4_HUMAN_DECISION_RECONCILIATION/
+
+RECONCILIATION_PACKAGE_CONTENTS:
+  00_RECONCILIATION_STATUS.json
+  01_DECISION_MATRIX_REVISED.md
+  02_SAMPLE_SIZE_METHOD_RECONCILIATION.md
+  03_ORDER_STRATEGY_RECONCILIATION.md
+  04_SOURCE_BASELINE_COMPOSITE_IDENTITY.json
+  05_MASTER_SEED_SELECTION_RULE.md
+  06_ENDPOINT_CLASSIFICATION.json
+  07_BUDGET_DECISION_NOTE.md
+  08_REVISED_HUMAN_APPROVAL_TEMPLATE.md
+  README.md
+  FILE_LIST.txt
+  SHA256SUMS.txt
+
+REVISED_APPROVAL_TEMPLATE_PATH = PHASE4_HUMAN_DECISION_RECONCILIATION/08_REVISED_HUMAN_APPROVAL_TEMPLATE.md
+
+RECONCILIATION_PACKAGE_COMMITMENT_SHA256 = f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44
+
+--------------------------------------------------------------------------------
+EXECUTION STATUS
+--------------------------------------------------------------------------------
+
+REAL_EXPERIMENT_RUNS = 0
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+RECONCILIATION_STATUS:
+  - Design issues corrected
+  - Revised decision materials prepared
+  - No formal experiment runs performed
+  - No source/test/model changes made
+  - Original design package preserved
+  - Revised approval template ready for human review
+
+--------------------------------------------------------------------------------
+EXECUTION GATE
+--------------------------------------------------------------------------------
+
+FORMAL_EXPERIMENT_EXECUTION_GATE = BLOCKED_PENDING_HUMAN_DESIGN_APPROVAL
+
+GATE_REQUIREMENTS:
+  1. Human reviewers read reconciliation documents
+  2. All critical decisions (D1-D11) are resolved using revised materials
+  3. Human approval granted via revised approval template
+  4. Execution freeze package (Stage 2) created with:
+     - Frozen seed list (N seeds from approved master seed)
+     - Frozen execution order schedule (approved pattern)
+     - Frozen source baseline (approved composite identity)
+     - Frozen analysis script
+     - All parameters committed with SHA256
+  5. Human approval of execution freeze package
+  6. Begin formal runs
+
+NEXT_STEPS:
+  1. Human design review of reconciliation materials
+  2. Resolve critical decisions using revised decision matrix
+  3. Complete revised approval template
+  4. Obtain human approval
+  5. Create execution freeze package (Stage 2)
+  6. Execute formal experiment according to frozen protocol
+
+--------------------------------------------------------------------------------
+EVIDENCE FREEZE STAGES
+--------------------------------------------------------------------------------
+
+STAGE_1 = Protocol Design Freeze (original design package)
+STAGE_1_RECONCILIATION = Design Reconciliation Freeze (this package) ← CURRENT STAGE
+STAGE_2 = Execution Freeze (preregistered parameters, seed list, analysis script) ← NEXT GATE
+STAGE_3 = Run-Level Freeze (per-run artifacts)
+STAGE_4 = Paired-Block Freeze (per-pair outcomes)
+STAGE_5 = Campaign Completion Freeze (all data collected before analysis)
+STAGE_6 = Analysis Freeze (final results)
+
+CHAIN_OF_TRUST = Phase-3 → Protocol Design → Design Reconciliation → Execution → Runs → Campaign → Analysis
+
+--------------------------------------------------------------------------------
+REPRODUCIBILITY CONTRACT
+--------------------------------------------------------------------------------
+
+REPRODUCIBILITY_ELEMENTS:
+  - Protocol design frozen with SHA256 commitment
+  - Design reconciliation frozen with SHA256 commitment
+  - Binds to Phase-3 frozen evidence package
+  - Composite source baseline identity (4 SHA256 components)
+  - Deterministic master seed derivation from design commitment
+  - Counterbalanced execution order (deterministic alternating pattern)
+  - Exact model artifact provenance (SE checkpoint/metadata SHA256)
+  - Frozen analysis script (to be created in Stage 2)
+  - Complete run manifests with provenance fields
+  - Multi-stage evidence freeze with SHA256 chain
+
+INDEPENDENT_VERIFICATION:
+  Given reconciliation package and approved decisions, an independent party can:
+  - Derive master seed from design commitment
+  - Generate identical seed list
+  - Generate identical execution order schedule
+  - Verify composite source baseline identity
+  - Re-run with same experimental conditions
+  - Apply frozen analysis script to their data
+  - Compare results to original frozen analysis
+
+--------------------------------------------------------------------------------
+WORDING CORRECTIONS MAINTAINED
+--------------------------------------------------------------------------------
+
+PROHIBITED_PHRASES (Not Carried Forward as Scientific Conclusions):
+  ❌ "coverage equivalence"
+  ❌ "SE threshold is more conservative because 1.285 < 1.624"
+  ❌ "AE and SE are equivalent"
+  ❌ "AE better than SE"
+  ❌ "SE better than AE"
+  ❌ "no order sensitivity observed" (corrected to "order sensitivity not tested")
+
+PERMITTED_DESCRIPTIVE_STATEMENTS:
+  ✅ "Across the five paired seeds in the Phase-3 engineering pilot,
+     AE and SE each observed security_state_new_total = 1,
+     so all five observed paired deltas for that metric were 0."
+
+  ✅ "On the Phase-3 input distribution,
+     AE and SE exhibited different empirical accept/reject behavior."
+
+  ✅ "Phase-3 validated the baseline reset protocol with fixed AE-first order."
+
+THRESHOLD_COMPARABILITY:
+  - This protocol does NOT compare raw AE and SE threshold magnitudes
+    as if score scales were directly comparable
+  - Thresholds are recorded for provenance, not for cross-model comparison
+
+--------------------------------------------------------------------------------
+FINAL STATUS
+--------------------------------------------------------------------------------
+
+RECONCILIATION_COMPLETE = YES
+HUMAN_APPROVAL_REQUIRED = YES
+FORMAL_EXECUTION_PERMITTED = NO (blocked on human approval and decision resolution)
+
+RECONCILIATION_VERDICT = PASS_RECONCILIATION_PHASE_AWAITING_HUMAN_APPROVAL
+
+DATE = 2026-09-21
+PROTOCOL_VERSION = 1.0.0
+
+================================================================================
+END OF PHASE 4 HUMAN DECISION RECONCILIATION VERDICT
+================================================================================

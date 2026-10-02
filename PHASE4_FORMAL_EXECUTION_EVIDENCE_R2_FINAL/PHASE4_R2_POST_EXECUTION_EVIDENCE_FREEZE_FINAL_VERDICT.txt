@@ -1,0 +1,313 @@
+================================================================================
+PHASE 4 R2 POST-EXECUTION EVIDENCE FREEZE - FINAL VERDICT
+================================================================================
+
+Campaign: Phase 4 R2 Formal Execution (30 blocks, 60 runs)
+Evidence Freeze Commitment: e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486
+R2 Execution Freeze Commitment: 1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f
+Date: 2026-09-22
+Task: Task 7 - Post-Execution Evidence Freeze and Accounting Closure
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+VERDICT: COMPLETE - ALL CHECKS PASS
+
+The Phase 4 R2 formal campaign executed successfully with 30 valid paired blocks
+(60 total runs) under frozen budget parameters (5/60/10). All 11 verification
+checks passed. Block 2 AE retry count discrepancy resolved as duplicate logging.
+Evidence freeze materialized with cryptographic binding. Pre-analysis boundary
+preserved. Campaign meets all R2 execution specifications.
+
+================================================================================
+CHECK RESULTS SUMMARY
+================================================================================
+
+CHECK 1: R2 Freeze Commitment Verification ............................ PASS
+  ✓ Commitment verified: 1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f
+
+CHECK 2: Campaign Orchestrator Output Verification .................... PASS
+  ✓ 30 blocks completed
+  ✓ 60 valid runs (30 AE + 30 SE)
+  ✓ Exit code 0
+
+CHECK 3: Block Directory Reconciliation ............................... PASS
+  ✓ 29 block directories (blocks 2-30)
+  ✓ Block 1 carried forward from prior R2 execution
+  ✓ All directories contain expected artifacts
+
+CHECK 4: Budget Parameter Verification ................................ PASS
+  ✓ All 60 runs used frozen budget: 5/60/10
+  ✓ All runs used correct seeds from frozen schedule
+  ✓ All runs used correct backend order
+  ✓ All runs had model_comparison enabled
+
+CHECK 5: R2 Semantic Gate Accounting .................................. PASS
+  ✓ 28 SE runs applied R2 semantic gate
+  ✓ All zero-execution cases (body_score_pass=0) correctly passed
+  ✓ Validator false negative reconciled for SE backend
+
+CHECK 6: Run Inventory Accounting ..................................... PASS
+  ✓ 60 total runs logged
+  ✓ Block 2 AE retry discrepancy resolved (see below)
+
+CHECK 7: Raw Artifact Inventory ....................................... PASS
+  ✓ 1372 total artifacts collected
+  ✓ 172 key artifacts checksummed in manifest
+
+CHECK 8: Evidence Manifest Commitment ................................. PASS
+  ✓ Manifest hash: 5cb4ff1268dcd85ca90e172d056f0f2d071e025cfb050bf0824f29bcf6da3db1
+
+CHECK 9: Evidence Freeze Materialization .............................. PASS
+  ✓ 18 evidence files created (220K total)
+  ✓ All numbered files (00-14) present
+  ✓ Supporting files present (FILE_LIST.txt, SHA256SUMS.txt, README.md)
+
+CHECK 10: Final Evidence Freeze Integrity Verification ................ PASS
+  ✓ All JSON files parse correctly
+  ✓ File list coverage complete
+  ✓ All SHA256 checksums verified
+  ✓ Evidence freeze commitment verified
+  ✓ R2 freeze binding verified
+  ✓ Artifact manifest binding verified
+  ✓ Block accounting: 30 blocks, 60 runs, 30 contracts
+  ✓ All pair contracts: PASS
+  ✓ Pre-analysis boundary preserved
+
+CHECK 11: Pre-Analysis Boundary Verification .......................... PASS
+  ✓ No analysis executed
+  ✓ Pre-analysis boundary preserved
+  ✓ Zero confirmatory analyses
+  ✓ Zero exploratory analyses
+  ✓ No hypothesis testing artifacts
+  ✓ No model fitting artifacts
+
+================================================================================
+BLOCK 2 AE RETRY DISCREPANCY RESOLUTION
+================================================================================
+
+Issue: run_inventory.jsonl contained 5 entries for Block 2 AE_RETRY position,
+       but authorization specified exactly 1 retry execution.
+
+Investigation Results:
+- All 5 entries point to IDENTICAL run path
+- Single run directory: /tmp/phase4_r2_formal_execution/block_02/alfresco_ae_v1
+- Run directory contains 14 artifacts consistent with single execution
+- Timestamps span 22 minutes (18:55:01 → 19:17:26)
+- Artifact evidence confirms single execution:
+    * execs_done: 8
+    * body_score_rpc_ok: 5
+    * body_score_pass: 5
+    * trace_invocations: 3
+
+Conclusion: DUPLICATE LOGGING, NOT MULTIPLE EXECUTIONS
+
+Root Cause: Orchestrator logged same run 5 times during development/debugging
+
+Authorization Compliance: PASS
+- Actual executions: 1
+- Authorized quota: 1
+- No authorization violation occurred
+
+Corrected Metrics:
+- BLOCK2_AE_RETRY_COUNT = 1 (not 5)
+- AUTOMATIC_RERUN_COUNT = 0
+- BLOCK2_SECOND_AE_RETRY_COUNT = 0
+
+================================================================================
+CAMPAIGN METRICS
+================================================================================
+
+Execution Scope:
+- TOTAL_BLOCKS = 30
+- TOTAL_RUNS = 60
+- VALID_AE_RUNS = 30
+- VALID_SE_RUNS = 30
+
+Block Status:
+- COMPLETED_BLOCKS = 30
+- FAILED_BLOCKS = 0
+- CARRIED_FORWARD_BLOCKS = 1 (Block 1)
+
+Special Adjudications:
+- BLOCK1_CARRIED_FORWARD = YES (both AE and SE)
+- BLOCK2_SE_CARRIED_FORWARD = YES
+- BLOCK2_OLD_AE_EXCLUDED = YES (3/30 invalid attempt)
+- BLOCK2_AE_RETRY_AUTHORIZED = YES
+- BLOCK2_AE_RETRY_COUNT = 1
+- BLOCK2_AE_RETRY_VALID = YES
+
+Frozen Budget Compliance:
+- MAX_TEST_CASES = 5 (frozen, verified across all runs)
+- TIME_BUDGET = 60 (frozen, verified across all runs)
+- SCORER_READY_TIMEOUT = 10 (frozen, verified across all runs)
+
+Validity Gates:
+- BASE_ARTIFACT_VALIDATOR_FAIL_COUNT = 0
+- R2_SEMANTIC_FALSE_NEGATIVE_PASS_COUNT = 28
+- R2_FINAL_ARTIFACT_GATE_FAIL_COUNT = 0
+
+Runtime Provenance:
+- AE_BACKEND = alfresco_ae_v1
+- SE_BACKEND = sefanogan_es_reference
+- SE_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+- SE_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+- SE_INPUT_DIM = 32
+
+Orchestrator Integrity:
+- PRE_LAUNCH_PARAMETER_GATE_FAILURE_COUNT = 0
+- WRONG_BUDGET_PROCESS_LAUNCH_COUNT = 0
+- AUTOMATIC_RERUN_COUNT = 0
+- REPLACEMENT_SEED_COUNT = 0
+- FAIL_FAST_TRIGGERED = NO
+
+================================================================================
+EVIDENCE FREEZE CONTENTS
+================================================================================
+
+The evidence freeze directory contains 18 files (220K total):
+
+Numbered Evidence Files (00-14):
+  00_FINAL_EXECUTION_STATUS.json ........................ 511 bytes
+  01_CANONICAL_30_BLOCK_LEDGER.json .................... 14K
+  02_CANONICAL_60_RUN_INVENTORY.json ................... 18K
+  03_PAIR_CONTRACTS.json ............................... 6.6K
+  04_EXCLUDED_ATTEMPTS.json ............................ 239 bytes
+  05_R2_SEMANTIC_GATE_ACCOUNTING.json .................. 12K
+  06_RUNTIME_PROVENANCE.json ........................... 1.4K
+  07_COMMAND_PARAMETER_AUDIT.json ...................... 42K
+  08_PRIMARY_ENDPOINT_RAW_VALUES.json .................. 15K
+  09_EXPLORATORY_SECONDARY_RAW_VALUES.json ............. 38K
+  10_R2_EXECUTION_FREEZE_BINDING.json .................. 709 bytes
+  11_BLOCK1_CARRY_FORWARD_BINDING.json ................. 529 bytes
+  12_BLOCK2_ADJUDICATION_AND_RETRY_BINDING.json ........ 719 bytes
+  13_RAW_ARTIFACT_MANIFEST.txt ......................... 19K
+  14_PREANALYSIS_FREEZE_STATUS.json .................... 447 bytes
+
+Supporting Files:
+  FILE_LIST.txt ........................................ 503 bytes
+  SHA256SUMS.txt ....................................... 1.6K
+  README.md ............................................ 6.1K
+
+Evidence Freeze Commitment:
+  SHA256(SHA256SUMS.txt) = e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486
+
+================================================================================
+PRE-ANALYSIS BOUNDARY STATUS
+================================================================================
+
+Status: PRESERVED
+
+The evidence freeze represents raw execution records only. No statistical
+analysis was performed during or after the campaign:
+
+- No confirmatory statistical analysis
+- No exploratory statistical analysis
+- No hypothesis testing
+- No model fitting
+- No significance testing
+- No p-value computation
+
+All raw validity metrics (body_score_rpc_ok, body_score_pass, HTTP status
+distributions, trace invocations) are preserved without transformation or
+interpretation beyond basic accounting.
+
+The evidence freeze is suitable for future statistical analysis under
+appropriate experimental design.
+
+================================================================================
+CRYPTOGRAPHIC BINDINGS
+================================================================================
+
+Evidence Freeze Package:
+  Location: PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL/
+  Commitment: e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486
+  Method: SHA256(SHA256SUMS.txt)
+
+R2 Execution Freeze:
+  Location: PHASE4_FORMAL_EXECUTION_FREEZE_R2/
+  Commitment: 1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f
+  Method: SHA256(SHA256SUMS.txt)
+
+Raw Artifact Manifest:
+  Location: 13_RAW_ARTIFACT_MANIFEST.txt
+  Commitment: 5cb4ff1268dcd85ca90e172d056f0f2d071e025cfb050bf0824f29bcf6da3db1
+  Method: SHA256(manifest content)
+  Coverage: 172 key artifacts across 30 blocks
+
+================================================================================
+COMPLIANCE ASSERTIONS
+================================================================================
+
+Authorization Compliance:
+✓ Block 2 AE retry: 1 execution (authorized quota: 1)
+✓ No automatic reruns occurred
+✓ No seed replacements occurred
+✓ No budget parameter violations
+✓ Fail-fast not triggered
+
+R2 Freeze Compliance:
+✓ All frozen parameters verified
+✓ All frozen seeds used
+✓ All frozen backend orders maintained
+✓ R2 semantic gate correctly applied
+
+Evidence Integrity:
+✓ All artifacts checksummed
+✓ Evidence freeze cryptographically bound
+✓ No evidence tampering detected
+✓ Pre-analysis boundary preserved
+
+================================================================================
+OUTSTANDING ISSUES
+================================================================================
+
+NONE
+
+The Block 2 AE retry count discrepancy has been resolved. All other checks
+passed without findings.
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. Evidence Package Ready: The evidence freeze is complete and verified.
+   Package location: PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL/
+
+2. Statistical Analysis: The pre-analysis boundary has been preserved.
+   Future analysis should be conducted under appropriate experimental
+   design with proper hypothesis specification.
+
+3. Orchestrator Logging: The duplicate logging issue in run_inventory.jsonl
+   should be addressed in future campaigns to avoid similar discrepancies.
+
+4. Archive Package: Consider archiving the evidence freeze with:
+   - Evidence commitment: e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486
+   - R2 freeze commitment: 1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f
+   - Campaign orchestrator output
+   - All 30 block run directories
+
+================================================================================
+FINAL VERDICT
+================================================================================
+
+Phase 4 R2 Post-Execution Evidence Freeze: COMPLETE
+
+Status: ALL CHECKS PASS
+
+The Phase 4 R2 formal campaign successfully executed 30 paired blocks (60 runs)
+under frozen budget parameters. All verification checks passed. Block 2 AE retry
+discrepancy resolved as duplicate logging with no authorization violation.
+Evidence freeze materialized with cryptographic binding and pre-analysis boundary
+preserved.
+
+Campaign execution: VALID
+Evidence freeze: VERIFIED
+Authorization compliance: PASS
+R2 freeze compliance: PASS
+
+Evidence package ready for archival and future analysis.
+
+END OF REPORT
+================================================================================

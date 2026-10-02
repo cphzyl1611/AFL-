@@ -1,0 +1,169 @@
+================================================================================
+R41B INVESTIGATION COMPLETE
+================================================================================
+
+Date: 2026-10-01
+Investigation: ALFRESCO_CONTENT_UPDATE_SE_R41B_HARNESS_TARGET_INVOCATION_FORENSIC_AND_LOCAL_REPLAY
+Status: COMPLETE
+Gate: PASS_HARNESS_TARGET_INVOCATION_REPAIR_VERIFIED
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+1. ALFRESCO_CONTENT_UPDATE_SE_R41B_FINAL_REPORT.txt
+   - Complete forensic analysis (9 sections)
+   - Execution record summary
+   - Root cause analysis with proven branch
+   - Code forensics (committed vs working tree)
+   - Seed and task configuration analysis
+   - Local verification results (6/6 tests pass)
+   - Regression test results (243/243 tests pass)
+   - R42 readiness assessment
+   - Security and operational notes
+   - Final classification and gate status
+
+2. ALFRESCO_CONTENT_UPDATE_SE_R41B_EXECUTIVE_SUMMARY.txt
+   - One-page summary for decision makers
+   - Problem statement
+   - Proven root cause
+   - Fix status (exists but not committed)
+   - Verification results
+   - R42 readiness
+   - Classification
+   - Gate status
+   - Recommendation
+
+3. /tmp/test_r41b_local_verification.py
+   - 6 unit tests proving fix works
+   - Tests old code behavior (simulates R41 failure)
+   - Tests new code behavior (accepts R41 seed)
+   - Tests JSON validation still works
+   - Tests edge cases (empty, invalid UTF-8)
+   - All tests PASS
+
+4. /tmp/r41b_old_body_valid.py
+   - Committed version of nv_body_valid.py (what R41 ran)
+   - Retrieved from git commit 6fc82d8
+   - Forensic evidence proving root cause
+
+5. /tmp/r41b_final_root_cause_confirmed.txt
+   - Detailed technical evidence
+   - Complete failure flow (10 steps)
+   - Code comparisons (committed vs working tree)
+   - R42 readiness assessment
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+ROOT CAUSE (PROVEN):
+- File: nv_body_valid.py (commit 6fc82d8, 2026-04-30)
+- Function: normalize_json_body_or_none()
+- Line: 35
+- Branch: Non-JSON rejection
+- Code: if not (text.startswith("{") or text.startswith("[")):
+- Result: Plain text seed rejected with "invalid_json"
+
+IMPACT:
+- 5/5 executions failed validation
+- 0/5 reached target (target_invoked=false)
+- 100% failure rate for content_update scenario
+
+FIX STATUS:
+- Exists: YES (in working tree)
+- Location: nv_body_valid.py + nv_http_harness.py (both modified)
+- Tested: YES (6/6 local tests + 243/243 regression tests)
+- Committed: NO ← CRITICAL GAP
+
+================================================================================
+VERIFICATION SUMMARY
+================================================================================
+
+Local Verification:
+✓ Test 1: Old code rejects plain text (R41 simulated)
+✓ Test 2: New code accepts plain text for content_update
+✓ Test 3: JSON validation still works for metadata_update
+✓ Test 4: Plain text rejected for JSON scenarios
+✓ Test 5: Empty body rejected for content_update
+✓ Test 6: Invalid UTF-8 rejected for content_update
+
+Regression Tests:
+✓ 173 tests: test_alfresco_bounded_feedback.py
+✓ 7 tests: test_nv_http_harness_representation_bridge.py
+✓ 7 tests: test_nv_feedback_execution_identity.py
+✓ 56 tests: test_alfresco_levelc_metadata.py
+
+Total: 243 tests, 109 subtests, 0 failures, 0 regressions
+
+================================================================================
+R42 BLOCKING ISSUE
+================================================================================
+
+CURRENT STATE:
+- Fix exists in working tree (uncommitted)
+- Git status shows: "modified: nv_body_valid.py" and "modified: nv_http_harness.py"
+- If R42 launches NOW, AFL++ will use COMMITTED code (broken)
+- R42 will FAIL with identical validation rejection
+
+REQUIRED ACTION:
+1. Commit nv_body_valid.py
+2. Commit nv_http_harness.py  
+3. Verify atomic commit (both files together)
+4. Then launch R42
+
+RISK IF NOT ADDRESSED:
+- R42 will consume another real attempt
+- R42 will fail identically to R41
+- No real attempts remaining after R42 failure
+- Investigation effort wasted
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+IMMEDIATE ACTION REQUIRED:
+
+git add nv_body_valid.py nv_http_harness.py
+git commit -m "fix(validation): add content_update scenario support for plain text
+
+The content_update scenario accepts raw text/file content, but validation
+code required JSON for all scenarios. This blocked all content_update
+executions in R41 (5/5 failed validation).
+
+Changes:
+- nv_body_valid.py: Add scenario parameter, special-case content_update
+- nv_http_harness.py: Pass scenario to body_validate()
+
+Verification:
+- 6/6 local tests pass (R41 seed now accepted)
+- 243/243 regression tests pass (no regressions)
+
+Root cause: normalize_json_body_or_none() line 35 rejected plain text
+Fix proven: R41 seed now validates successfully with working tree code
+
+Fixes: R41 harness target invocation failure
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+
+DO NOT LAUNCH R42 BEFORE THIS COMMIT.
+
+================================================================================
+GATE STATUS
+================================================================================
+
+R41B_GATE = PASS_HARNESS_TARGET_INVOCATION_REPAIR_VERIFIED
+
+All gate requirements met:
+✓ Root cause identified with certainty
+✓ Exact failure branch proven (nv_body_valid.py:35)
+✓ Fix exists and is complete
+✓ Fix verified with R41 seed (6/6 tests)
+✓ No regressions detected (243/243 tests)
+✓ Fix ready for commit
+
+Gate PASSED. Investigation COMPLETE.
+
+Next step: Commit the fix, then proceed to R42.
+
+================================================================================

@@ -1,0 +1,245 @@
+================================================================================
+ALFRESCO CONTENT UPDATE R20B FINAL REPORT
+Interpreter and Repair Authority Reconciliation
+================================================================================
+
+EXECUTIVE SUMMARY:
+  Status: PASS_MINIMAL_REPAIR_AND_LOCAL_SCORER_VERIFIED
+  
+  R20's scorer blocker was caused by incorrect environment variable naming,
+  not machine environment failure. The correct conda Python interpreter with
+  proper env vars successfully runs the canonical scorer.
+  
+  The duplicate body_only_mode repair was reconciled: runner script line 339
+  is the sole authority; target template file was reverted.
+
+================================================================================
+STEP 1: INTERPRETER RECONCILIATION
+================================================================================
+
+FINDING:
+  The R20 scorer verification used base conda Python interpreter:
+    /home/dministrator/miniconda3/bin/python3
+  
+  This lacks numpy/torch, causing "ModuleNotFoundError: No module named 'numpy'"
+  
+RESOLUTION:
+  Correct interpreter is:
+    /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+  
+  Verified with:
+    $ /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 -c "import numpy, torch; print('OK')"
+    OK
+
+CLASSIFICATION:
+  INTERPRETER_SELECTION_DRIFT (not machine environment failure)
+
+================================================================================
+STEP 2: BODY_ONLY_MODE AUTHORITY RECONCILIATION
+================================================================================
+
+DUPLICATE REPAIR IDENTIFIED:
+  1. scripts/run_alfresco_bounded_feedback.py:339
+     Inside render_content_update_runtime_config()
+     "body_only_mode": 1
+     
+  2. targets/alfresco_content_update.json:11
+     Template file
+     "body_only_mode": 1
+
+AUTHORITY ANALYSIS:
+  The runner script HARDCODES runtime config construction.
+  Target template files are NOT loaded at runtime.
+  
+  Evidence from render_content_update_runtime_config() (line 312-354):
+    ```python
+    config = json.loads(profile_path.read_text(encoding="utf-8"))
+    # ... validation only ...
+    config.update({
+        "platform": "alfresco",
+        "target_type": "http_api",
+        "base": ALFRESCO_BASE_URL,
+        "body_only_mode": 1,  # ← AUTHORITATIVE REPAIR
+        ...
+    })
+    destination.write_text(json.dumps(config, ensure_ascii=False, sort_keys=True))
+    ```
+
+RESOLUTION:
+  - Runner script line 339 is AUTHORITATIVE
+  - Target template file change was NON-FUNCTIONAL
+  - Reverted targets/alfresco_content_update.json to body_only_mode: 0
+  
+  Git operation:
+    $ git checkout targets/alfresco_content_update.json
+    Updated 1 path from the index
+
+VERIFICATION:
+  $ grep "body_only_mode" targets/alfresco_content_update.json
+  "body_only_mode": 0
+  
+  $ grep -A2 -B2 '"body_only_mode": 1' scripts/run_alfresco_bounded_feedback.py | head -10
+  Line 339:         "body_only_mode": 1,
+
+CONCLUSION:
+  Single authoritative repair location confirmed: runner script line 339
+
+================================================================================
+STEP 3: LOCAL CANONICAL SCORER VERIFICATION
+================================================================================
+
+INITIAL BLOCKER:
+  Scorer startup failed with:
+    KeyError: 'feature_order'
+    File ".../model_stage/sefanogan_infer.py", line 96, in __init__
+        self.feature_order = self.meta["feature_order"]
+
+ROOT CAUSE ANALYSIS:
+  Used wrong environment variable names:
+    - Set: SEFANOGAN_MODEL_PATH and SEFANOGAN_META_PATH
+    - Required: SEFANOGAN_REFERENCE_CHECKPOINT and SEFANOGAN_REFERENCE_META_PATH
+  
+  This caused load_validity_backend() to fail path existence check (line 39).
+  The scorer fell back to build_infer_engine() which incorrectly used AEInfer.
+
+CORRECT SCORER PATH IDENTIFIED:
+  Backend: "sefanogan_es_reference"
+  Class: ReferenceScorer (model_stage/sefanogan_es_reference.py:203)
+  
+  ReferenceScorer.score(vector: list[float]) -> float
+  - Expects 32-dimensional feature vector
+  - Does NOT require "feature_order" field in metadata
+  - Validates only: schema_version, model_family, input_dim, feature_contract
+
+CANONICAL ARTIFACTS LOCATED:
+  Checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  Metadata SHA256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  
+  Location:
+    /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/
+      training_runs/seed-20260519/sefanogan_es_reference.pt
+    /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/
+      training_runs/seed-20260519/sefanogan_es_reference.json
+
+VERIFICATION COMMAND:
+  PYTHONPATH="$REPO_ROOT:$PYTHONPATH" \
+  NV_VALID_SOCK="/tmp/r20b_scorer_test.sock" \
+  NV_VALIDITY_BACKEND="sefanogan_es_reference" \
+  SEFANOGAN_REFERENCE_CHECKPOINT="$CANONICAL_CKPT" \
+  SEFANOGAN_REFERENCE_META_PATH="$CANONICAL_META" \
+  /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    model_stage/nv_valid_server_real.py
+
+SCORER OUTPUT:
+  [OK] nv_valid_server_real listening: /tmp/r20b_scorer_test.sock (fmt=text)
+  [REQ] scenario=content_update endpoint=content_update bytes=24
+  [RESP] mode=sefanogan_es_reference score=0.683438 recon_err=0.000000 feat_err=0.000000
+  RPC response: 0.683438
+
+VERIFICATION STATUS: PASS
+  - ReferenceScorer initialized successfully
+  - Unix socket RPC accepted content_update payload
+  - Score returned via Protocol V2
+  - No KeyError, no module import errors
+
+================================================================================
+STEP 4: FOCUSED REGRESSION
+================================================================================
+
+TEST SUITE 1: test_content_update_scorer_participation.py
+  5 tests PASSED
+  
+  Coverage:
+  - RPC accepts raw text content (not just JSON)
+  - Scorer stats structure supports RPC counters
+  - Model comparison validation logic (zero vs nonzero invocations)
+  - Harness-scorer integration components exist
+
+TEST SUITE 2: test_content_update_seed_contract_red.py
+  8 tests PASSED (4 subtests)
+  
+  Coverage:
+  - Authoritative content_update seeds are plain text
+  - Authoritative metadata_update seeds are JSON metadata
+  - Seed contracts remain distinct across scenarios
+  - Runner respects scenario parameter
+
+REGRESSION STATUS: PASS (13 tests, 0 failures)
+
+================================================================================
+STEP 5: CLEANUP VERIFICATION
+================================================================================
+
+SCORER PROCESS CLEANUP:
+  PID 62930 terminated via kill signal
+  Socket /tmp/r20b_scorer_test.sock removed
+  No orphan processes remain
+
+VERIFICATION:
+  $ ps aux | grep nv_valid_server_real | grep -v grep
+  (no output - clean)
+
+================================================================================
+R20B RECONCILIATION SUMMARY
+================================================================================
+
+INTERPRETER DRIFT CONFIRMED:
+  - R20 used wrong Python interpreter (base conda vs aflpp-se-calib-pip)
+  - Correct interpreter verified with scorer RPC test: PASS
+  
+ENVIRONMENT VARIABLE NAMING ERROR CONFIRMED:
+  - R20 used SEFANOGAN_MODEL_PATH (wrong)
+  - Correct: SEFANOGAN_REFERENCE_CHECKPOINT
+  - This is the PRIMARY root cause of R20 scorer blocker
+
+BODY_ONLY_MODE AUTHORITY ESTABLISHED:
+  - Runner script line 339 is sole authority
+  - Target template change reverted (non-functional duplicate)
+  
+MINIMAL REPAIR STATE VERIFIED:
+  - Single authoritative body_only_mode location
+  - No extraneous changes in template files
+  - Focused regression tests: 13 PASS, 0 FAIL
+
+SCORER INFRASTRUCTURE STATUS:
+  - ReferenceScorer path works correctly with proper env vars
+  - Canonical artifacts verified via SHA256
+  - Protocol V2 RPC functional for content_update scenario
+
+================================================================================
+FINAL GATE STATUS
+================================================================================
+
+GATE: PASS_MINIMAL_REPAIR_AND_LOCAL_SCORER_VERIFIED
+
+EVIDENCE ARTIFACTS:
+  1. Interpreter verification: /tmp/r20b_interpreter_check.txt
+  2. Authority analysis: /tmp/r20b_authority_check.sh
+  3. Scorer verification log: (inline in Step 3)
+  4. Regression test output: /tmp/r20b_step4_output.txt
+  5. This report: ALFRESCO_CONTENT_UPDATE_R20B_FINAL_REPORT.txt
+
+CONSTRAINTS PRESERVED:
+  ✓ No Alfresco service contact
+  ✓ No real campaign execution
+  ✓ No real-run authorization consumed
+  ✓ No canonical model/metadata/threshold changes
+  ✓ No seed authority changes
+  ✓ No task.json validity injection restored
+  ✓ No Basic Auth changes
+  ✓ No git commit/push/reset/rebase/tag
+
+DELIVERABLES:
+  ✓ R20 scorer blocker root cause identified and proven
+  ✓ Correct Python interpreter documented
+  ✓ Correct environment variable names documented
+  ✓ Duplicate body_only_mode repair reconciled
+  ✓ Authoritative repair location established
+  ✓ Local scorer RPC verified with canonical artifacts
+  ✓ Focused regression tests PASS
+
+================================================================================
+END OF REPORT
+Generated: 2026-09-28
+Session: ALFRESCO_CONTENT_UPDATE_SE_R20B_INTERPRETER_AND_REPAIR_AUTHORITY_RECONCILIATION
+================================================================================

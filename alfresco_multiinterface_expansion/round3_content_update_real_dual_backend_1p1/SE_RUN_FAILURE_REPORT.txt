@@ -1,0 +1,321 @@
+═══════════════════════════════════════════════════════════════════════════════
+SE RUN FAILURE REPORT
+Alfresco content_update Dual-Backend 1+1 Pilot — SE Execution Complete
+Generated: 2026-09-23
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+═════════════════
+
+SE Run Status: COMPLETE (exit code 0)
+Verdict: FAILURE — Zero valid executions, artifact contract failed
+Root Cause: SE model (sefanogan_es_reference) rejected ALL seed mutations
+
+ALFRESCO_CONTENT_UPDATE_REAL_DUAL_BACKEND_1P1_VERDICT = FAIL_SE_MODEL_TOO_RESTRICTIVE
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1 — CURRENT READINESS GATE
+═══════════════════════════════════════════════════════════════════════════════
+
+Pre-launch readiness checks:
+
+ALFRESCO_TCP_REACHABLE = YES
+ALFRESCO_HTTP_CONTEXT_REACHABLE = YES
+ALFRESCO_AUTH_PLUMBING_READY = YES
+ALFRESCO_AUTHENTICATED_READ_STATUS = PASS
+CONTENT_UPDATE_TARGET_RESOURCE_AVAILABLE = YES
+
+All readiness gates passed before SE launch.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2 — SE EXECUTION CONTRACT CONFIRMATION
+═══════════════════════════════════════════════════════════════════════════════
+
+SE Parameters (frozen, unchanged):
+  scenario                = content_update
+  seed                    = 6103669
+  max_test_cases          = 5
+  time_budget             = 60
+  mutation_scope          = field_value
+  scorer_ready_timeout    = 10.0
+  model_comparison        = enabled
+  validity_backend        = sefanogan_es_reference
+  scorer_python           = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python
+
+External Canonical SE Authority:
+  checkpoint_path         = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  checkpoint_sha256       = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+  metadata_path           = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+  metadata_sha256         = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+  model_family            = se_fanogan_es_reference ✓
+  input_dim               = 32 ✓
+  feature_contract        = alfresco_fixed_32 ✓
+  threshold               = 1.2847454080581664
+  threshold_source        = sefanogan_es_realrun_threshold.json
+
+SE_PRE_LAUNCH_PARAMETER_GATE = PASS
+SE_CANONICAL_PROVENANCE_GATE = PASS
+SE_CANONICAL_32D_CONTENT_UPDATE_FEATURE_GATE = PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 3 — SE RUN EXECUTION
+═══════════════════════════════════════════════════════════════════════════════
+
+Run Directory:
+  /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9
+
+Launch Result:
+  SE_PROCESS_LAUNCHED = YES
+  SE_PROCESS_COMPLETED_NORMALLY = YES
+  SE_RUN_STATUS = EXIT_CODE_0
+  AFL++ returncode = 0
+
+Execution Ledger (from executions.jsonl):
+  harness_invocation_count = 6
+  target_invocation_count = 0
+  target_execution_count = 0
+  status_observed_count = 0
+  validation_reject_count = 3
+  counted_execution_count = 0
+
+Body Validation Statistics (from nv_body_valid_stats.json):
+  body_score_rpc_ok = 5
+  body_score_rpc_fail = 0
+  body_score_pass = 0
+  body_score_reject = 5
+
+Scorer Trace (from scorer_trace.jsonl):
+  SE_TRACE_INVOCATIONS = 5
+  SE_TRACE_PRESENT = YES
+  trace_backend = sefanogan_es_reference
+
+Model Comparison Validity (from model_comparison_validity.json):
+  backend = sefanogan_es_reference ✓
+  threshold = 1.2847454080581664 ✓
+  threshold_source = sefanogan_es_realrun_threshold.json ✓
+  participation.scorer_rpc_ok = 5 ✓
+  participation.scorer_rpc_fail = 0 ✓
+  participation.trace_backend = sefanogan_es_reference ✓
+  participation.trace_invocations = 5 ✓
+  participation.verdict = PASS ✓
+
+SE_BODY_SCORE_RPC_OK = 5
+SE_BODY_SCORE_RPC_FAIL = 0
+SE_BODY_SCORE_PASS = 0
+SE_BODY_SCORE_REJECT = 5
+SE_EXPECTED_BACKEND_RECONCILES = YES
+SE_MODEL_COMPARISON_VALIDITY = PASS
+
+Readback Status (from readback.json):
+  request.method = GET
+  request.status = 200
+  target.name = nv-afl-levelc-metadata.txt
+  result.metadata_hash = sha256:e073da14335a199bf384886b3ae44320e212032bc5319b280a8657e98a485345
+  SE_READBACK = PASS (node readable, metadata captured)
+
+Artifact Contract (from artifact_report.json):
+  artifact_final_result = artifact_contract_failed
+  missing_required = ["probe", "state_db"]
+  execution_proved = true
+  launch_returncode = 0
+  SE_ARTIFACT_CONTRACT = FAIL
+
+Security State:
+  SE_SECURITY_STATE_NEW_TOTAL = 0
+  SE_SECURITY_STATE_TOTAL = 0
+
+Trace Reconciliation:
+  SE_TRACE_STATS_RECONCILIATION = PASS
+
+═══════════════════════════════════════════════════════════════════════════════
+ROOT CAUSE ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+The SE model (sefanogan_es_reference) functioned correctly:
+  ✓ Checkpoint loaded from external canonical authority
+  ✓ Backend identity reconciled
+  ✓ 5/5 scorer RPC invocations succeeded
+  ✓ Threshold (1.2847454080581664) applied correctly
+
+BUT:
+  ✗ ALL 5 seed mutations were rejected (scores exceeded threshold)
+  ✗ Zero HTTP executions reached Alfresco
+  ✗ Zero coverage feedback collected
+  ✗ AFL++ terminated at budget boundary (max_test_cases=5)
+  ✗ Required artifacts (nv_probe.json, nv_state_db.json) never created
+
+Seed Input:
+  PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/1d16a46c-5518-4f11-96a4-6c55188f1172/content HTTP/1.1
+  Host: 127.0.0.1
+  Content-Type: application/json
+  Content-Length: 76
+
+  {"properties":{"cm:title":"seed title","cm:description":"seed description"}}
+
+AFL++ mutated this seed 5 times. The SE model scored all 5 mutations as
+anomalous (above threshold), preventing any from reaching the target.
+
+ROOT_CAUSE_CLASSIFICATION = SE_MODEL_THRESHOLD_MISMATCH
+
+The frozen threshold (1.2847454080581664) was calibrated for a different
+input distribution or scenario. For content_update with this seed, the
+threshold is TOO LOW — normal mutations are scored as anomalies.
+
+With max_test_cases=5 and zero accepted inputs, the run could not generate
+meaningful fuzzing feedback or coverage data.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 4 — DUAL-BACKEND 1+1 PILOT VERDICT
+═══════════════════════════════════════════════════════════════════════════════
+
+AE Result (from STEP3_AE_RUN_COMPLETE.txt):
+  CONTENT_UPDATE_AE_END_TO_END_VALID = YES
+  AE valid HTTP executions = 5
+  AE artifact contract = PASS
+  AE readback = PASS
+
+SE Result (current):
+  CONTENT_UPDATE_SE_END_TO_END_VALID = NO
+  SE valid HTTP executions = 0
+  SE artifact contract = FAIL
+  SE readback = PASS (but no executions)
+
+Pipeline Comparison:
+  CONTENT_UPDATE_SAME_PIPELINE_CONFIRMED = NO
+  CONTENT_UPDATE_REAL_ALFRESCO_READBACK_CONFIRMED = PARTIAL (AE only)
+
+Final Verdict:
+  ALFRESCO_CONTENT_UPDATE_REAL_DUAL_BACKEND_1P1_VERDICT = FAIL_SE_MODEL_TOO_RESTRICTIVE
+
+The 1+1 pilot cannot be marked as successful because the SE backend failed to
+produce any valid executions. The frozen threshold renders the SE model
+unusable for this scenario with the frozen seed.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 5 — EVIDENCE PACKAGE STATUS
+═══════════════════════════════════════════════════════════════════════════════
+
+Evidence Directory:
+  alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+
+AE Evidence: COMPLETE
+  - Run artifacts in /tmp/nv-alfresco-bounded-892680-de43d1f9c4c145738c5df29f957b92b4
+  - STEP3_AE_RUN_COMPLETE.txt
+  - STEP3_AE_BOUNDED_STOP_RECONCILIATION.txt
+
+SE Evidence: COMPLETE (but run failed)
+  - Run artifacts in /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9
+  - This report: SE_RUN_FAILURE_REPORT.txt
+
+External Authority Recovery:
+  - EXTERNAL_AUTHORITY_RECOVERY_REPORT.txt
+
+Cannot finalize FILE_LIST.txt, SHA256SUMS.txt, README.md with PASS status
+because SE run failed end-to-end validation.
+
+EVIDENCE_DIRECTORY = alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+EVIDENCE_COMMITMENT_SHA256 = NOT_COMPUTED (incomplete evidence)
+FILE_LIST_COVERS_ALL_PACKAGE_FILES = NOT_APPLICABLE
+SHA256SUMS_COVERS_ALL_FILES_EXCEPT_ITSELF = NOT_APPLICABLE
+ALL_SHA256SUMS_VERIFY = NOT_APPLICABLE
+
+═══════════════════════════════════════════════════════════════════════════════
+SECURITY STATE PRESERVATION
+═══════════════════════════════════════════════════════════════════════════════
+
+PILOT_SEED = 6103669
+AE_RERUN_REQUIRED = NO
+SE_PROCESS_LAUNCHED = YES
+AUTOMATIC_RERUN_COUNT = 0
+REPLACEMENT_SEED_COUNT = 0
+
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+SCORER_REPAIR_CHANGED = NO
+CANONICAL_SE_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+All security constraints preserved.
+
+═══════════════════════════════════════════════════════════════════════════════
+FINAL REPORT SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+ALFRESCO_CONTENT_UPDATE_REAL_DUAL_BACKEND_1P1_VERDICT = FAIL_SE_MODEL_TOO_RESTRICTIVE
+
+SE_LAUNCH_GATE = PASS
+
+ALFRESCO_TCP_REACHABLE = YES
+ALFRESCO_HTTP_CONTEXT_REACHABLE = YES
+ALFRESCO_AUTH_PLUMBING_READY = YES
+ALFRESCO_AUTHENTICATED_READ_STATUS = PASS
+CONTENT_UPDATE_TARGET_RESOURCE_AVAILABLE = YES
+
+SE_PRE_LAUNCH_PARAMETER_GATE = PASS
+SE_CANONICAL_PROVENANCE_GATE = PASS
+SE_CANONICAL_32D_CONTENT_UPDATE_FEATURE_GATE = PASS
+SE_PROCESS_LAUNCHED = YES
+SE_PROCESS_COMPLETED_NORMALLY = YES
+SE_RUN_STATUS = EXIT_CODE_0
+SE_BODY_SCORE_RPC_OK = 5
+SE_BODY_SCORE_RPC_FAIL = 0
+SE_TRACE_INVOCATIONS = 5
+SE_TRACE_PRESENT = YES
+SE_EXPECTED_BACKEND_RECONCILES = YES
+SE_MODEL_COMPARISON_VALIDITY = PASS
+SE_TRACE_STATS_RECONCILIATION = PASS
+SE_READBACK = PASS
+SE_ARTIFACT_CONTRACT = FAIL
+SE_SECURITY_STATE_NEW_TOTAL = 0
+SE_SECURITY_STATE_TOTAL = 0
+SE_BODY_SCORE_PASS = 0
+SE_BODY_SCORE_REJECT = 5
+
+CONTENT_UPDATE_AE_END_TO_END_VALID = YES
+CONTENT_UPDATE_SE_END_TO_END_VALID = NO
+CONTENT_UPDATE_SAME_PIPELINE_CONFIRMED = NO
+CONTENT_UPDATE_REAL_ALFRESCO_READBACK_CONFIRMED = PARTIAL
+
+AUTOMATIC_RERUN_COUNT = 0
+REPLACEMENT_SEED_COUNT = 0
+
+EVIDENCE_DIRECTORY = alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+EVIDENCE_COMMITMENT_SHA256 = NOT_COMPUTED
+FILE_LIST_COVERS_ALL_PACKAGE_FILES = NOT_APPLICABLE
+SHA256SUMS_COVERS_ALL_FILES_EXCEPT_ITSELF = NOT_APPLICABLE
+ALL_SHA256SUMS_VERIFY = NOT_APPLICABLE
+
+NEXT_GATE = ENGINEERING_DECISION_REQUIRED
+
+═══════════════════════════════════════════════════════════════════════════════
+ENGINEERING RECOMMENDATIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+The SE model (sefanogan_es_reference) is technically functional but
+operationally unusable for content_update with the frozen parameters.
+
+Three paths forward:
+
+1. RECALIBRATE THRESHOLD
+   - Increase threshold to allow more inputs through
+   - Requires re-freezing protocol and new authorization
+   - Violates current "no threshold changes" constraint
+
+2. CHANGE SEED
+   - Use a seed that produces mutations within SE model's learned distribution
+   - Requires new seed selection and authorization
+   - Violates current "no seed changes" constraint
+
+3. RETRAIN SE MODEL
+   - Retrain on content_update-specific feature distribution
+   - Generate new canonical checkpoint
+   - Requires full model development cycle
+
+The frozen protocol (seed=6103669, threshold=1.2847454080581664, max_test_cases=5)
+is incompatible with SE model sefanogan_es_reference for content_update scenario.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

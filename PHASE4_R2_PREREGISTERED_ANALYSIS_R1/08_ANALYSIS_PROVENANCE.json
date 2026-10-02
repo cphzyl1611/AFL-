@@ -1,0 +1,53 @@
+{
+  "analysis_provenance": {
+    "analysis_package": "PHASE4_R2_PREREGISTERED_ANALYSIS_R1",
+    "analysis_type": "SUCCESSOR_CORRECTED_PRIMARY_ENDPOINT",
+    "creation_date": "2026-09-22",
+    "predecessor_package": "PHASE4_R2_PREREGISTERED_ANALYSIS",
+    "predecessor_defect": "PRIMARY_ENDPOINT_EXTRACTION_DEFECT",
+    "correction_applied": "Extracted correct primary endpoint security_state_new_total from frozen evidence",
+    "data_sources": {
+      "final_evidence_freeze": {
+        "package": "PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL",
+        "commitment_sha256": "e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486"
+      },
+      "frozen_design": {
+        "package": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN",
+        "key_files": [
+          "02_ENDPOINTS.json",
+          "06_STATISTICAL_ANALYSIS_PLAN.md",
+          "07_FAILURE_EXCLUSION_AND_STOPPING_RULES.md",
+          "10_HUMAN_DECISIONS_REQUIRED.md"
+        ]
+      },
+      "primary_endpoint_extraction": {
+        "ae_source": "nv_state_db.json (array length)",
+        "se_source": "nv_state_trace.jsonl (count 'new':1 entries)",
+        "blocks_extracted": "3-30 (28 analysis-eligible pairs)"
+      }
+    },
+    "analysis_modifications": {
+      "new_experiments_run": false,
+      "raw_evidence_modified": false,
+      "final_evidence_freeze_modified": false,
+      "predecessor_analysis_modified": false,
+      "analysis_population_changed": false,
+      "primary_endpoint_changed": false,
+      "primary_endpoint_corrected": true,
+      "statistical_methods_added": false,
+      "exploratory_endpoints_added": false
+    },
+    "reproducibility": {
+      "extraction_script": "/tmp/extract_corrected_primary.py",
+      "verification_independent": true,
+      "all_values_recomputed": true,
+      "manual_edits": false
+    },
+    "chain_of_custody": {
+      "evidence_freeze_timestamp": "2026-09-21 (prior session)",
+      "reconciliation_timestamp": "2026-09-22 (prior session)",
+      "successor_analysis_timestamp": "2026-09-22 (current session)",
+      "all_artifacts_preserved": true
+    }
+  }
+}

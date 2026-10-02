@@ -1,0 +1,83 @@
+{
+  "provenance_chain": {
+    "stage_0_phase3_evidence_freeze": {
+      "package_name": "PHASE3_FINAL_EVIDENCE_FREEZE",
+      "commitment_sha256": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+      "date": "2026-08-27",
+      "status": "FROZEN",
+      "role": "Baseline SE/AE runtime provenance and 5+5 pilot evidence"
+    },
+    "stage_1_protocol_design": {
+      "package_name": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN",
+      "commitment_sha256": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Complete protocol design with 15 human decision points"
+    },
+    "stage_2_human_decision_reconciliation": {
+      "package_name": "PHASE4_HUMAN_DECISION_RECONCILIATION",
+      "commitment_sha256": "f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Initial reconciliation of sample-size method and order strategy"
+    },
+    "stage_3_approval_blocker_reconciliation": {
+      "package_name": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION",
+      "commitment_sha256": "7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Correction of 6 critical approval blockers",
+      "blockers_resolved": [
+        "Method label verification",
+        "Master seed arithmetic correction (3469967646 → 3485535768)",
+        "Nomenclature correction (4-SHA256 → COMPOSITE_4_FIELD_SOURCE_IDENTITY)",
+        "Full validity gate set restoration",
+        "N=30 interpretation classification",
+        "Counterbalanced order rule specification"
+      ]
+    },
+    "stage_4_human_approval_materialization": {
+      "package_name": "PHASE4_HUMAN_APPROVAL_MATERIALIZED",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Materialization of human approval for all D1-D15 recommended values",
+      "approval_statement": "批准按最终 approval template 的推荐值执行 D1–D15"
+    },
+    "stage_5_formal_execution_freeze": {
+      "package_name": "PHASE4_FORMAL_EXECUTION_FREEZE",
+      "date": "2026-09-21",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "role": "Complete execution freeze binding all approved decisions",
+      "frozen_components": [
+        "Human approval binding",
+        "Composite source identity",
+        "Runtime model provenance",
+        "Formal seed list (30 seeds)",
+        "Formal paired order schedule (15 AE-first, 15 SE-first)",
+        "Formal run budget (MAX_TEST_CASES=5, TIME=60s)",
+        "Endpoint and analysis roles",
+        "Full validity gate contract",
+        "Failure exclusion and interruption rules",
+        "Execution plan",
+        "Provenance chain"
+      ]
+    }
+  },
+  "commitment_chain_integrity": {
+    "phase3_to_phase4_link": "VERIFIED",
+    "protocol_to_reconciliation_link": "VERIFIED",
+    "reconciliation_to_approval_link": "VERIFIED",
+    "approval_to_execution_freeze_link": "VERIFIED",
+    "all_checksums_verified": true
+  },
+  "execution_freeze_metadata": {
+    "freeze_timestamp": "2026-09-21T14:06:00Z",
+    "formal_seed_count": 30,
+    "unique_formal_seeds": 30,
+    "ae_first_blocks": 15,
+    "se_first_blocks": 15,
+    "master_seed": 3485535768,
+    "source_identity_type": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+    "real_experiment_runs": 0
+  }
+}

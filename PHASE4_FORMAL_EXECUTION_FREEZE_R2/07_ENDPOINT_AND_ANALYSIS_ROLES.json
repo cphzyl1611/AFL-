@@ -1,0 +1,48 @@
+{
+  "endpoint_and_analysis_roles": {
+    "frozen_timestamp": "2026-09-21T14:06:00Z",
+    "approved_decisions": "D1, D2"
+  },
+  "primary_confirmatory_endpoint": {
+    "endpoint_name": "security_state_new_total",
+    "endpoint_role": "PRIMARY_CONFIRMATORY",
+    "estimand": "θ = E[Δᵢ] where Δᵢ = security_state_new_total(SE, seed_i) - security_state_new_total(AE, seed_i)",
+    "estimand_type": "MEAN_PAIRED_DIFFERENCE",
+    "analysis_type": "POINT_ESTIMATE_AND_95_PERCENT_CI",
+    "hypothesis_test": "OPTIONAL_SUPPLEMENTARY"
+  },
+  "confirmatory_secondary_endpoints": {
+    "count": 0,
+    "endpoints": [],
+    "note": "No confirmatory secondary endpoints approved"
+  },
+  "secondary_exploratory_endpoints": {
+    "count": 3,
+    "endpoints": [
+      {
+        "endpoint_name": "security_state_total",
+        "description": "Cumulative security state discoveries",
+        "analysis_type": "DESCRIPTIVE_ONLY"
+      },
+      {
+        "endpoint_name": "body_score_pass",
+        "description": "Number of valid bodies by score threshold",
+        "analysis_type": "DESCRIPTIVE_ONLY"
+      },
+      {
+        "endpoint_name": "body_score_reject",
+        "description": "Number of rejected bodies by score threshold",
+        "analysis_type": "DESCRIPTIVE_ONLY"
+      }
+    ],
+    "multiplicity_correction": "NONE",
+    "note": "Exploratory endpoints cannot be promoted to confirmatory status post-hoc"
+  },
+  "objective_type": {
+    "superiority_test": false,
+    "equivalence_test": false,
+    "noninferiority_test": false,
+    "estimation_primary": true,
+    "note": "Primary emphasis on estimation (point estimate + CI), not hypothesis testing"
+  }
+}

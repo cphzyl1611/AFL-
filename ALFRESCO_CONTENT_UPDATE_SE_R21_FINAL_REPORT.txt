@@ -1,0 +1,193 @@
+ALFRESCO_CONTENT_UPDATE_SE_R21_FINAL_REPORT
+=============================================
+
+SESSION: R21_FINAL_SUCCESSOR_REAL_EXECUTION
+TIMESTAMP: 2026-09-29T00:00:00Z
+PREDECESSOR: R20B (PASS_MINIMAL_REPAIR_AND_LOCAL_SCORER_VERIFIED)
+
+EXECUTION SUMMARY
+-----------------
+R21_REAL_RUN_PERFORMED = YES
+R21_COMPLETED_REAL_ATTEMPT_COUNT = 1
+R21_CONSUMED_REAL_ATTEMPT_COUNT = 1
+AUTHORIZED_R21_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_R21_REAL_ATTEMPT_REMAINING = 0
+
+PRELAUNCH CHECKS
+----------------
+All prelaunch checks PASSED:
+- EFFECTIVE_CONTENT_UPDATE_BODY_ONLY_MODE = 1 ✓
+- Scorer Python verification = PASS ✓
+- Canonical artifacts resolved = PASS ✓
+- Auth credentials present = YES ✓
+- Docker engine ready = YES ✓
+
+CAMPAIGN EXECUTION
+------------------
+Launch timestamp: 2026-09-29 00:00:03
+Campaign directory: /tmp/nv-alfresco-bounded-63720-918e324627f84d7d9a4f149abb883308
+AFL command: /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/afl-fuzz -n -m none -t 10000+ -s 12345 -i [seed_dir] -o [afl-out] -- /home/dministrator/miniconda3/bin/python3 /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/nv_http_harness.py
+
+Fuzzer metrics:
+- execs_done = 6
+- execs_per_sec = 1.82
+- Run duration ~3 seconds (aborted by time budget)
+
+ACTUAL CONFIGURATION
+--------------------
+ACTUAL_BODY_ONLY_MODE = 1
+COMMAND_SCENARIO = content_update
+COMMAND_MAX_TEST_CASES = 3
+COMMAND_TIME_BUDGET = 30
+COMMAND_AFL_SEED = 12345
+
+SCORER PARTICIPATION (STEP 4)
+------------------------------
+SCORER_PROCESS_STARTED = NO
+SCORER_ENDPOINT_ESTABLISHED = NO
+ACTUAL_BACKEND = sefanogan_es_reference (configured, never activated)
+ACTUAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d (configured)
+ACTUAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 (configured)
+ACTUAL_THRESHOLD = 1.2847454080581664 (configured)
+ACTUAL_FEATURE_CONTRACT = alfresco_fixed_32 (configured)
+ACTUAL_FEATURE_DIM = 32 (configured)
+ACTUAL_SCENARIO = content_update (configured)
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+Reason: Scorer never started because harness failed to execute HTTP requests.
+
+BODY-MODE REPAIR (STEP 5)
+--------------------------
+ACTUAL_BODY_ONLY_MODE = 1 (verified in target.json)
+INVALID_INPUT_PARSE_COUNT = 0
+INVALID_INPUT_RULE_COUNT = 0
+VALIDITY_REACHED_COUNT = 3
+
+Note: Fuzzer-level validity counters show nv_valid_cnt=3, but execution ledger shows body_validated=false for all executions.
+
+TARGET EXECUTION (STEP 6)
+--------------------------
+TARGET_EXECUTIONS = 0
+HTTP_SUCCESS_COUNT = 0
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = NO
+READBACK_VERIFIED = NOT_APPLICABLE
+CONTENT_IDENTITY_PRESERVED = NOT_APPLICABLE
+CONTENT_UPDATE_EFFECT_CONFIRMED = NO
+
+Execution ledger (5 records):
+- All show: target_invoked=false, status_observed=false, http_status=0
+- Harness was invoked but never completed HTTP requests
+
+FRAMEWORK ACCOUNTING (STEP 7)
+------------------------------
+VALIDITY_SCORER_ACCOUNTING = FAIL (scorer never invoked)
+TARGET_EXECUTION_ACCOUNTING = FAIL (zero target executions)
+SECURITY_STATE_ACCOUNTING = NOT_APPLICABLE
+REWARD_ACCOUNTING = PASS (MAB correctly recorded zero pulls)
+MAB_ACCOUNTING = PASS (all arms at zero, no updates)
+SCHEDULER_REPORTING_ACCOUNTING = PASS (1 seed selection recorded)
+
+ROOT CAUSE ANALYSIS
+-------------------
+The harness failed to execute any HTTP requests despite being invoked by AFL.
+
+Evidence:
+1. Execution ledger shows 5 harness invocations, all with target_invoked=false
+2. No nv_http_status.json file was created
+3. No nv_probe.json, nv_state_db.json, or state_trace files created
+4. AFL fuzzer_stats shows nv_valid_cnt=3 but zero actual HTTP executions
+
+Investigation traced the failure to:
+
+**HARNESS PYTHON ENVIRONMENT MISMATCH**
+
+The runner script uses sys.executable to build the harness command.
+When the runner is invoked with:
+  python3 scripts/run_alfresco_bounded_feedback.py --scorer-python /path/to/conda/env/python3 ...
+
+The harness inherits the runner's Python (base conda), NOT the --scorer-python value.
+
+AFL command used:
+  -- /home/dministrator/miniconda3/bin/python3 nv_http_harness.py
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       Base conda Python (sys.executable from runner process)
+
+Required Python:
+  /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+       Conda environment with all dependencies
+
+The base conda Python lacks required dependencies for the harness,
+causing silent failures during AFL persistent-mode execution.
+
+CORRECT LAUNCH PATTERN (for future attempts):
+  /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    scripts/run_alfresco_bounded_feedback.py \
+    --scorer-python /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    [other args]
+
+This ensures both harness and scorer use the same environment.
+
+MISSING ARTIFACTS
+-----------------
+The following required artifacts were not created:
+- nv_http_status.json
+- nv_http_status.json.seq
+- nv_probe.json
+- nv_state_db.json
+- nv_state_trace.jsonl
+- nv_ctx.json
+- evidence/readback.json
+- model_comparison_participation (scorer trace)
+
+Artifact contract validation: FAILED
+Final artifact result: artifact_contract_failed
+
+SCIENTIFIC OUTCOME
+------------------
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = FAIL_RUNTIME_OR_CONTRACT
+
+Justification:
+- Scorer never started (SCORER_INVOCATIONS = 0)
+- No target executions occurred (TARGET_EXECUTIONS = 0)
+- Harness failed due to environment misconfiguration
+- Post-launch runtime failure
+
+This is NOT a valid scientific result because the harness never executed.
+
+FINAL GATE
+----------
+CONTENT_UPDATE_SE_R21_GATE = FAIL_RUNTIME_OR_CONTRACT
+
+ATTEMPT ACCOUNTING
+------------------
+R21 consumed its single authorized real attempt.
+No retry is authorized per task instructions.
+
+SUCCESSOR RECOMMENDATIONS
+-------------------------
+If a future session (R22 or later) is authorized:
+
+1. MANDATORY FIX: Launch the runner with the correct Python interpreter:
+   /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 scripts/run_alfresco_bounded_feedback.py
+
+2. Verify harness dependencies in the launch environment before the campaign
+
+3. Reuse all R20B canonical artifacts (checkpoint, metadata, threshold)
+
+4. Maintain all other R21 parameters:
+   - body_only_mode = 1
+   - max_test_cases = 3
+   - time_budget = 30
+   - afl_seed = 12345
+   - backend = sefanogan_es_reference
+
+END OF REPORT

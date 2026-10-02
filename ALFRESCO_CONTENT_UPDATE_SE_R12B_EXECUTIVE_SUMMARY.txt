@@ -1,0 +1,126 @@
+═══════════════════════════════════════════════════════════════════════════════
+R12B EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+TASK: ALFRESCO_CONTENT_UPDATE_SE_RUNTIME_ARTIFACT_RESOLUTION_RECONCILIATION_R12B
+DATE: 2026-09-26
+SESSION: Read-only bounded reconciliation (no code changes, no model copies)
+
+PREDECESSOR CONTEXT:
+  R11 established canonical 32D Alfresco SE artifacts as runtime authority
+  R12 observed repo-local 38D experimental artifacts and blocked on "model drift"
+  R12B reconciles: does runtime actually load repo-local 38D or external 32D?
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY FINDINGS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ARTIFACT INVENTORY — THREE DISTINCT IDENTITIES:
+
+   A. Repo-local 38D experimental (O2OA research artifacts):
+      • checkpoint: sefanogan_gan_model.pt (SHA256: 205a6a20...)
+      • metadata: sefanogan_es_reference_meta.json (38D, alfresco_metadata_38)
+      • Status: R11 confirmed these are NOT canonical Alfresco authority
+
+   B. External 32D canonical (R11 Alfresco authority):
+      • checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+      • metadata SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+      • feature_dim: 32, feature_contract: alfresco_fixed_32
+      • Location: external Alfresco audit/training artifact location (NOT in repo)
+
+   C. Threshold artifact (repo-local wrapper pointing to canonical):
+      • File: sefanogan_es_realrun_threshold.json (SHA256: aeae50b9...)
+      • Embedded refs: correctly point to external 32D canonical artifacts
+      • Threshold: 1.2847454080581664 (matches R11 canonical)
+      • Status: ✓ VALIDATED
+
+2. RUNTIME SELECTION MECHANISM — EXPLICIT ENV VAR CONTROL:
+
+   Runtime artifact loading is controlled by environment variables:
+     • SEFANOGAN_REFERENCE_CHECKPOINT → checkpoint file path
+     • SEFANOGAN_REFERENCE_META_PATH → metadata file path
+
+   Code location: model_stage/nv_valid_server_real.py:141-142
+   Validation: load_validity_backend() enforces non-empty strings + file existence
+   NO FALLBACK: raises ValueError("SE_REFERENCE_ARTIFACTS_REQUIRED") if unset
+
+3. CONFIGURATION GAP — CRITICAL FINDING:
+
+   The orchestration script (scripts/run_alfresco_bounded_feedback.py) sets
+   NV_VALIDITY_BACKEND but does NOT set the required artifact path env vars.
+
+   Current behavior when backend=sefanogan_es_reference:
+     → Scorer server starts
+     → Reads SEFANOGAN_REFERENCE_CHECKPOINT via os.getenv() → returns ""
+     → Reads SEFANOGAN_REFERENCE_META_PATH via os.getenv() → returns ""
+     → Calls load_validity_backend() with empty strings
+     → CRASHES: ValueError("SE_REFERENCE_ARTIFACTS_REQUIRED")
+
+   Result: NO artifacts (repo-local or canonical) are loaded. Scorer fails at startup.
+
+4. R12 "MODEL DRIFT" RECONCILIATION:
+
+   R12 observation: "repo-local artifacts are 38D" → ✓ CORRECT
+   R12 conclusion: "runtime drift from canonical" → ✗ UNVERIFIABLE
+
+   Why unverifiable:
+     • Runtime selection is explicit (env vars), not implicit (path scanning)
+     • Current config does NOT set required env vars
+     • Scorer crashes before loading ANY artifacts
+     • No evidence runtime would ever load repo-local 38D artifacts
+
+   R12B classification: UNRESOLVED
+   
+   Rationale: The question "does runtime point to 38D?" is undefined because
+   runtime cannot start. The real issue is CONFIGURATION GAP, not model drift.
+
+═══════════════════════════════════════════════════════════════════════════════
+VERDICT
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R12B_GATE = BLOCKED_RUNTIME_SELECTION_UNRESOLVED
+
+Gate cannot pass because:
+  ✗ Runtime checkpoint/metadata env vars NOT configured
+  ✗ Scorer server will crash at startup
+  ✗ Cannot determine effective runtime artifact selection
+
+Threshold artifact status:
+  ✓ Validated, correctly references R11 canonical 32D artifacts
+  ✓ Threshold value matches R11 canonical: 1.2847454080581664
+
+Session compliance:
+  ✓ Read-only reconciliation (no code changes, no model copies, no real run)
+
+═══════════════════════════════════════════════════════════════════════════════
+CORRECTIVE ACTION
+═══════════════════════════════════════════════════════════════════════════════
+
+Location: scripts/run_alfresco_bounded_feedback.py
+Function: ScorerServer.start() (line ~2696)
+
+Required change:
+  When self.backend == "sefanogan_es_reference", inject:
+    env["SEFANOGAN_REFERENCE_CHECKPOINT"] = "[path to canonical 32D checkpoint]"
+    env["SEFANOGAN_REFERENCE_META_PATH"] = "[path to canonical 32D metadata]"
+
+  Paths must resolve to files with:
+    checkpoint SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+    metadata SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+═══════════════════════════════════════════════════════════════════════════════
+NEXT STEPS
+═══════════════════════════════════════════════════════════════════════════════
+
+Successor task: ALFRESCO_CONTENT_UPDATE_SE_R12C_RUNTIME_CONFIGURATION_REPAIR
+
+Scope:
+  1. Update ScorerServer.start() with canonical artifact env var injection
+  2. Verify scorer server starts successfully
+  3. Verify runtime loads canonical 32D artifacts (feature_dim=32, alfresco_fixed_32)
+  4. Re-run R12B to confirm PASS
+
+After R12C PASS:
+  Proceed to live readiness gate and real content_update + SE execution
+
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,38 @@
+{
+  "analysis_population_accounting": {
+    "execution_valid_pair_count": 30,
+    "analysis_eligible_pair_count": 28,
+    "analysis_excluded_valid_pair_count": 2,
+    "note": "The formal experiment execution produced 30 valid paired blocks. The primary analysis population contains 28 analysis-eligible pairs under the frozen/adjudicated population rule.",
+    "execution_valid_pairs": {
+      "definition": "Paired blocks where both AE and SE runs passed all validity gates",
+      "source": "PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL/01_CANONICAL_30_BLOCK_LEDGER.json",
+      "blocks": "1-30 (all marked pair_status = PASS)"
+    },
+    "analysis_eligible_pairs": {
+      "definition": "Execution-valid pairs with complete primary endpoint data for both AE and SE",
+      "source": "Frozen PAIR_EXCLUSION_RULE + special adjudications",
+      "blocks": "3-30 (28 pairs)"
+    },
+    "excluded_pairs_detail": [
+      {
+        "block_index": 1,
+        "execution_validity": "PASS (both AE and SE valid)",
+        "exclusion_reason": "Block 1 evidence carried forward from prior R2 execution - no primary endpoint data in current R2 execution freeze",
+        "exclusion_authorization": "Explicit special adjudication in canonical ledger",
+        "ae_status": "VALID_CARRIED_FORWARD",
+        "se_status": "VALID_CARRIED_FORWARD"
+      },
+      {
+        "block_index": 2,
+        "execution_validity": "PASS (both AE and SE valid)",
+        "exclusion_reason": "SE primary endpoint data missing - SE run carried forward from prior execution, not rerun in R2",
+        "exclusion_authorization": "Frozen PAIR_EXCLUSION_RULE requires complete paired primary endpoint data for both runs",
+        "ae_status": "VALID_AUTHORIZED_RETRY",
+        "se_status": "VALID_CARRIED_FORWARD",
+        "note": "AE retry executed with primary data; SE carried forward without primary data rerun"
+      }
+    ],
+    "clarification": "Do not interpret the 30→28 reduction as experimental failure. All 30 pairs executed successfully and passed validity gates. The 2-pair exclusion is due to documented special handling (carry-forward) that prevented complete primary endpoint data collection for those specific pairs."
+  }
+}

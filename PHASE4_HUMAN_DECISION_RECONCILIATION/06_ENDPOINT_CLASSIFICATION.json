@@ -1,0 +1,136 @@
+{
+  "endpoint_verification_source": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/02_ENDPOINTS.json",
+  "phase3_evidence_source": "PHASE3_FINAL_EVIDENCE_FREEZE/04_DESCRIPTIVE_RESULTS.json",
+  "canonical_endpoint_names": {
+    "primary_confirmatory": {
+      "name": "security_state_new_total",
+      "type": "count",
+      "source": "fuzzer_stats file emitted by afl-fuzz",
+      "description": "Number of testcases that triggered new security_state coverage transitions",
+      "role": "PRIMARY_CONFIRMATORY",
+      "phase3_observed_values": {
+        "ae_runs": [1, 1, 1, 1, 1],
+        "se_runs": [1, 1, 1, 1, 1],
+        "paired_differences": [0, 0, 0, 0, 0]
+      }
+    },
+    "secondary_exploratory": [
+      {
+        "name": "security_state_total",
+        "type": "count",
+        "source": "fuzzer_stats",
+        "description": "Total security_state coverage observed (cumulative, not new)",
+        "role": "SECONDARY_EXPLORATORY",
+        "note": "Confounds initial corpus with new discoveries; reported descriptively"
+      },
+      {
+        "name": "body_score_pass",
+        "type": "count",
+        "source": "run manifest JSON",
+        "description": "Number of testcases that passed the scoring threshold",
+        "role": "SECONDARY_EXPLORATORY",
+        "phase3_observed_behavior": "AE accepted all (25/25 per run), SE rejected all (0/25 per run)",
+        "note": "Describes model-specific filtering behavior, not effectiveness"
+      },
+      {
+        "name": "body_score_reject",
+        "type": "count",
+        "source": "run manifest JSON",
+        "description": "Number of testcases that failed the scoring threshold",
+        "role": "SECONDARY_EXPLORATORY",
+        "note": "Inverse of body_score_pass; describes accept/reject patterns"
+      }
+    ],
+    "validity_gates": [
+      {
+        "name": "body_score_rpc_ok",
+        "type": "count",
+        "source": "run manifest JSON",
+        "description": "Number of successful RPC calls to the scoring backend",
+        "gate_condition": ">0",
+        "role": "VALIDITY_GATE",
+        "note": "Run-level exclusion criterion; not a scientific endpoint"
+      },
+      {
+        "name": "body_score_rpc_fail",
+        "type": "count",
+        "source": "run manifest JSON",
+        "description": "Number of failed RPC calls to the scoring backend",
+        "gate_condition": "=0",
+        "role": "VALIDITY_GATE",
+        "note": "Run-level exclusion criterion; not a scientific endpoint"
+      },
+      {
+        "name": "trace_invocations",
+        "type": "count",
+        "source": "run manifest JSON",
+        "description": "Number of times the scorer trace mechanism was invoked",
+        "gate_condition": ">0",
+        "role": "VALIDITY_GATE",
+        "note": "Evidence contract requirement; not a scientific endpoint"
+      }
+    ],
+    "diagnostic_only": [
+      {
+        "name": "counted_execution_count",
+        "type": "count",
+        "source": "fuzzer_stats",
+        "description": "Total executions counted by the fuzzer during the run",
+        "role": "DIAGNOSTIC",
+        "note": "Engineering diagnostic; verifies execution budget consumption"
+      },
+      {
+        "name": "wall_clock_seconds",
+        "type": "float",
+        "source": "run manifest JSON",
+        "description": "Wall-clock time elapsed during the fuzzing run",
+        "role": "DIAGNOSTIC",
+        "note": "Engineering diagnostic; verifies time budget respected"
+      },
+      {
+        "name": "target_baseline_identity",
+        "type": "string",
+        "source": "run manifest JSON",
+        "description": "Hash or identifier of the target baseline state used",
+        "role": "PROVENANCE",
+        "note": "Reproducibility requirement; not a scientific endpoint"
+      }
+    ]
+  },
+  "nomenclature_corrections": {
+    "incorrect_names_not_used": [
+      "sec_pass",
+      "body_pass",
+      "reject_count"
+    ],
+    "correct_canonical_names": [
+      "security_state_new_total",
+      "security_state_total",
+      "body_score_pass",
+      "body_score_reject",
+      "body_score_rpc_ok",
+      "body_score_rpc_fail",
+      "trace_invocations"
+    ]
+  },
+  "classification_summary": {
+    "primary_confirmatory_count": 1,
+    "secondary_exploratory_count": 3,
+    "validity_gate_count": 3,
+    "diagnostic_only_count": 3
+  },
+  "multiplicity_policy": {
+    "confirmatory_comparisons": 1,
+    "multiplicity_adjustment_required": false,
+    "rationale": "Single primary confirmatory endpoint; secondary endpoints are exploratory"
+  },
+  "phase3_observed_coverage_equivalence_note": {
+    "statement": "Both backends discovered identical coverage (security_state_new_total=1) for all paired seeds",
+    "interpretation": "Descriptive observation from N=5 pilot, not a claim of general equivalence",
+    "does_not_imply": [
+      "AE and SE are equivalent",
+      "Coverage will always be identical",
+      "No difference will be found in larger study"
+    ]
+  }
+}

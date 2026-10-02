@@ -1,0 +1,305 @@
+ALFRESCO_CONTENT_UPDATE_SE_R23_FINAL_REPORT
+==============================================
+Generated: 2026-09-29 01:07 UTC
+Session: R23 successor real execution with fixed interpreter
+Authority: CONTENT_UPDATE_SE_R22_GATE = PASS_INTERPRETER_PROPAGATION_VERIFIED
+
+EXECUTIVE SUMMARY
+=================
+R23 authorized exactly ONE real execution attempt using the authoritative Python
+interpreter for both runner and scorer harness.
+
+The run was LAUNCHED successfully but USER-ABORTED after 3 seconds during AFL
+startup calibration, before the scorer process started and before any target
+HTTP requests were sent.
+
+One real attempt was consumed. No retry authorized.
+
+FINAL GATE: FAIL_RUNTIME_OR_CONTRACT (user abort = runtime failure)
+
+PRELAUNCH VERIFICATION (STEP 1)
+================================
+EFFECTIVE_CONTENT_UPDATE_BODY_ONLY_MODE = 1
+  Source: scripts/run_alfresco_bounded_feedback.py:339 (render_content_update_runtime_config)
+  Verification: content_update scenario forces body_only_mode=1 regardless of target.json
+
+RUNNER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+  Verification: import numpy PASS, import torch PASS
+
+SCORER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+  Verification: import numpy PASS, import torch PASS, import model_stage.nv_valid_server_real PASS
+
+CANONICAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  Resolved path: /home/dministrator/alfresco-audit-artifacts/sefanogan_es_reference_checkpoint_4eace87a.pt
+  Match count: 1 (unique)
+
+CANONICAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  Resolved path: /home/dministrator/alfresco-audit-artifacts/sefanogan_es_reference_meta_2a73ccc3.json
+  Match count: 1 (unique)
+
+CANONICAL_THRESHOLD = 1.2847454080581664
+  Source: sefanogan_es_realrun_threshold.json
+
+CANONICAL_FEATURE_CONTRACT = alfresco_fixed_32
+CANONICAL_FEATURE_DIM = 32
+CANONICAL_SCENARIO = content_update
+CANONICAL_BACKEND = sefanogan_es_reference
+
+ALFRESCO_USER_PRESENT = YES
+ALFRESCO_PASS_PRESENT = YES
+AUTHENTICATED_READ_SUCCEEDED = YES
+  Test: curl -u $ALFRESCO_USER:$ALFRESCO_PASS http://localhost:5002/api/status
+  Result: HTTP 200, {"status":"ok"}
+
+DOCKER_ENGINE_READY = YES
+  Container: alfresco_dev_server, State: running, Health: healthy
+
+ALFRESCO_LIVE = YES
+TARGET_RESOURCE_READY = YES
+  Test: curl http://localhost:5002/api/v1/resource/4a3d9b2e-8f7c-11ec-b3d0-0242ac120003
+  Result: HTTP 200, resource present
+
+PRELAUNCH_GATE = PASS
+
+COMMAND CONSTRUCTION (STEP 2)
+==============================
+Constructed command:
+  /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --model-comparison \
+    --validity-backend sefanogan_es_reference \
+    --afl-seed 12345 \
+    --scorer-python /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3 \
+    --max-test-cases 3 \
+    --time-budget 30
+
+Environment:
+  SEFANOGAN_REFERENCE_CHECKPOINT=/home/dministrator/alfresco-audit-artifacts/sefanogan_es_reference_checkpoint_4eace87a.pt
+  SEFANOGAN_REFERENCE_META_PATH=/home/dministrator/alfresco-audit-artifacts/sefanogan_es_reference_meta_2a73ccc3.json
+  ALFRESCO_USER=(present)
+  ALFRESCO_PASS=(present)
+
+COMMAND_PREFIX_USES_AUTHORITATIVE_PYTHON = YES
+COMMAND_SCORER_PYTHON_MATCHES_RUNNER = YES
+COMMAND_HAS_MODEL_COMPARISON = YES
+COMMAND_HAS_CANONICAL_BACKEND = YES
+COMMAND_SCENARIO = content_update
+COMMAND_BODY_ONLY_MODE_EFFECTIVE = 1
+COMMAND_MAX_TEST_CASES = 3
+COMMAND_TIME_BUDGET = 30
+COMMAND_AFL_SEED = 12345
+
+COMMAND_VERIFICATION_GATE = PASS
+
+REAL EXECUTION (STEP 3)
+========================
+Launch time: 2026-09-29 01:04:40 UTC
+Temp directory: /tmp/nv-alfresco-bounded-66848-7683663fdf114e089eea20148b6bd487
+
+Launch outcome: STARTED then USER-ABORTED after 3 seconds
+
+R23_REAL_RUN_PERFORMED = YES
+R23_CONSUMED_REAL_ATTEMPT_COUNT = 1
+
+RUNTIME INTERPRETER IDENTITY (STEP 4)
+======================================
+ACTUAL_RUNNER_SYS_EXECUTABLE = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+  Source: scripts/run_alfresco_bounded_feedback.py (launched with this interpreter)
+
+ACTUAL_HARNESS_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+  Source: /tmp/nv-alfresco-bounded-66848-7683663fdf114e089eea20148b6bd487/afl-out/fuzzer_stats
+  Field: command_line, afl_banner
+
+ACTUAL_SCORER_PYTHON = UNKNOWN (scorer process never started due to user abort)
+
+RUNTIME_INTERPRETER_VERIFICATION = INCOMPLETE
+
+SCORER PARTICIPATION (STEP 5)
+==============================
+Source: /tmp/nv-alfresco-bounded-66848-7683663fdf114e089eea20148b6bd487/evidence/model_comparison_validity.json
+
+SCORER_PROCESS_STARTED = NO (abort during AFL calibration)
+SCORER_ENDPOINT_ESTABLISHED = NO
+
+ACTUAL_BACKEND = sefanogan_es_reference (configured, not runtime-verified)
+ACTUAL_CHECKPOINT_SHA256 = UNKNOWN (scorer never loaded checkpoint)
+ACTUAL_METADATA_SHA256 = UNKNOWN (scorer never loaded metadata)
+ACTUAL_THRESHOLD = 1.2847454080581664 (configured, not runtime-verified)
+ACTUAL_FEATURE_CONTRACT = UNKNOWN (scorer never initialized)
+ACTUAL_FEATURE_DIM = UNKNOWN
+ACTUAL_SCENARIO = content_update (configured, not runtime-verified)
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+Model comparison participation verdict: INVALID_FOR_MODEL_COMPARISON
+Reason codes: ZERO_SCORER_INVOCATIONS, TRACE_MISSING
+
+SCORER_PARTICIPATION_GATE = FAIL (scorer never started)
+
+REPAIRED INPUT MODE (STEP 6)
+=============================
+Source: /tmp/nv-alfresco-bounded-66848-7683663fdf114e089eea20148b6bd487/evidence/artifact_report.json
+
+ACTUAL_BODY_ONLY_MODE = UNKNOWN (harness never reached steady-state fuzzing)
+
+HARNESS_INVOCATIONS = 5 (all during AFL calibration)
+INVALID_INPUT_PARSE_COUNT = 0
+INVALID_INPUT_RULE_COUNT = 0
+VALIDITY_REACHED_COUNT = 0
+
+Execution ledger:
+  counted_execution_count: 2
+  target_execution_count: 0 (no HTTP requests sent)
+  pending_cleanup_count: 3
+  invalid_execution_identity_count: 2
+
+INPUT_MODE_VERIFICATION = INCOMPLETE
+
+TARGET EXECUTION AND READBACK (STEP 7)
+=======================================
+TARGET_EXECUTIONS = 0
+HTTP_SUCCESS_COUNT = 0
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = NO
+READBACK_VERIFIED = NOT_APPLICABLE
+CONTENT_IDENTITY_PRESERVED = NOT_APPLICABLE
+CONTENT_UPDATE_EFFECT_CONFIRMED = NOT_APPLICABLE
+
+Reason: run aborted before any valid executions reached the target
+
+TARGET_EXECUTION_GATE = NOT_APPLICABLE
+
+FRAMEWORK ACCOUNTING (STEP 8)
+==============================
+VALIDITY_SCORER_ACCOUNTING = NOT_APPLICABLE (scorer never started)
+TARGET_EXECUTION_ACCOUNTING = NOT_APPLICABLE (zero target executions)
+SECURITY_STATE_ACCOUNTING = NOT_APPLICABLE
+REWARD_ACCOUNTING = NOT_APPLICABLE
+MAB_ACCOUNTING = RECONCILED (zero updates expected, zero observed)
+SCHEDULER_REPORTING_ACCOUNTING = NOT_APPLICABLE
+
+MAB journal verification:
+  record_count: 3 (initialization records)
+  update_count: 0
+  per_arm_pulls: [0, 0, 0]
+  per_arm_reward_sums: [0.0, 0.0, 0.0]
+  reconciled: true
+
+SCIENTIFIC OUTCOME
+==================
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = FAIL_RUNTIME_OR_CONTRACT
+
+Justification:
+  User abort during AFL startup calibration constitutes a runtime failure.
+  Scorer never started, target never executed, no scientific evidence collected.
+
+This is NOT:
+  - A code defect (prelaunch verification passed)
+  - A configuration error (command construction passed)
+  - A scorer failure (scorer never started)
+  - A legitimate "zero accepted candidates" outcome (no candidates reached scorer)
+
+This is a runtime failure caused by external interruption.
+
+FINAL GATE
+==========
+CONTENT_UPDATE_SE_R23_GATE = FAIL_RUNTIME_OR_CONTRACT
+
+ATTEMPT ACCOUNTING
+==================
+R23_REAL_RUN_PERFORMED = YES
+R23_COMPLETED_REAL_ATTEMPT_COUNT = 0 (launched but not completed)
+R23_CONSUMED_REAL_ATTEMPT_COUNT = 1 (launch consumes attempt regardless of completion)
+
+AUTHORIZED_R23_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_R23_REAL_ATTEMPT_REMAINING = 0
+
+No retry authorized.
+
+RUNTIME EVIDENCE SUMMARY
+========================
+ACTUAL_RUNNER_SYS_EXECUTABLE = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+ACTUAL_HARNESS_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+ACTUAL_SCORER_PYTHON = UNKNOWN (never started)
+
+ACTUAL_BODY_ONLY_MODE = UNKNOWN (never reached fuzzing)
+
+SCORER_PROCESS_STARTED = NO
+SCORER_ENDPOINT_ESTABLISHED = NO
+
+ACTUAL_BACKEND = sefanogan_es_reference (configured only)
+ACTUAL_CHECKPOINT_SHA256 = UNKNOWN
+ACTUAL_METADATA_SHA256 = UNKNOWN
+ACTUAL_THRESHOLD = 1.2847454080581664 (configured only)
+ACTUAL_FEATURE_CONTRACT = UNKNOWN
+ACTUAL_FEATURE_DIM = UNKNOWN
+ACTUAL_SCENARIO = content_update (configured only)
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+TARGET_EXECUTIONS = 0
+HTTP_SUCCESS_COUNT = 0
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = NO
+READBACK_VERIFIED = NOT_APPLICABLE
+CONTENT_UPDATE_EFFECT_CONFIRMED = NOT_APPLICABLE
+
+VALIDITY_SCORER_ACCOUNTING = NOT_APPLICABLE
+TARGET_EXECUTION_ACCOUNTING = NOT_APPLICABLE
+SECURITY_STATE_ACCOUNTING = NOT_APPLICABLE
+REWARD_ACCOUNTING = NOT_APPLICABLE
+MAB_ACCOUNTING = RECONCILED (zero updates)
+SCHEDULER_REPORTING_ACCOUNTING = NOT_APPLICABLE
+
+ARTIFACT LOCATIONS
+==================
+Temp directory: /tmp/nv-alfresco-bounded-66848-7683663fdf114e089eea20148b6bd487
+Artifact report: .../evidence/artifact_report.json
+Model comparison: .../evidence/model_comparison_validity.json
+Executions ledger: .../evidence/executions.jsonl
+MAB journal: .../evidence/mab_updates.jsonl
+AFL stats: .../afl-out/fuzzer_stats
+
+Missing (due to abort):
+  - nv_probe.json
+  - nv_state_db.json
+  - nv_state_trace.jsonl
+  - nv_http_status.json
+  - nv_http_status.json.seq
+  - nv_ctx.json
+  - readback.json
+
+CONCLUSION
+==========
+R23 successfully constructed and launched the real execution with the authoritative
+Python interpreter for both runner and harness (scorer identity unproven due to
+early abort).
+
+The run was interrupted by user action after 3 seconds, during AFL startup
+calibration, before the scorer process started and before any target HTTP requests
+were sent.
+
+One authorized real attempt was consumed. No retry is authorized under R23 rules.
+
+The R23 gate is FAIL_RUNTIME_OR_CONTRACT due to external runtime interruption.
+
+No code changes, configuration changes, or model artifact changes are indicated.
+The prelaunch verification passed and the command construction was correct.
+
+To obtain scientific evidence, a future session would need to authorize a new
+successor run (R24 or later) and allow it to complete without interruption.
+
+End of Report

@@ -1,0 +1,142 @@
+{
+  "frozen_artifacts": {
+    "phase3_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "se_backend": {
+      "name": "sefanogan_es_reference",
+      "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+      "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+      "metadata_input_dim": 32,
+      "threshold": 1.2847454080581664,
+      "authority": "Phase-3 frozen canonical SE reference",
+      "provenance_requirement": "Every SE run must prove exact checkpoint and metadata SHA256 identity at runtime"
+    },
+    "ae_backend": {
+      "name": "alfresco_ae_v1",
+      "threshold": 1.623614,
+      "authority": "Phase-3 frozen AE configuration",
+      "provenance_requirement": "Every AE run must record exact backend name and threshold"
+    }
+  },
+  "source_baseline": {
+    "policy": "All runs within the formal experiment must execute from the same git commit SHA",
+    "determination": "Human decision required: which commit becomes the formal experiment baseline?",
+    "options": [
+      "Current HEAD at protocol freeze time",
+      "Phase-3 final commit (if no source changes are needed)",
+      "A new commit that includes only protocol/documentation (no fuzzer/harness changes)"
+    ],
+    "recording": "Every run manifest must record the exact git commit SHA it executed from"
+  },
+  "target_configuration": {
+    "target_identity": "Formal experiment must freeze exact target endpoint, host, and configuration",
+    "target_baseline_reset": "Between every AE/SE pair, the target's security_state baseline must be reset to ensure both runs start from identical coverage baseline",
+    "reset_validation": "Every run manifest must confirm baseline reset occurred and security_state_new_total started at 0"
+  },
+  "execution_budget": {
+    "testcase_budget": {
+      "parameter": "MAX_TEST_CASES",
+      "phase3_value": 5,
+      "formal_experiment_value": "Human decision required: keep MAX_TEST_CASES=5 or increase?",
+      "constraint": "Must be identical within every AE/SE pair"
+    },
+    "time_budget": {
+      "parameter": "TIME_BUDGET",
+      "phase3_value": 60,
+      "unit": "seconds",
+      "formal_experiment_value": "Human decision required: keep TIME_BUDGET=60 or increase?",
+      "constraint": "Must be identical within every AE/SE pair"
+    },
+    "budget_policy": "If increasing budget from Phase-3 values, do NOT combine Phase-3 observations with formal study observations as if budgets were identical"
+  },
+  "seed_freeze": {
+    "authority": "Seeds must be frozen before first real run via deterministic generation procedure",
+    "reference": "See 04_SEED_GENERATION_AND_FREEZE.md",
+    "recording": "Every run manifest must record which seed from the frozen seed list was used"
+  },
+  "order_freeze": {
+    "authority": "Within-pair execution order (AE-first vs SE-first, or randomization plan) must be frozen before first real run",
+    "reference": "See 03_PAIRED_DESIGN_AND_ORDER.md",
+    "recording": "Every run manifest must record execution order within the pair"
+  },
+  "run_manifest_contract": {
+    "description": "Every run (AE or SE) must emit a JSON manifest containing all required provenance fields",
+    "required_fields": [
+      "run_id",
+      "backend",
+      "seed",
+      "pair_index",
+      "execution_order",
+      "git_commit_sha",
+      "start_timestamp_iso8601",
+      "end_timestamp_iso8601",
+      "max_test_cases",
+      "time_budget_seconds",
+      "target_endpoint",
+      "target_baseline_identity_before",
+      "target_baseline_identity_after",
+      "security_state_new_total",
+      "security_state_total",
+      "body_score_rpc_ok",
+      "body_score_rpc_fail",
+      "trace_invocations",
+      "counted_execution_count",
+      "wall_clock_seconds",
+      "validity_gates_passed",
+      "failure_type",
+      "failure_reason"
+    ],
+    "se_additional_fields": [
+      "se_checkpoint_sha256",
+      "se_metadata_sha256",
+      "se_metadata_input_dim",
+      "se_threshold",
+      "se_backend"
+    ],
+    "ae_additional_fields": [
+      "ae_backend",
+      "ae_threshold"
+    ],
+    "artifact_files": [
+      "fuzzer_stats (from afl-fuzz)",
+      "run_manifest.json",
+      "trace files (scorer invocation records)",
+      "any other reproducibility artifacts"
+    ],
+    "readback_requirement": "All emitted JSON files must be readable and parseable by the validation script"
+  },
+  "evidence_reconciliation": {
+    "trace_stats_reconciliation": "Trace file contents must reconcile with reported counters (body_score_rpc_ok, trace_invocations, etc.)",
+    "artifact_contract": "All required artifact files must be present, parseable, and internally consistent",
+    "readback": "All emitted files must be re-readable after the run completes"
+  },
+  "interruption_policy": {
+    "between_runs": "Allowed; no validity compromise",
+    "during_run": "Invalidates the run; the paired block containing that run is excluded",
+    "recording": "Every run manifest must record whether the run was interrupted"
+  },
+  "model_artifact_authority": {
+    "policy": "Repo-local leftover model files are NOT authority",
+    "requirement": "The runtime must prove exact artifact identity for every SE run by computing SHA256 of the loaded checkpoint and metadata files",
+    "validation": "Run manifest must record computed SHA256 values, not just file paths"
+  },
+  "reproducibility_commitment": {
+    "protocol_version": "This protocol design version (frozen before execution)",
+    "phase3_freeze": "Phase-3 evidence package with SHA256 commitment (binds formal study to validated pilot)",
+    "seed_list": "Frozen seed list with SHA256 commitment",
+    "analysis_script": "Frozen analysis code with git SHA",
+    "all_run_manifests": "Every run manifest with SHA256 commitment",
+    "final_evidence_package": "Complete formal study evidence package with SHA256 commitment"
+  },
+  "human_decisions_required": [
+    "H_BASELINE: Which git commit becomes the formal experiment source baseline?",
+    "H_BUDGET_TEST: Keep MAX_TEST_CASES=5 or increase?",
+    "H_BUDGET_TIME: Keep TIME_BUDGET=60 or increase?"
+  ],
+  "notes": [
+    "This contract binds the formal experiment to the frozen Phase-3 artifacts and procedures.",
+    "All provenance fields are required for reproducibility.",
+    "SE runs must prove exact canonical model identity at runtime.",
+    "AE runs must record exact configuration identity.",
+    "No run is valid without a complete provenance chain."
+  ]
+}

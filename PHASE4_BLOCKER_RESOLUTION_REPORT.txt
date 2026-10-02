@@ -1,0 +1,120 @@
+=============================================================================
+PHASE 4 — BLOCKER RESOLUTION INVESTIGATION REPORT
+=============================================================================
+
+INVESTIGATION_DATE: 2026-09-21
+INVESTIGATION_SCOPE: Two preflight blockers preventing formal execution
+
+=============================================================================
+BLOCKER 1: EXECUTION FREEZE COMMITMENT MISMATCH
+=============================================================================
+
+BLOCKER_1_STATUS: INTEGRITY_ANOMALY_IDENTIFIED
+
+ROOT CAUSE ANALYSIS
+-------------------
+The human authorization statement references:
+  commitment = fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+Current SHA256SUMS.txt produces:
+  527be51338df9d7189fd07bef4e78d7a64d309fae097c0e5b79343502dc497d0
+
+TIMELINE RECONSTRUCTION
+-----------------------
+- 2026-09-21 14:28:14: SHA256SUMS.txt created (birth)
+- 2026-09-21 14:31:21: SHA256SUMS.txt modified (~3 minutes later)
+- 2026-09-21 14:34:00: PHASE4_HUMAN_APPROVAL_MATERIALIZATION_VERDICT.txt created
+                       Reports: ALL_SHA256SUMS_VERIFY = PASS
+                       Reports: commitment = fb888b1...
+
+FINDING 1: README.md Missing from SHA256SUMS.txt
+-------------------------------------------------
+- FILE_LIST.txt includes README.md (12 files total)
+- SHA256SUMS.txt only contains 11 entries (README.md missing)
+- Adding README.md to checksums produces: 4c034b4c5a79ca7f764fe190ed015336b08e4e704e3b49a35489ab6ef26231d0
+- This STILL does not match the expected fb888b1...
+
+FINDING 2: 01_HUMAN_APPROVAL_BINDING.json Documented But Missing
+-----------------------------------------------------------------
+- README.md line 24 references: 01_HUMAN_APPROVAL_BINDING.json
+- This file does NOT exist in PHASE4_FORMAL_EXECUTION_FREEZE/
+- This file is NOT listed in FILE_LIST.txt
+- Similar file found in PHASE4_HUMAN_APPROVAL_MATERIALIZED/01_APPROVED_D1_D15.json
+
+CONCLUSION
+----------
+The SHA256SUMS.txt that produced the expected commitment fb888b1... 
+was different from the current SHA256SUMS.txt in at least two ways:
+1. It included README.md (now missing from checksums)
+2. It may have included 01_HUMAN_APPROVAL_BINDING.json (file never created)
+
+The freeze package integrity cannot be verified against the human's 
+authorization because the SHA256SUMS.txt has been modified or 
+incompletely generated.
+
+HUMAN ADJUDICATION REQUIRED
+----------------------------
+Options:
+A. Regenerate SHA256SUMS.txt with correct files and recompute commitment
+B. Verify whether the missing 01_HUMAN_APPROVAL_BINDING.json should exist
+C. Use the current freeze state and update the authorization commitment
+
+=============================================================================
+BLOCKER 2: ALFRESCO API NOT READY
+=============================================================================
+
+BLOCKER_2_STATUS: PORT_MAPPING_ISSUE_IDENTIFIED
+
+CONTAINER STATUS
+----------------
+Container: docker-compose-alfresco-1
+Status: Up 3 days (healthy)
+Health: PASS
+
+PORT MAPPING ISSUE
+------------------
+Expected endpoint: http://localhost:18080/alfresco/api/...
+Docker port mapping: NONE (port 18080 not exposed)
+Actual listening port: 8080
+
+Direct test on port 8080:
+  $ curl http://localhost:8080/alfresco/api/-default-/public/alfresco/versions/1/nodes/-root-
+  HTTP Status: 401 (Unauthorized)
+
+CONCLUSION
+----------
+The Alfresco API is OPERATIONAL but listening on port 8080, not 18080.
+The 401 status indicates the endpoint is reachable and responding correctly.
+The runner script is configured to connect to port 18080.
+
+RESOLUTION OPTIONS
+------------------
+Option A: Update runner script ALFRESCO_BASE_URL to use port 8080
+Option B: Reconfigure Docker to map port 8080 → 18080
+Option C: Verify if authentication is required for the API endpoint
+
+RECOMMENDATION: Option A (update runner to port 8080) is fastest and 
+preserves container state. The port number is not part of the frozen 
+source identity or runtime provenance.
+
+=============================================================================
+SUMMARY
+=============================================================================
+
+BLOCKER_1_VERDICT: REQUIRES_HUMAN_ADJUDICATION
+  - Freeze package integrity anomaly
+  - Missing files in SHA256SUMS.txt
+  - Cannot verify commitment against authorization
+
+BLOCKER_2_VERDICT: TRIVIAL_CONFIGURATION_FIX_AVAILABLE
+  - Container operational, wrong port configured
+  - Non-breaking fix: change 18080 → 8080 in runner
+
+FORMAL_EXPERIMENT_EXECUTION_GATE: BLOCKED
+
+Next action: Human must decide how to proceed with Blocker 1 before 
+any execution can begin.
+
+=============================================================================
+END OF REPORT
+=============================================================================

@@ -1,0 +1,31 @@
+{
+  "r1_predecessor_binding": {
+    "predecessor_package": "PHASE4_FORMAL_EXECUTION_FREEZE_R1",
+    "predecessor_commitment": "5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52",
+    "predecessor_status": "FROZEN_VALIDATOR_FALSE_NEGATIVE_DETECTED",
+    "predecessor_execution_outcome": "BLOCKED_AT_BLOCK_1"
+  },
+  "r1_to_r2_preserved_artifacts": [
+    "02_COMPOSITE_SOURCE_IDENTITY.json",
+    "03_RUNTIME_MODEL_PROVENANCE.json",
+    "04_FORMAL_SEED_LIST.json",
+    "05_FORMAL_PAIRED_ORDER_SCHEDULE.json",
+    "06_FORMAL_RUN_BUDGET.json",
+    "07_ENDPOINT_AND_ANALYSIS_ROLES.json",
+    "09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md",
+    "10_EXECUTION_PLAN.md",
+    "11_PROVENANCE_CHAIN.json",
+    "12_RUNTIME_ENVIRONMENT_PREREQUISITES.json"
+  ],
+  "r1_to_r2_changes": {
+    "scientific_semantics_changed": false,
+    "artifact_gate_reconciled": true,
+    "semantic_adapter_added": true,
+    "runtime_source_modified": false
+  },
+  "r2_governance_classification": {
+    "change_type": "ARTIFACT_GATE_SEMANTIC_ADAPTER_ONLY",
+    "scientific_validity_preserved": true,
+    "execution_evidence_continuity": true
+  }
+}

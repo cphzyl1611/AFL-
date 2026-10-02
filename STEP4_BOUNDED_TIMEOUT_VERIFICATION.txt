@@ -1,0 +1,176 @@
+================================================================================
+STEP 4: BOUNDED SOCKET RECEIVE TIMEOUT VERIFICATION
+================================================================================
+
+Date: 2026-10-01
+Task: ALFRESCO_CONTENT_UPDATE_SE_R39_PROTOCOL_V2_ALIGNMENT_AND_INTEGRATION_REPAIR
+
+================================================================================
+TIMEOUT IMPLEMENTATION VERIFICATION
+================================================================================
+
+SO_RCVTIMEO_PRESENT = YES
+SO_RCVTIMEO_VALUE = 2 seconds
+TIMEOUT_CLASSIFIED_AS_RPC_FAILURE = YES
+
+================================================================================
+CODE LOCATION
+================================================================================
+
+File: src/afl-fuzz-run.c
+Function: nv_validity_rpc_score_unix()
+Lines: 834-838
+
+Code:
+```c
+/* Set receive timeout to prevent indefinite blocking (R39 fix) */
+struct timeval tv;
+tv.tv_sec = 2;
+tv.tv_usec = 0;
+setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+```
+
+================================================================================
+TIMEOUT BEHAVIOR
+================================================================================
+
+Before Timeout (R39 Failure Mode):
+  - Line 952: ssize_t r = recv(fd, resp, sizeof(resp) - 1, 0);
+  - NO timeout set
+  - recv() blocks indefinitely waiting for scorer response
+  - If scorer fails to send response → AFL++ hangs forever
+  - Production R39: 90-second campaign timeout, exit code 124
+
+After Timeout (R39 Fix):
+  - SO_RCVTIMEO set to 2 seconds before recv()
+  - recv() returns -1 with errno=EAGAIN or errno=EWOULDBLOCK after 2 seconds
+  - Line 955: if (r <= 0) return 0.0;
+  - Returns score=0.0, ok=0 to caller
+
+================================================================================
+TIMEOUT CLASSIFICATION IN VALIDITY PIPELINE
+================================================================================
+
+Call Chain:
+  1. common_fuzz_stuff() calls nv_validity_check()
+  2. nv_validity_check() calls nv_validity_rpc_score_unix()
+  3. nv_validity_rpc_score_unix() times out → returns ok=0
+  4. nv_validity_check() line 1091: if (!ok) return NV_V_REJ_RPC_FAIL;
+  5. common_fuzz_stuff() line 2413: if (nv_v_is_reject(vr)) { nv_account_invalid(afl, vr); ... }
+  6. nv_account_invalid() line 991-993: NV_V_REJ_RPC_FAIL → afl->nv_invalid_rpc_fail_cnt++
+
+Result Classification:
+  - NOT counted as valid execution (skipped before fuzz_run_target)
+  - NOT counted as target failure (target never executed)
+  - Counted as RPC_FAILURE (scorer communication failure)
+  - Increments nv_invalid_rpc_fail_cnt counter
+  - Does NOT increment nv_err_exec (target error counter)
+
+TIMEOUT_CLASSIFIED_AS_RPC_FAILURE = YES
+
+================================================================================
+DEFENSIVE PROPERTIES
+================================================================================
+
+1. Fail-Closed:
+   - Timeout returns score=0.0, ok=0
+   - Invalid flag propagates to caller
+   - Input rejected before target execution
+   - No false validity grant on scorer failure
+
+2. Campaign Resilience:
+   - Single RPC timeout does NOT block entire campaign
+   - Fuzzing loop continues with next mutation
+   - No indefinite hang (R39 root cause eliminated)
+
+3. Timeout Duration Justification:
+   - Python reference: 1 second (nv_body_valid.py line 245)
+   - C implementation: 2 seconds (more defensive)
+   - Canonical SE model inference: ~20-50ms (measured in R38C)
+   - 2 seconds allows 40-100× normal latency
+   - Sufficient for model inference + Unix socket overhead
+   - Not so long that a hung scorer stalls campaign throughput
+
+4. Error Path Coverage:
+   - connect() failure → return 0.0 (line 845-848)
+   - send() failure → return 0.0 (line 926)
+   - recv() timeout → return 0.0 (line 955)
+   - parse failure → return 0.0 (line 973)
+   - All paths close(fd) before return
+   - All paths return ok=0 on failure
+
+================================================================================
+COMPARISON WITH R39 FAILURE MODE
+================================================================================
+
+R39 (No Timeout):
+  - Protocol V1 sent to Protocol V2 scorer
+  - Scorer raises JSONDecodeError, prints to subprocess.PIPE
+  - Scorer exception handler catches, continues loop WITHOUT sending response
+  - AFL++ recv() blocks indefinitely (no timeout)
+  - After 90 seconds: timeout command kills process tree
+  - Campaign result: ARTIFACT_CONTRACT_FAILED, exit code 124
+
+Post-Repair (With Timeout):
+  - Protocol V2 sent to Protocol V2 scorer (alignment fixed)
+  - If scorer fails for ANY reason and does not send response:
+    - recv() returns after 2 seconds with EAGAIN/EWOULDBLOCK
+    - RPC classified as failure (NV_V_REJ_RPC_FAIL)
+    - Input rejected, fuzzing continues with next mutation
+  - Campaign continues running until:
+    - max_test_cases reached, OR
+    - user interrupts (Ctrl+C), OR
+    - scheduler exhaustion
+
+INDEFINITE_BLOCKING_ELIMINATED = YES
+
+================================================================================
+INTEGRATION WITH EXISTING ERROR COUNTERS
+================================================================================
+
+Existing Counters (from fuzzer_stats):
+  - nv_valid_cnt: inputs that passed ALL validity checks
+  - nv_invalid_cnt: inputs rejected by ANY validity check
+  - nv_invalid_parse_cnt: HTTP parse failures (NV_V_REJ_PARSE)
+  - nv_invalid_rule_cnt: rule-based rejections (allowlist, body, docid, etc.)
+  - nv_invalid_rpc_fail_cnt: RPC communication failures (NV_V_REJ_RPC_FAIL)
+  - nv_invalid_score_cnt: score threshold rejections (NV_V_REJ_SCORE)
+
+Timeout Accounting:
+  - RPC timeout → NV_V_REJ_RPC_FAIL
+  - Increments nv_invalid_rpc_fail_cnt
+  - Increments nv_invalid_cnt (aggregate)
+  - Does NOT increment nv_invalid_score_cnt (not a model decision)
+  - Does NOT increment nv_err_exec (target not executed)
+
+TIMEOUT_COUNTER = nv_invalid_rpc_fail_cnt
+
+================================================================================
+OBSERVABILITY
+================================================================================
+
+Timeout Detection in Logs:
+  - fuzzer_stats will show nv_invalid_rpc_fail_cnt > 0
+  - High nv_invalid_rpc_fail_cnt indicates:
+    - Scorer subprocess died or hung
+    - Network partition (unlikely for Unix socket)
+    - Scorer processing extremely slow (>2 seconds per request)
+
+Diagnostic Path (if timeouts occur in production):
+  1. Check scorer_trace.jsonl for recent entries
+  2. Check scorer stdout/stderr for exceptions (Step 5)
+  3. Check scorer process is alive (ps aux | grep nv_valid_server)
+  4. Check Unix socket exists (ls -la $NV_VALID_SOCK)
+  5. If scorer alive but not responding → likely infinite loop or deadlock
+
+================================================================================
+NEXT STEP
+================================================================================
+
+Step 5: Persist scorer stdout/stderr/early-exit evidence
+  - Modify run_alfresco_bounded_feedback.py
+  - Replace subprocess.PIPE with file handles
+  - Capture exit code and timestamps
+  - Include in evidence/ directory
+
+================================================================================

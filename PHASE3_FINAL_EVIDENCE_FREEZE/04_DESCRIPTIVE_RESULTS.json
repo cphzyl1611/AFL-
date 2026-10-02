@@ -1,0 +1,35 @@
+{
+  "ae_security_state_new_values": [1, 1, 1, 1, 1],
+  "se_security_state_new_values": [1, 1, 1, 1, 1],
+  "ae_statistics": {
+    "mean": 1.0,
+    "median": 1.0,
+    "sample_sd": 0.0,
+    "min": 1,
+    "max": 1,
+    "range": 0
+  },
+  "se_statistics": {
+    "mean": 1.0,
+    "median": 1.0,
+    "sample_sd": 0.0,
+    "min": 1,
+    "max": 1,
+    "range": 0
+  },
+  "paired_deltas_se_minus_ae": [0, 0, 0, 0, 0],
+  "descriptive_analysis_only": true,
+  "statistical_superiority_claim": false,
+  "interpretation": {
+    "coverage_equivalence": "Both backends discovered identical coverage (security_state_new_total=1) for all paired seeds",
+    "validation_behavior": "AE accepted all inputs (25/25), SE rejected all inputs (0/25), demonstrating SE threshold conservativeness in practice",
+    "threshold_comparison_note": "AE and SE raw threshold magnitudes (1.624 vs 1.285) are not directly comparable across different score scales",
+    "empirical_observation": "SE was more conservative in practice for this input distribution, despite both thresholds being calibrated to similar false reject rates on calibration sample"
+  },
+  "ae_accept_rate": 1.0,
+  "se_accept_rate": 0.0,
+  "ae_total_body_score_pass": 25,
+  "ae_total_body_score_reject": 0,
+  "se_total_body_score_pass": 0,
+  "se_total_body_score_reject": 25
+}

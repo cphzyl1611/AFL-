@@ -1,0 +1,100 @@
+═══════════════════════════════════════════════════════════════════════
+STEP 2 — SE Canonical Provenance Gate
+═══════════════════════════════════════════════════════════════════════
+
+PROTOCOL: Alfresco content_update Final Authorized SE Launch
+EXECUTED: 2026-09-23 20:05 UTC
+STATUS: ⛔ BLOCKED - PROVENANCE HASH MISMATCH
+
+───────────────────────────────────────────────────────────────────────
+EXPECTED CANONICAL CONTRACT (from user authorization)
+───────────────────────────────────────────────────────────────────────
+checkpoint_sha256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+metadata_sha256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+input_dim:         32
+backend:           sefanogan_es_reference
+
+───────────────────────────────────────────────────────────────────────
+ACTUAL REPOSITORY STATE
+───────────────────────────────────────────────────────────────────────
+Checkpoint: model_stage/models/sefanogan_gan_model.pt
+  Git tracked:    ✓ YES (commit 6fc82d8)
+  SHA256:         205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+  Status:         ❌ MISMATCH (expected 4eace87a...)
+
+Metadata: model_stage/models/sefanogan_es_reference.json
+  Git tracked:    ✗ NO (untracked)
+  SHA256:         8d4223f05a0ac0191519594f169f23bd66af40b7d179d3b3ea47308e125d67e7
+  Status:         ❌ MISMATCH (expected 2a73ccc3...)
+
+Threshold artifact: model_stage/models/sefanogan_es_realrun_threshold.json
+  Git tracked:    ✗ NO (untracked)
+  Contains:       se_checkpoint_hash=4eace87a..., se_metadata_hash=2a73ccc3...
+  Status:         ⚠️  Untracked metadata declaring non-existent checkpoint hash
+
+───────────────────────────────────────────────────────────────────────
+FORENSIC ANALYSIS
+───────────────────────────────────────────────────────────────────────
+✓ Searched ALL .pt/.pth files in model_stage/models/
+✓ Checked git commit history for sefanogan_gan_model.pt
+✓ Verified checkpoint unchanged since commit 6fc82d8
+
+FINDING: Expected checkpoint hash 4eace87a... does NOT exist anywhere:
+  - Not in current filesystem (6 checkpoint files checked)
+  - Not in git history (commit 6fc82d8 shows 205a6a20...)
+  - Not in any other checkpoint file
+
+CONCLUSION: The expected hash 4eace87a... appears to be an ERROR in the
+untracked threshold calibration artifact or user specification.
+
+The repository has ONLY ONE SE checkpoint: sefanogan_gan_model.pt (205a6a20...)
+This checkpoint has been stable since commit 6fc82d8.
+
+───────────────────────────────────────────────────────────────────────
+IMPACT ON SE LAUNCH
+───────────────────────────────────────────────────────────────────────
+⛔ BLOCKING: SE launch cannot proceed
+
+Using current checkpoint (205a6a20...) would violate canonical provenance
+requirement stated in user authorization: "checkpoint_sha256 = 4eace87a..."
+
+The SE backend sefanogan_es_reference.py will load:
+  - Checkpoint: sefanogan_gan_model.pt (205a6a20...)
+  - Threshold: 1.2847454 (from untracked artifact calibrated for 4eace87a...)
+
+This creates PROVENANCE UNCERTAINTY:
+  • Checkpoint mismatch: using 205a6a20... instead of expected 4eace87a...
+  • Threshold validity: calibrated for different checkpoint
+  • Metadata mismatch: using 8d4223f0... instead of expected 2a73ccc3...
+
+───────────────────────────────────────────────────────────────────────
+REQUIRED USER RESOLUTION
+───────────────────────────────────────────────────────────────────────
+Before STEP 3 (SE launch), user must provide ONE of:
+
+[A] CONFIRM that 205a6a20... is the CORRECT checkpoint
+    → Update expected hash to match actual repository state
+    → Proceed with current checkpoint + threshold
+
+[B] PROVIDE checkpoint file with SHA256=4eace87a...
+    → Replace current checkpoint
+    → Verify threshold calibration applies
+
+[C] RECALIBRATE threshold for current checkpoint (205a6a20...)
+    → Generate new frozen artifact
+    → But this violates "no model modifications" constraint
+
+───────────────────────────────────────────────────────────────────────
+FINAL VERDICT
+───────────────────────────────────────────────────────────────────────
+SE_CANONICAL_PROVENANCE_GATE = FAIL
+
+STEP 3 (SE launch):     ⛔ CANNOT PROCEED
+STEP 4 (1+1 verdict):   ⏸️  SUSPENDED
+STEP 5 (evidence pkg):  ⏸️  SUSPENDED
+
+BLOCKING REASON: Expected checkpoint hash 4eace87a... does not exist in
+repository. Only available checkpoint is 205a6a20... which contradicts user
+specification.
+
+USER ACTION REQUIRED BEFORE CONTINUING.

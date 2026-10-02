@@ -1,0 +1,30 @@
+{
+  "adjudication_status": {
+    "package_name": "PHASE4_BLOCK1_SE_FALSE_NEGATIVE_ADJUDICATION",
+    "creation_date": "2026-09-21",
+    "block_index": 1,
+    "backend": "sefanogan_es_reference",
+    "seed": 1120356083,
+    "execution_order": "AE-first",
+    "validator_verdict": "INVALID_EXCLUDED",
+    "adjudication_verdict": "FALSE_NEGATIVE",
+    "governance_classification": "VALIDATOR_FALSE_NEGATIVE_UNDER_EXISTING_R1_SEMANTICS"
+  },
+  "false_negative_justification": {
+    "r1_contract_interpretation": "R1 artifact_contract description lists 'fuzzer_stats, manifest JSON, trace files' without explicitly enumerating nv_probe.json or nv_state_db.json as required artifacts",
+    "validator_behavior": "Validator implementation requires probe and state_db files beyond the frozen R1 semantic specification",
+    "scientific_evidence_status": "COMPLETE",
+    "phase3_precedent_alignment": "EXACT_MATCH",
+    "architectural_correctness": "Absence of probe/state_db is the correct outcome when zero HTTP requests are sent due to body validation rejection"
+  },
+  "recommended_resolution": {
+    "option_1": "Apply Phase 3 workaround: create empty probe/state_db files to satisfy validator while preserving scientific integrity",
+    "option_2": "Repair validator implementation to match R1 frozen semantic contract (remove probe/state_db from execution_required for body_score_pass=0 cases)",
+    "option_3": "Create R2 execution freeze with explicit artifact contract clarification and validator alignment"
+  },
+  "execution_impact": {
+    "block_1_scientific_validity": "VALID",
+    "block_1_inclusion_recommendation": "INCLUDE_IN_ANALYSIS_IF_VALIDATOR_REPAIRED_OR_WORKAROUND_APPLIED",
+    "campaign_continuation": "BLOCKED_PENDING_GOVERNANCE_DECISION"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "analysis_authority_binding": {
+    "final_evidence_package": "PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL",
+    "final_evidence_commitment_sha256": "e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486",
+    "final_evidence_commitment_verified": "YES",
+    "frozen_design_package": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN",
+    "primary_endpoint": {
+      "name": "security_state_new_total",
+      "type": "count",
+      "description": "Number of testcases that triggered new security_state coverage transitions during the fuzzing run",
+      "source": "fuzzer_stats file emitted by afl-fuzz",
+      "authority_source": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/02_ENDPOINTS.json"
+    },
+    "primary_estimand": {
+      "definition": "θ = E[Δᵢ] where Δᵢ = SE_security_state_new_total_i - AE_security_state_new_total_i",
+      "paired_difference": "SE - AE",
+      "authority_source": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/06_STATISTICAL_ANALYSIS_PLAN.md"
+    },
+    "analysis_population_definition": {
+      "rule": "All paired blocks where both AE and SE runs pass all applicable validity gates",
+      "pair_exclusion_rule": "A paired block is valid for analysis only if **both** the AE run and SE run within the pair pass all applicable validity gates",
+      "authority_source": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/07_FAILURE_EXCLUSION_AND_STOPPING_RULES.md"
+    },
+    "execution_valid_pair_count": 30,
+    "analysis_eligible_pair_count": 28,
+    "analysis_excluded_valid_pair_count": 2,
+    "excluded_blocks": [
+      {
+        "block_index": 1,
+        "exclusion_reason": "Block 1 evidence carried forward from prior R2 execution - no primary endpoint data in current R2 execution",
+        "exclusion_authorization": "Explicit special adjudication in canonical ledger"
+      },
+      {
+        "block_index": 2,
+        "exclusion_reason": "SE primary endpoint data missing - SE carried forward (not rerun in R2)",
+        "exclusion_authorization": "Frozen PAIR_EXCLUSION_RULE requires complete paired primary endpoint data"
+      }
+    ]
+  }
+}

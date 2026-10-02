@@ -1,0 +1,199 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3 CAMPAIGN — BASELINE INTEGRITY GATE FAILURE
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 0 — Exact Baseline Integrity: FAIL
+
+Three critical mismatches detected:
+
+1. TRACKED_DIFF_SHA256
+   Expected: 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+   Actual:   5c1df489a09b7cd4b1b241009a9b178b0c45c429f5f4511c90ac30a5c97cc5fe
+
+2. FULL_12FILE_UNTRACKED_TEST_MANIFEST_SHA256
+   Expected: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+   Actual:   fbd4cf305af7dec8363e52c526734d85787ddeed2e0f96e28a8604ae64d54e49
+
+3. SEFANOGAN_REFERENCE_INPUT_DIM
+   Expected: 32
+   Actual:   38
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE3_5PLUS5_VERDICT = BASELINE_INTEGRITY_FAILURE
+═══════════════════════════════════════════════════════════════════════════════
+
+SOURCE_SNAPSHOT_HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408 [MATCH]
+RUNNER_SHA256 = 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650 [MATCH]
+TRACKED_DIFF_SHA256 = 5c1df489a09b7cd4b1b241009a9b178b0c45c429f5f4511c90ac30a5c97cc5fe [MISMATCH]
+FULL_12FILE_UNTRACKED_TEST_MANIFEST_SHA256 = fbd4cf305af7dec8363e52c526734d85787ddeed2e0f96e28a8604ae64d54e49 [MISMATCH]
+SEFANOGAN_REFERENCE_INPUT_DIM = 38 [MISMATCH - Expected 32]
+
+RUNTIME_SE_CHECKPOINT_SHA256 = NOT_CHECKED
+RUNTIME_SE_METADATA_SHA256 = NOT_CHECKED
+SE_STANDALONE_SCORER_READY = NOT_CHECKED
+
+DOCKER_DAEMON_REACHABLE = NOT_CHECKED
+ALFRESCO_MAIN_CONTEXT_READY = NOT_CHECKED
+ALFRESCO_REAL_API_STATUS = NOT_CHECKED
+
+VALID_AE_RUNS = 0
+VALID_SE_RUNS = 0
+TOTAL_VALID_RUNS = 0
+
+SEED_20260915_PAIR_CONTRACT = NOT_EXECUTED
+SEED_20260916_PAIR_CONTRACT = NOT_EXECUTED
+SEED_20260917_PAIR_CONTRACT = NOT_EXECUTED
+SEED_20260918_PAIR_CONTRACT = NOT_EXECUTED
+SEED_20260919_PAIR_CONTRACT = NOT_EXECUTED
+GLOBAL_5PLUS5_CONTRACT = NOT_EXECUTED
+
+AE_SECURITY_STATE_NEW_VALUES = []
+AE_SECURITY_STATE_NEW_MEAN = N/A
+AE_SECURITY_STATE_NEW_MEDIAN = N/A
+AE_SECURITY_STATE_NEW_SAMPLE_SD = N/A
+AE_SECURITY_STATE_NEW_MIN = N/A
+AE_SECURITY_STATE_NEW_MAX = N/A
+AE_SECURITY_STATE_NEW_RANGE = N/A
+
+SE_SECURITY_STATE_NEW_VALUES = []
+SE_SECURITY_STATE_NEW_MEAN = N/A
+SE_SECURITY_STATE_NEW_MEDIAN = N/A
+SE_SECURITY_STATE_NEW_SAMPLE_SD = N/A
+SE_SECURITY_STATE_NEW_MIN = N/A
+SE_SECURITY_STATE_NEW_MAX = N/A
+SE_SECURITY_STATE_NEW_RANGE = N/A
+
+PAIRED_DELTAS_SE_MINUS_AE = []
+
+DESCRIPTIVE_ANALYSIS_ONLY = N/A
+STATISTICAL_SUPERIORITY_CLAIM = NO
+
+PHASE3_AGGREGATE_MANIFEST = NOT_GENERATED
+PHASE3_AGGREGATE_MANIFEST_SHA256 = NOT_GENERATED
+
+REAL_ALFRESCO_REQUESTS = NO
+AFL_RUN_EXECUTED = NO
+SOURCE_CHANGED_DURING_PHASE3 = DETECTED_AT_STEP_0
+TESTS_CHANGED_DURING_PHASE3 = DETECTED_AT_STEP_0
+MODEL_FILES_CHANGED_DURING_PHASE3 = DETECTED_AT_STEP_0
+GIT_REFS_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+ENGINEERING_VARIANCE_PILOT = FAIL
+NEXT_FORMAL_EXPERIMENT_GATE = BLOCKED_REQUIRE_BASELINE_RESTORATION
+
+═══════════════════════════════════════════════════════════════════════════════
+CAMPAIGN STOPPED AT STEP 0 — BASELINE INTEGRITY REQUIREMENTS NOT MET
+═══════════════════════════════════════════════════════════════════════════════
+
+The frozen baseline from the Phase 2 acceptance has been modified:
+
+- Tracked source files have changed (git diff hash mismatch)
+- Test files have changed (12-file manifest hash mismatch)
+- Model metadata has changed (INPUT_DIM: 32 → 38)
+
+Protocol requires exact snapshot match before executing any real fuzzing runs.
+The campaign cannot proceed.
+
+REQUIRED ACTION: Restore exact Phase 2 accepted baseline before retry.
+
+═══════════════════════════════════════════════════════════════════════════════
+DETAILED BASELINE DRIFT ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+TRACKED FILE MODIFICATIONS (3 files, +840 lines, -20 lines):
+
+1. nv_valid_server_mock.py
+   - Modified (tracked)
+   - +22 lines (net)
+
+2. scripts/run_alfresco_bounded_feedback.py
+   - Modified (tracked)
+   - +519 lines (net)
+   - This is the runner script itself (RUNNER_SHA256 matched, but content changed since baseline freeze)
+
+3. tests/test_alfresco_bounded_feedback.py
+   - Modified (tracked)
+   - +319 lines (net)
+
+UNTRACKED FILE ADDITIONS:
+
+Phase 2 artifacts (expected):
+- PHASE2_FINAL_ACCOUNTING_RECONCILIATION_REPORT.txt
+- PHASE2_FINAL_PAIR_ACCEPTANCE_MANIFEST.json
+- PHASE2_RPC_STATS_PATH_REPAIR_ACCEPTANCE_REPORT.txt
+- PHASE2_TDD_REPAIR_REPORT.md
+
+Phase 3 artifacts (this session):
+- PHASE3_BASELINE_INTEGRITY_FAILURE_REPORT.txt (this file)
+- phase3_execution_log.txt
+- run_phase3_5plus5_pilot.py
+- run_phase3_5plus5_pilot_fixed.py
+- run_phase3_5plus5_pilot_fixed2.py
+
+Model files (INPUT_DIM drift 32→38):
+- model_stage/models/sefanogan_es_realrun_threshold.json
+- model_stage/models/sefanogan_es_reference.json
+- model_stage/models/sefanogan_es_reference_meta.json
+
+Calibration scripts:
+- scripts/calibrate_se_realrun_threshold.py
+
+Test additions (12-file manifest drift):
+- tests/test_offline_orchestration_dry_run.py
+- tests/test_phase1b_cli_wiring.py
+- tests/test_phase1b_cli_wiring_simple.py
+- tests/test_phase1b_main_integration.py
+- tests/test_real_alfresco_metadata_ae_se_runner.py
+- tests/test_rpc_stats_path_integration_red_green.py
+- tests/test_rpc_stats_path_regression.py
+- tests/test_rpc_stats_validation_red.py
+- tests/test_scorer_trace_env_propagation_red.py
+- tests/test_scorer_trace_env_propagation_red_v2.py
+- tests/test_scorer_trace_writing_integration.py
+- tests/test_se_realrun_threshold_calibration.py
+
+═══════════════════════════════════════════════════════════════════════════════
+ROOT CAUSE ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+The baseline was established at commit 87bee5c6 with specific frozen SHA256 hashes.
+Since that freeze:
+
+1. Three tracked files have been modified with 840+ new lines
+2. The SE model INPUT_DIM changed from 32 to 38 (architectural change)
+3. The 12-file test manifest changed (new test files added)
+
+This represents significant development activity between Phase 2 acceptance and 
+Phase 3 campaign launch, violating the frozen baseline requirement.
+
+The campaign protocol requires ZERO drift between the Phase 2 accepted baseline
+and Phase 3 execution to ensure valid engineering variance measurement.
+
+═══════════════════════════════════════════════════════════════════════════════
+RESTORATION PATH
+═══════════════════════════════════════════════════════════════════════════════
+
+To restore the exact Phase 2 baseline:
+
+Option 1 — Revert tracked changes:
+  git checkout HEAD -- nv_valid_server_mock.py
+  git checkout HEAD -- scripts/run_alfresco_bounded_feedback.py
+  git checkout HEAD -- tests/test_alfresco_bounded_feedback.py
+
+Option 2 — Use Phase 2 baseline commit directly:
+  Identify the exact commit where:
+    - TRACKED_DIFF_SHA256 = 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+    - FULL_12FILE_UNTRACKED_TEST_MANIFEST_SHA256 = 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+    - SEFANOGAN_REFERENCE_INPUT_DIM = 32
+  
+  Then reset to that state.
+
+Option 3 — Accept new baseline:
+  Update the Phase 3 protocol to accept current state as the new baseline.
+  This requires recalculating all frozen hashes and updating the campaign spec.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

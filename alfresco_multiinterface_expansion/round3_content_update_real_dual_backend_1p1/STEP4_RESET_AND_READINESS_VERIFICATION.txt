@@ -1,0 +1,165 @@
+================================================================================
+STEP 4 — RESET AND READINESS VERIFICATION
+================================================================================
+
+TIMESTAMP: 2026-09-23
+PREVIOUS_RUN: AE (backend=alfresco_ae_v1, seed=6103669, max_test_cases=5)
+NEXT_RUN: SE (backend=sefanogan_es_reference, seed=6103669, max_test_cases=5)
+
+================================================================================
+ENVIRONMENT RESET CHECKLIST
+================================================================================
+
+1. AE Run Artifacts Preserved: ✓
+   Location: /tmp/nv-alfresco-bounded-892680-de43d1f9c4c145738c5df29f957b92b4/
+   Status: Preserved (read-only, no modifications)
+   Evidence copied to: alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+
+2. Temporary State Cleanup: (will verify before SE launch)
+   - Check for residual /tmp/nv-alfresco-bounded-* directories
+   - Verify no conflicting AFL++ processes
+   - Confirm scorer service state
+
+3. Frozen Parameters Verification: ✓
+   - Seed: 6103669 (unchanged from AE run)
+   - Max test cases: 5 (unchanged from AE run)
+   - Time budget: 60 seconds (unchanged from AE run)
+   - Target: content_update (unchanged from AE run)
+   - Node ID: 1d16a46c-5518-4f11-96a4-6c55188f1172 (unchanged from AE run)
+
+4. Backend Switch Verification:
+   - AE backend: alfresco_ae_v1 ✓ (completed)
+   - SE backend: sefanogan_es_reference (next run)
+   - Model comparison mode: enabled ✓
+   - Scorer lifecycle: runner-managed ✓
+
+================================================================================
+PRE-LAUNCH READINESS GATES
+================================================================================
+
+GATE 1: AE Run Complete
+  Status: ✓ PASS
+  Evidence: STEP3_AE_RUN_COMPLETE.txt
+  Verdict: exit_code=0, artifact_contract=PASS
+
+GATE 2: AE Bounded-Stop Reconciliation Complete
+  Status: ✓ PASS
+  Evidence: STEP3_AE_BOUNDED_STOP_RECONCILIATION.txt
+  Verdict: EXPECTED_BOUNDED_COMPLETION (HIGH confidence)
+
+GATE 3: AE Evidence Package Integrity
+  Status: ✓ PASS
+  Artifacts verified:
+    - fuzzer_stats (nv_total_valid_exec=5)
+    - mab_updates.jsonl (2 reward updates)
+    - executions.jsonl (3 execution records)
+    - scorer_trace.jsonl (5 scorer invocations, backend=alfresco_ae_v1)
+    - model_comparison_validity.json (verdict=PASS)
+    - readback.json (correlated with exec_seq=5)
+    - artifact_report.json (final_result=pass)
+
+GATE 4: Parameter Freeze Verification
+  Status: ✓ PASS
+  All parameters match STEP2_FIXED_EXECUTION_CONTRACT.txt:
+    - seed=6103669
+    - max_test_cases=5
+    - time_budget=60
+    - target=content_update
+    - node_id=1d16a46c-5518-4f11-96a4-6c55188f1172
+
+GATE 5: SE Backend Configuration
+  Status: (will verify at launch)
+  Required changes:
+    - validity_backend: alfresco_ae_v1 → sefanogan_es_reference
+    - All other parameters: unchanged
+    - Model comparison: enabled
+    - Scorer lifecycle: runner-managed
+
+GATE 6: Environment Clean State
+  Status: (will verify before launch)
+  Checks:
+    - No residual /tmp/nv-alfresco-bounded-* directories (except AE artifacts)
+    - No conflicting AFL++ processes
+    - Scorer service available and healthy
+
+================================================================================
+READINESS VERIFICATION PROTOCOL
+================================================================================
+
+Before launching SE run, execute the following checks:
+
+1. List active /tmp/nv-alfresco-bounded-* directories
+   Command: ls -ld /tmp/nv-alfresco-bounded-*
+   Expected: Only AE directory present (892680-de43d1f9c4c145738c5df29f957b92b4)
+
+2. Check for running AFL++ processes
+   Command: pgrep -f afl-fuzz
+   Expected: No output (no running fuzzer processes)
+
+3. Verify scorer service state
+   Command: Check scorer_trace.jsonl timestamp and process availability
+   Expected: Scorer available for new connection
+
+4. Verify runner script availability
+   Path: scripts/run_alfresco_bounded_feedback.py
+   Expected: Present and unchanged
+
+5. Verify frozen seed availability
+   Path: (will be determined by runner from seed=6103669)
+   Expected: Seed file accessible
+
+================================================================================
+SE LAUNCH PARAMETERS (PREVIEW)
+================================================================================
+
+The SE run will be launched with the following exact parameters:
+
+  NV_TOKEN=<token_from_environment>
+  python scripts/run_alfresco_bounded_feedback.py \
+    --target content_update \
+    --seed 6103669 \
+    --max-test-cases 5 \
+    --time-budget 60 \
+    --validity-backend sefanogan_es_reference \
+    --model-comparison
+
+Expected runner behavior:
+  - Generate new /tmp/nv-alfresco-bounded-<timestamp>-<uuid> directory
+  - Launch AFL++ with max_test_cases=5, time_budget=60
+  - Connect to sefanogan_es_reference scorer backend
+  - Execute until max_test_cases limit reached
+  - Report exit_code=0 with exit_status="success" if artifact contract passes
+  - Generate complete evidence package matching AE run structure
+
+Expected AFL++ behavior:
+  - Execute fuzzing campaign with frozen seed 6103669
+  - Stop programmatically when nv_total_valid_exec >= 5
+  - Terminal message: "Testing aborted programmatically"
+  - Exit code: 0 (normal bounded completion)
+
+Expected evidence artifacts (matching AE run):
+  - fuzzer_stats
+  - nv_http_status.json
+  - nv_probe.json
+  - nv_state_db.json
+  - nv_state_trace.jsonl
+  - evidence/mab_updates.jsonl
+  - evidence/seed_selection.jsonl
+  - evidence/executions.jsonl
+  - evidence/model_comparison_validity.json
+  - evidence/readback.json
+  - evidence/artifact_report.json
+  - scorer_trace.jsonl (backend=sefanogan_es_reference)
+  - nv_body_valid_stats.json (scorer_rpc_ok >= 5)
+
+================================================================================
+NEXT ACTIONS
+================================================================================
+
+1. Execute environment readiness verification (6 checks above)
+2. If all checks pass: Launch SE run with exact parameters
+3. If any check fails: Report blocker and halt before launch
+4. After SE run completes: Execute bounded-stop reconciliation for SE
+5. After SE reconciliation: Generate dual-backend capability verdict (STEP 6)
+
+================================================================================

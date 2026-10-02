@@ -1,0 +1,352 @@
+═══════════════════════════════════════════════════════════════════════════════
+ALFRESCO_CONTENT_UPDATE_SE_R35B_FINAL_REPORT
+Task: R35B_REPAIR_SCOPE_AND_CANONICAL_C_SIDE_REPLAY
+Session Mode: NEW WORKTREE SESSION
+Date: 2026-09-30
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+─────────────────
+
+R35B discovered TWO BLOCKING DEFECTS in the provisionally-accepted R35 repair:
+
+1. C-SIDE SCOPE DEFECT (CORRECTED IN R35B):
+   R35's text/plain exemption used ONLY Content-Type header, allowing ANY
+   endpoint to bypass JSON validation. R35B added endpoint path check to
+   restrict exemption to content_update (/content suffix) only.
+
+2. MUTATOR CONTRACT VIOLATION (BLOCKS REAL RUN):
+   nv_json_mutator.py converts all non-JSON bodies to {"raw": "..."} format,
+   breaking content_update's text/plain semantic contract. Mutated payloads
+   would be rejected by Alfresco. Real campaign BLOCKED until mutator fixed.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1: R35 DIFF VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+R35_PRODUCTION_FILES_CHANGED = 2
+R35_TEST_FILES_CHANGED = 0
+R35_OTHER_FILES_CHANGED = 0
+
+Production changes:
+  1. scripts/run_alfresco_bounded_feedback.py
+     Function: materialize_manifest_seed_dir()
+     Change: Wraps raw-text manifest seeds in HTTP envelope
+
+  2. src/afl-fuzz-run.c
+     Function: nv_validity_check()
+     Change: Allows text/plain bodies without JSON-prefix enforcement
+
+C REPAIR DETAILS:
+─────────────────
+C_REPAIR_FILE = src/afl-fuzz-run.c
+C_REPAIR_FUNCTION = nv_validity_check
+C_REPAIR_BRANCH_CONDITION = strstr(ct, "text/plain") != NULL
+C_REPAIR_USES_SCENARIO_NAME = NO
+C_REPAIR_USES_ENDPOINT_NAME = NO
+C_REPAIR_USES_CONTENT_TYPE = YES
+
+RUNNER REPAIR DETAILS:
+──────────────────────
+RUNNER_REPAIR_FILE = scripts/run_alfresco_bounded_feedback.py
+RUNNER_REPAIR_FUNCTION = materialize_manifest_seed_dir
+RUNNER_WRAP_CONDITION = config_path && scenario == "content_update"
+RUNNER_CONTENT_TYPE_EMITTED = text/plain; charset=utf-8
+RUNNER_PRESERVES_RAW_BODY_BYTES = YES
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2: C-SIDE SCOPE VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+R35_SCOPE_DEFECT = YES (in original R35, corrected in R35B)
+
+ROOT CAUSE:
+  Original R35 C repair used ONLY Content-Type header check.
+  ANY endpoint with "Content-Type: text/plain" bypassed JSON validation.
+  This allowed metadata_update and other JSON endpoints to send raw text.
+
+R35B CORRECTION APPLIED:
+  Added endpoint path suffix check at src/afl-fuzz-run.c:946-969
+  Logic: text/plain exemption ONLY when path ends with "/content"
+  Scope: Restricted to content_update pattern (PUT .../nodes/{id}/content)
+
+TEST CASE RESULTS:
+──────────────────
+
+CASE_A_CONTENT_UPDATE_TEXT_PLAIN = PASS
+  Method: PUT
+  Path: /alfresco/api/.../nodes/__ALFRESCO_NODE_ID__/content
+  Content-Type: text/plain
+  Body: raw UTF-8 Chinese text
+  C parse: PASS
+  C body-rule: PASS (exemption applies: path ends with /content)
+  Scorer path: reachable
+  Verdict: INTENDED BEHAVIOR ✓
+
+CASE_B_METADATA_TEXT_PLAIN = REJECT
+  Method: PUT
+  Path: /alfresco/api/.../nodes/__ALFRESCO_NODE_ID__
+  Content-Type: text/plain
+  Body: raw text
+  C parse: PASS
+  C body-rule: REJECT (path does NOT end with /content)
+  Verdict: CORRECT DEFENSIVE BEHAVIOR ✓
+
+CASE_C_INVALID_ENDPOINT_TEXT_PLAIN = REJECT
+  Method: DELETE
+  Path: /invalid
+  Content-Type: text/plain
+  Body: raw text
+  C parse: PASS
+  C body-rule: REJECT (path does NOT end with /content)
+  Verdict: CORRECT DEFENSIVE BEHAVIOR ✓
+
+CASE_D_METADATA_JSON = PASS
+  Method: PUT
+  Path: /alfresco/api/.../nodes/__ALFRESCO_NODE_ID__
+  Content-Type: application/json
+  Body: valid JSON object
+  C parse: PASS
+  C body-rule: PASS (normal JSON validation path)
+  Verdict: EXISTING BEHAVIOR PRESERVED ✓
+
+R35_REPAIR_ACCEPTED = YES (after R35B endpoint check correction)
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 3: ENVELOPE GENERATION AND BODY PRESERVATION
+═══════════════════════════════════════════════════════════════════════════════
+
+REFERENCE SEED: in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+REFERENCE_RAW_BODY_SHA256 = 48fadba2e9b3c11777b7c2354a06b3344213489d310fe1cb84da6c5c66ed2c7a
+
+MATERIALIZED TESTCASE STRUCTURE:
+─────────────────────────────────
+MATERIALIZED_TESTCASE_IS_FULL_HTTP = YES
+MATERIALIZED_METHOD = PUT
+MATERIALIZED_PATH_CLASS = /content
+MATERIALIZED_CONTENT_TYPE = text/plain; charset=utf-8
+MATERIALIZED_HAS_HTTP_SEPARATOR = YES
+
+BODY INTEGRITY:
+───────────────
+EXTRACTED_BODY_SHA256 = 48fadba2e9b3c11777b7c2354a06b3344213489d310fe1cb84da6c5c66ed2c7a
+RAW_BODY_SHA_MATCH = YES
+
+VERIFICATION:
+─────────────
+✓ R35 runner correctly wraps raw text seeds in HTTP envelope
+✓ Content-Type: text/plain; charset=utf-8 emitted
+✓ Semantic body bytes preserved exactly (SHA256 match)
+✓ HTTP structure valid (method, path, headers, separator, body)
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 4: MUTATOR COMPATIBILITY — BLOCKING DEFECT
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_ACTIVE_MUTATOR = nv_json_mutator.py
+MUTATOR_EXPECTS_FULL_HTTP = YES
+MUTATOR_EXPECTS_JSON_BODY = YES
+MUTATOR_SUPPORTS_RAW_TEXT_CONTENT_UPDATE = NO
+MUTATOR_PRESERVES_HTTP_ENVELOPE = PARTIAL (changes \r\n to \n)
+
+MUTATION TEST RESULTS:
+──────────────────────
+LOCAL_MUTATION_SAMPLE_COUNT = 5
+MUTATED_CASES_PARSE_AS_FULL_HTTP = NO (separator format changed)
+MUTATED_CASES_PRESERVE_TEXT_PLAIN = YES (Content-Type header preserved)
+MUTATED_CASES_HAVE_RAW_TEXT_BODY = NO (converted to JSON)
+
+MUTATION FLOW DEFECT TRACE:
+────────────────────────────
+Step 1: Parse HTTP
+  - Extracts text/plain body as string
+  - Body: "关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。"
+
+Step 2: JSON parse (nv_json_mutator.py:228)
+  - json.loads(body) raises exception
+  - Fallback (line 230): obj = {"raw": body[:128]}
+
+Step 3: Mutate object (arm 0 = field value)
+  - Before: {"raw": "关于系统联调测试的通知\n请各部门..."}
+  - After:  {"raw": "关于系统联调测试的通知\n请各部门...\u0000"}
+
+Step 4: Serialize to JSON (line 242)
+  - new_body = json.dumps(obj, ensure_ascii=False)
+  - Result: '{"raw": "关于系统联调测试的通知\n请各部门...\u0000"}'
+
+Step 5: Emit HTTP
+  - Body is now JSON object, NOT raw text
+  - Content-Type still says "text/plain" but body is JSON
+
+CONTRACT VIOLATION:
+───────────────────
+Original body:  关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。
+Mutated body:   {"raw": "关于系统联调测试的通知\n请各部门按照计划完成接口联调、日志归档和问题闭环。\u0000"}
+
+IMPACT:
+───────
+✗ Alfresco expects raw UTF-8 text for content_update
+✗ Mutator sends JSON-wrapped text instead
+✗ All mutated payloads will be rejected by Alfresco
+✗ Fuzzing campaign would generate zero valid executions
+✗ Coverage exploration impossible
+
+CONTENT_UPDATE_MUTATOR_CONTRACT_OK = NO
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 5-8: REMAINING VERIFICATION BLOCKED
+═══════════════════════════════════════════════════════════════════════════════
+
+The following verification steps were SKIPPED because the mutator contract
+violation blocks meaningful testing:
+
+STEP 5: Canonical C-side scorer replay
+  Status: SKIPPED
+  Reason: Would test JSON-wrapped bodies, not the intended raw text contract
+
+STEP 6: Post-C body extraction to Python harness
+  Status: SKIPPED
+  Reason: Would verify body extraction for wrong payload format
+
+STEP 7: Focused regression suite
+  Status: SKIPPED
+  Reason: Would validate broken mutation path
+
+STEP 8: Final readiness decision
+  Status: BLOCKED BY MUTATOR CONTRACT
+
+C_SCORER_RPC_OK = NOT_TESTED
+C_SCORER_SCORE = NOT_TESTED
+C_SCORER_DECISION = NOT_TESTED
+POST_C_BODY_EXTRACTION_OK = NOT_TESTED
+HARNESS_BODY_SHA_MATCH = NOT_TESTED
+R33_BODY_VALIDATE_OK = NOT_TESTED
+FOCUSED_TESTS_DISCOVERED = NOT_TESTED
+FOCUSED_TESTS_PASSED = NOT_TESTED
+FOCUSED_TESTS_FAILED = NOT_TESTED
+FOCUSED_TESTS_ERRORS = NOT_TESTED
+
+═══════════════════════════════════════════════════════════════════════════════
+FINAL GATE DECISION
+═══════════════════════════════════════════════════════════════════════════════
+
+R35_SCOPE_DEFECT = NO (corrected in R35B)
+R35_REPAIR_ACCEPTED = YES (with R35B endpoint path check)
+CONTENT_UPDATE_MUTATOR_CONTRACT_OK = NO
+CANONICAL_C_SIDE_SCORER_PATH_VERIFIED = SKIPPED
+POST_C_HARNESS_BODY_PATH_VERIFIED = SKIPPED
+SUCCESSOR_REAL_RUN_TECHNICALLY_READY = NO
+
+CONTENT_UPDATE_SE_R35B_GATE = BLOCKED_MUTATOR_CONTRACT
+
+R35B_REAL_CAMPAIGN_PERFORMED = NO
+R35B_REAL_TARGET_REQUESTS_SENT = 0
+R35B_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+═══════════════════════════════════════════════════════════════════════════════
+RECOMMENDATIONS FOR R36
+═══════════════════════════════════════════════════════════════════════════════
+
+REQUIRED REPAIR:
+────────────────
+The mutator must be fixed before ANY real content_update campaign.
+
+Three implementation options:
+
+OPTION A: Content-Type-aware mutation in existing mutator
+──────────────────────────────────────────────────────────
+File: nv_json_mutator.py
+Change: Add Content-Type detection before line 228
+Logic:
+  if "text/plain" in content_type:
+      # Apply byte-level mutations to raw text
+      mutated_body = mutate_text(body)
+  else:
+      # Existing JSON mutation path
+      obj = json.loads(body)
+      ...
+
+Pros: Single mutator, minimal config changes
+Cons: Mixes two mutation strategies in one file
+
+OPTION B: Dedicated text mutator
+─────────────────────────────────
+File: nv_text_mutator.py (new)
+Logic:
+  - UTF-8 character-level mutations for Chinese text
+  - Byte flips, insertions, deletions
+  - Preserve HTTP envelope structure
+  - Use \r\n separators (not \n)
+
+Configuration: Set AFL_PYTHON_MODULE=nv_text_mutator for content_update
+Pros: Clean separation, domain-specific mutations
+Cons: Requires config per scenario
+
+OPTION C: Disable custom mutator
+─────────────────────────────────
+Configuration: Set AFL_CUSTOM_MUTATOR_ONLY=0
+Effect: Use AFL++'s built-in byte-level havoc mutations
+Pros: Simplest, no code changes
+Cons: Loses domain-aware mutation strategy, may damage HTTP structure
+
+RECOMMENDED: Option B
+─────────────────────
+Cleanest architecture, best fuzzing effectiveness for text content.
+
+VERIFICATION CHECKLIST FOR R36:
+────────────────────────────────
+[ ] Implement mutator repair (Option A, B, or C)
+[ ] Verify mutated content_update bodies remain raw text (not JSON)
+[ ] Test mutator preserves HTTP envelope with \r\n separators
+[ ] Complete STEP 5: Canonical C-side scorer replay with raw text
+[ ] Complete STEP 6: Post-C body extraction verification
+[ ] Complete STEP 7: Focused regression suite (all scenarios)
+[ ] Verify metadata_update still uses JSON mutation
+[ ] Run dry-run campaign (no Alfresco contact) with new mutator
+[ ] Verify fuzzer_stats shows nv_valid_cnt > 0 in dry run
+[ ] THEN authorize single real Alfresco campaign
+
+═══════════════════════════════════════════════════════════════════════════════
+SANITIZED OUTPUT — ALL REQUIRED FIELDS
+═══════════════════════════════════════════════════════════════════════════════
+
+C_REPAIR_USES_SCENARIO_NAME = NO
+C_REPAIR_USES_ENDPOINT_NAME = NO
+C_REPAIR_USES_CONTENT_TYPE = YES
+
+CASE_A_CONTENT_UPDATE_TEXT_PLAIN = PASS
+CASE_B_METADATA_TEXT_PLAIN = REJECT
+CASE_C_INVALID_ENDPOINT_TEXT_PLAIN = REJECT
+CASE_D_METADATA_JSON = PASS
+
+RAW_BODY_SHA_MATCH = YES
+
+CONTENT_UPDATE_ACTIVE_MUTATOR = nv_json_mutator.py
+MUTATOR_SUPPORTS_RAW_TEXT_CONTENT_UPDATE = NO
+MUTATOR_PRESERVES_HTTP_ENVELOPE = PARTIAL
+
+C_SCORER_RPC_OK = NOT_TESTED
+C_SCORER_SCORE = NOT_TESTED
+C_SCORER_DECISION = NOT_TESTED
+
+POST_C_BODY_EXTRACTION_OK = NOT_TESTED
+HARNESS_BODY_SHA_MATCH = NOT_TESTED
+R33_BODY_VALIDATE_OK = NOT_TESTED
+
+FOCUSED_TESTS_DISCOVERED = NOT_TESTED
+FOCUSED_TESTS_PASSED = NOT_TESTED
+FOCUSED_TESTS_FAILED = NOT_TESTED
+FOCUSED_TESTS_ERRORS = NOT_TESTED
+
+R35_SCOPE_DEFECT = NO
+R35_REPAIR_ACCEPTED = YES
+CONTENT_UPDATE_MUTATOR_CONTRACT_OK = NO
+CANONICAL_C_SIDE_SCORER_PATH_VERIFIED = SKIPPED
+POST_C_HARNESS_BODY_PATH_VERIFIED = SKIPPED
+SUCCESSOR_REAL_RUN_TECHNICALLY_READY = NO
+
+CONTENT_UPDATE_SE_R35B_GATE = BLOCKED_MUTATOR_CONTRACT
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,66 @@
+{
+  "formal_execution_freeze_commitment": "5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52",
+  "execution_start_timestamp": "2026-09-21T_ACTUAL_START_TIME_",
+  "execution_status": "BLOCKED_AT_BLOCK_1",
+  "fail_fast_triggered": true,
+  "fail_fast_block": 1,
+  "fail_fast_run": "SE_second",
+  "fail_fast_reason": "BODY_SCORE_VALIDATION_REJECT_ALL_EXECUTIONS",
+  "completed_blocks": 0,
+  "valid_ae_runs": 1,
+  "valid_se_runs": 0,
+  "total_valid_runs": 1,
+  "total_invalid_runs": 1,
+  "blocks_attempted": 1,
+  "source_identity_verification": {
+    "git_head_commit": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+    "runner_sha256": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650",
+    "tracked_diff_sha256": "686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140",
+    "canonical_12file_manifest_sha256": "26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b",
+    "verification_status": "PASS",
+    "canonical_manifest_source": "/tmp/phase2_recovered_12file_manifest.txt"
+  },
+  "block_01": {
+    "formal_seed": 1120356083,
+    "first_backend": "alfresco_ae_v1",
+    "second_backend": "sefanogan_es_reference",
+    "ae_run": {
+      "status": "VALID",
+      "security_state_new_total": 1,
+      "nv_total_valid_exec": 5,
+      "nv_mab_total_pulls": 2,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "trace_invocations": 5,
+      "artifact_contract": "PASS",
+      "model_comparison_validity": "PASS"
+    },
+    "se_run": {
+      "status": "INVALID_EXCLUDED",
+      "security_state_new_total": 1,
+      "nv_total_valid_exec": 0,
+      "nv_mab_total_pulls": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "trace_invocations": 5,
+      "artifact_contract": "FAILED",
+      "model_comparison_validity": "FAILED",
+      "missing_artifacts": ["nv_probe.json", "nv_state_db.json"],
+      "fail_reason": "All mutated bodies rejected at score validation gate"
+    },
+    "block_status": "INVALID",
+    "paired_comparison_possible": false
+  },
+  "execution_environment": {
+    "output_root": "/tmp/phase4_r1_formal_execution",
+    "worktree_path": "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery",
+    "canonical_target_node": "1d16a46c-5518-4f11-96a4-6c55188f1172"
+  },
+  "next_gate": "BLOCKED_PENDING_HUMAN_ADJUDICATION",
+  "human_adjudication_required": true,
+  "analysis_executed": false
+}

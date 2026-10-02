@@ -1,0 +1,123 @@
+--- a/campaign_orchestrator.py
++++ b/campaign_orchestrator.py
+@@ -310,81 +310,48 @@ class CampaignOrchestrator:
+     def _execute_runner(self, cmd: NormalizedCommand) -> Optional[dict]:
+         """Execute runner/fuzz_test_runner.py with normalized command"""
+         import os
+-        import json
+-        import tempfile
+ 
+-        # Build command line
+-        runner_path = self.repo_root / "runner" / "fuzz_test_runner.py"
+-
+-        # Create task JSON for submit command
+-        task_obj = {
+-            "seed": cmd.seed,
+-            "backend": cmd.backend,
+-            "scenario": cmd.scenario,
+-            "max_test_cases": cmd.max_test_cases,
+-            "time_budget": cmd.time_budget,
+-            "scorer_ready_timeout": cmd.scorer_ready_timeout,
+-            "model_comparison": cmd.model_comparison
+-        }
+-
+-        # Write task JSON to temporary file
+-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+-            json.dump(task_obj, f, indent=2)
+-            task_json_path = f.name
++        # Call run_alfresco_bounded_feedback.py directly
++        script_path = self.repo_root / "scripts" / "run_alfresco_bounded_feedback.py"
+ 
+-        try:
+-            cmd_line = [
+-                "python3", str(runner_path),
+-                "submit",
+-                "--task-json", task_json_path,
+-                "--repo-root", str(self.repo_root),
+-                "--run-root", cmd.run_root
+-            ]
+-
+-            # Set run root
+-            os.makedirs(cmd.run_root, exist_ok=True)
+-            env = os.environ.copy()
+-
+-            print(f"  Launching: {' '.join(cmd_line)}")
+-            print(f"  Run root: {cmd.run_root}")
+-
+-            result = subprocess.run(
+-                cmd_line,
+-                env=env,
+-                capture_output=True,
+-                text=True,
+-                timeout=cmd.time_budget + 30
+-            )
+-
+-            if result.returncode != 0:
+-                print(f"  ✗ Runner exit code: {result.returncode}")
+-                print(f"  stderr: {result.stderr[-500:]}")
+-                return None
+-
+-            # Find run directory
+-            run_dirs = sorted(Path(cmd.run_root).glob("run_*"))
+-            if not run_dirs:
+-                print(f"  ✗ No run directory created")
+-                return None
+-
+-            run_path = str(run_dirs[-1])
+-
+-            return {
+-                "run_path": run_path,
+-                "exit_code": result.returncode,
+-                "stdout": result.stdout,
+-                "stderr": result.stderr
+-            }
+-
+-        except subprocess.TimeoutExpired:
+-            print(f"  ✗ Runner timeout exceeded")
++        cmd_line = [
++            "python3", str(script_path),
++            "--scenario", cmd.scenario,
++            "--afl-seed", str(cmd.seed),
++            "--max-test-cases", str(cmd.max_test_cases),
++            "--time-budget", str(cmd.time_budget),
++            "--scorer-ready-timeout", str(cmd.scorer_ready_timeout),
++            "--validity-backend", cmd.backend,
++            "--run-root", cmd.run_root
++        ]
++        
++        if cmd.model_comparison:
++            cmd_line.append("--model-comparison")
++
++        # Set run root
++        os.makedirs(cmd.run_root, exist_ok=True)
++        env = os.environ.copy()
++
++        print(f"  Launching: {' '.join(cmd_line)}")
++        print(f"  Run root: {cmd.run_root}")
++
++        try:
++            result = subprocess.run(
++                cmd_line,
++                env=env,
++                capture_output=True,
++                text=True,
++                timeout=cmd.time_budget + 60
++            )
++        except subprocess.TimeoutExpired:
++            print(f"  ✗ Execution timeout exceeded")
+             return None
+         except Exception as e:
+-            print(f"  ✗ Runner execution error: {e}")
++            print(f"  ✗ Execution error: {e}")
+             return None
+-        finally:
+-            # Clean up temporary task JSON
+-            try:
+-                os.unlink(task_json_path)
+-            except:
+-                pass
++        
++        if result.returncode != 0:
++            print(f"  ✗ Exit code: {result.returncode}")
++            print(f"  stderr: {result.stderr[-500:]}")
++            return None

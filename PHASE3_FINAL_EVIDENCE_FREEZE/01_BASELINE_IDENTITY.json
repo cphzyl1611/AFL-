@@ -1,0 +1,11 @@
+{
+  "git_head_commit": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+  "runner_script": "scripts/run_alfresco_bounded_feedback.py",
+  "runner_sha256": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650",
+  "tracked_diff_sha256": "686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140",
+  "canonical_12file_manifest_sha256": "26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b",
+  "threshold_artifact_path": "model_stage/models/sefanogan_es_realrun_threshold.json",
+  "threshold_artifact_sha256": "aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599",
+  "baseline_integrity_status": "VERIFIED",
+  "note": "Canonical 12-file manifest is the accepted Phase-2/Phase-3 binding"
+}

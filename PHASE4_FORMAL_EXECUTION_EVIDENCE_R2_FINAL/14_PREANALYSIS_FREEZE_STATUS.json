@@ -1,0 +1,11 @@
+{
+  "analysis_executed": false,
+  "statistical_tests_performed": [],
+  "confirmatory_analysis_count": 0,
+  "exploratory_analysis_count": 0,
+  "hypothesis_tests_count": 0,
+  "model_fitting_count": 0,
+  "preanalysis_boundary_preserved": true,
+  "freeze_timestamp": "2026-09-22T00:00:00Z",
+  "description": "This evidence freeze records raw execution outcomes only. No statistical analysis, hypothesis testing, or model fitting has been performed."
+}

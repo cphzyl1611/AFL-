@@ -1,0 +1,29 @@
+{
+  "approval_metadata": {
+    "approval_timestamp": "2026-09-21T14:05:00Z",
+    "approval_statement": "批准按最终 approval template 的推荐值执行 D1–D15",
+    "approval_interpretation": "ALL_RECOMMENDED_VALUES_IN_THE_FINAL_BOUND_D1_D15_APPROVAL_TEMPLATE",
+    "approval_status": "APPROVED",
+    "approval_scope": "ALL_15_DESIGN_DECISIONS"
+  },
+  "binding_provenance": {
+    "final_approval_template_path": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md",
+    "final_approval_template_sha256": "e825bfc9385b7ce7498824574c7012809afa3fb9e17d1776170d2c8f1644568e",
+    "successor_reconciliation_package": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION",
+    "successor_reconciliation_commitment": "7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3",
+    "phase4_design_package_commitment": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+    "phase3_evidence_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8"
+  },
+  "approval_materialization_status": {
+    "human_approval_received": true,
+    "approval_materialized": true,
+    "execution_freeze_created": false,
+    "formal_seed_list_generated": false,
+    "real_experiment_runs": 0
+  },
+  "human_acceptance_constraints": {
+    "no_fabricated_signature": true,
+    "no_fabricated_identity_credential": true,
+    "human_statement_preserved_verbatim": true
+  }
+}

@@ -1,0 +1,76 @@
+================================================================================
+R40 ONE-SHOT REAL VALIDATION - LAUNCH GATE BLOCKED
+================================================================================
+
+LAUNCH_GATE_STATUS = BLOCKED
+BLOCKER = TARGET_RESOURCE_NOT_READY
+
+================================================================================
+STEP 1: MINIMAL LAUNCH GATE VERIFICATION
+================================================================================
+
+Required Checks:
+
+✓ ALFRESCO_USER_PRESENT = YES
+  Environment variable set
+
+✓ ALFRESCO_PASS_PRESENT = YES
+  Environment variable set
+
+✗ AUTHENTICATED_ALFRESCO_HTTP_STATUS = 502 (REQUIRED: 200)
+  Target: http://127.0.0.1:8080/alfresco/service/api/server
+  Result: 502 Bad Gateway
+  BLOCKER: Alfresco service not reachable
+
+✗ TARGET_RESOURCE_READY = NO
+  Alfresco health endpoint returned 502
+  Service is down or unreachable
+
+BLOCKED CHECKS (cannot verify without target):
+  - CANONICAL_CHECKPOINT_SHA_MATCH
+  - CANONICAL_METADATA_SHA_MATCH
+  - REPAIRED_C_PROTOCOL_V2_BUILD_PRESENT
+
+================================================================================
+EXACT SINGLE BLOCKER
+================================================================================
+
+TARGET_RESOURCE_NOT_READY
+
+The Alfresco service at http://127.0.0.1:8080 is not reachable.
+Health endpoint /alfresco/service/api/server returned HTTP 502 Bad Gateway.
+
+This indicates:
+  - Alfresco service is not running on localhost:8080, OR
+  - Alfresco is behind a proxy that is down/misconfigured, OR
+  - Network connectivity issue
+
+Required Action:
+  1. Verify Alfresco service is running: sudo systemctl status alfresco
+  2. Verify port 8080 is listening: sudo netstat -tlnp | grep 8080
+  3. Check Alfresco logs for startup errors
+  4. Verify proxy configuration (if applicable)
+
+Once Alfresco service returns HTTP 200 on the health endpoint, the launch
+gate can proceed.
+
+================================================================================
+R40 ATTEMPT STATUS
+================================================================================
+
+R40_REAL_RUN_PERFORMED = NO
+R40_CONSUMED_REAL_ATTEMPT_COUNT = 0
+AUTHORIZED_R40_REAL_ATTEMPT_REMAINING = 1
+R40_MANUAL_LAUNCH_REQUIRED = NO (gate blocked, not a policy issue)
+
+The one authorized real validation attempt has NOT been consumed.
+
+================================================================================
+TASK STOPPED AT STEP 1
+================================================================================
+
+Cannot proceed to Step 2 (runner configuration) or Step 3 (launch) without
+a reachable Alfresco target.
+
+STOP per task instruction: "If any required check fails, STOP before launch
+and report the exact single blocker."

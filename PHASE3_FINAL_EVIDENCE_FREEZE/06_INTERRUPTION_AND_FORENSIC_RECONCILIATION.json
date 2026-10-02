@@ -1,0 +1,50 @@
+{
+  "interruption_analysis": {
+    "interruption_occurred_between_runs": true,
+    "interruption_overlapped_active_run": false,
+    "interruption_start": "2026-09-20T14:29:45Z",
+    "interruption_end": "2026-09-20T23:38:30Z",
+    "interruption_duration_seconds": 32925,
+    "interruption_duration_human": "9h 8m",
+    "last_run_before_interruption": "se_seed_20260916",
+    "first_run_after_interruption": "ae_seed_20260917",
+    "all_10_budgets_match": true,
+    "all_10_runs_single_invocation": true,
+    "any_run_resumed_after_interruption": false,
+    "interruption_impact": "NONE_ON_ACTIVE_RUNS"
+  },
+  "artifact_workaround_analysis": {
+    "workaround_applied": true,
+    "workaround_description": "Manual creation of empty nv_probe.json and nv_state_db.json files after SE run completion",
+    "workaround_classification": "NON_SEMANTIC_EVIDENCE_WORKAROUND",
+    "workaround_timing": "POST_RUN_REPAIR",
+    "affected_runs": ["se_seed_20260915", "se_seed_20260916", "se_seed_20260917", "se_seed_20260918", "se_seed_20260919"],
+    "root_cause": "When all executions are validation rejects (body_score_reject=5, body_score_pass=0), state probe update_state() never called, files never written",
+    "impact_assessment": {
+      "modified_source_code": false,
+      "modified_test_code": false,
+      "modified_model_files": false,
+      "modified_threshold": false,
+      "modified_seeds_or_budgets": false,
+      "changed_fuzzer_execution": false,
+      "changed_scorer_evaluation": false,
+      "only_affected_evidence_packaging": true
+    },
+    "workaround_final_disposition": "ACCEPTABLE_NON_SEMANTIC"
+  },
+  "forensic_runtime_provenance_verdict": {
+    "model_identity_blocker_status": "FALSE_POSITIVE_WRONG_FILE_SCOPE",
+    "post_campaign_audit_blocking_verdict": "SUPERSEDED",
+    "forensic_audit_unblocking_verdict": "SCIENTIFICALLY_VALID",
+    "all_5_se_runtime_identities_canonical": true,
+    "model_identity_drift_detected": false,
+    "error_in_post_campaign_audit": "Audit inspected repo-local leftover files instead of verifying runtime environment variables",
+    "forensic_proof_method": "Environment variable inspection and SHA256 verification of externally referenced canonical model files",
+    "final_model_identity_conclusion": "All 5 SE runs used correct canonical model artifacts matching frozen threshold artifact"
+  },
+  "validation_gap_identified": {
+    "gap": "Runtime model identity verification not performed during campaign execution",
+    "recommendation": "Add runtime SHA256 verification at scorer startup: compute hash of loaded checkpoint/metadata, compare against frozen canonical hashes, write verification to scorer trace, fail-closed on mismatch",
+    "future_improvement": "Provides runtime provenance instead of requiring post-hoc forensic reconstruction"
+  }
+}

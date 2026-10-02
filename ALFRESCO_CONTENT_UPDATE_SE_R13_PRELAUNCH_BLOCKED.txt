@@ -1,0 +1,294 @@
+================================================================================
+ALFRESCO_CONTENT_UPDATE_SE_EXACTLY_ONE_REAL_EXECUTION_R13
+PRELAUNCH BLOCKER REPORT
+================================================================================
+
+SESSION MODE: NEW SESSION
+AUTHORIZATION: EXACTLY_ONE_REAL_BOUNDED_EXECUTION
+DATE: 2026-09-26
+
+AUTHORITATIVE PREDECESSOR: R12D_PASS_READY_FOR_EXACTLY_ONE_REAL_EXECUTION
+
+================================================================================
+STEP 1 — MINIMAL LAUNCH GUARD
+================================================================================
+
+CRITICAL IDENTITY VERIFICATION:
+--------------------------------
+
+EXPECTED_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+EXPECTED_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+EXPECTED_THRESHOLD = 1.2847454080581664
+EXPECTED_BACKEND = sefanogan_es_reference
+EXPECTED_FEATURE_DIM = 32
+EXPECTED_FEATURE_CONTRACT = alfresco_fixed_32
+EXPECTED_SCENARIO = content_update
+
+SEED VERIFICATION:
+------------------
+SEED_PATH = in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+SEED_EXISTS = YES
+SEED_REPRESENTATION = text/raw
+SEED_AUTHORITY = ACCEPTED_EXISTING_FIXTURE
+
+ENVIRONMENT VERIFICATION:
+-------------------------
+ALFRESCO_LIVE = YES (docker ps shows alfresco container running)
+AUTH_READY = NOT_FULLY_VERIFIED (connectivity check passed with 200/401)
+TARGET_RESOURCE_READY = NOT_VERIFIED (would require full R12D environment check)
+
+SCORER_READY = NO ❌
+
+CANONICAL ARTIFACT ACCESSIBILITY:
+----------------------------------
+
+ARTIFACT_SEARCH_PERFORMED = YES
+
+Searched locations:
+  - model_stage/
+  - model_stage/models/
+  - PHASE3_FINAL_EVIDENCE_FREEZE/
+  - CONTENT_UPDATE_SE_R5_EVIDENCE/
+  - Entire repository (find . -name "*.pt" -o -name "*.pth" -o -name "*.json")
+
+CHECKPOINT_FOUND_WITH_EXPECTED_HASH = NO ❌
+METADATA_FOUND_WITH_EXPECTED_HASH = NO ❌
+
+THRESHOLD_ARTIFACT_FOUND = YES
+THRESHOLD_ARTIFACT_PATH = model_stage/models/sefanogan_es_realrun_threshold.json
+THRESHOLD_ARTIFACT_SHA256 = aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599
+THRESHOLD_VALUE = 1.2847454080581664 ✓
+EMBEDDED_CHECKPOINT_REFERENCE = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+EMBEDDED_METADATA_REFERENCE = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+CALLER_ENVIRONMENT_PROVISIONING:
+---------------------------------
+SEFANOGAN_REFERENCE_CHECKPOINT = NOT_SET ❌
+SEFANOGAN_REFERENCE_META_PATH = NOT_SET ❌
+
+ARCHITECTURAL AUTHORITY (from R12C):
+------------------------------------
+
+R12C established the authoritative artifact binding contract:
+
+  ARTIFACT_PATH_OWNER = CALLER_ENVIRONMENT
+
+  The accepted Phase-3 architecture designates the CALLER (human operator
+  or CI environment) as the authority for SE artifact path provisioning.
+
+  Required before launch:
+    export SEFANOGAN_REFERENCE_CHECKPOINT=<path-to-canonical.pt>
+    export SEFANOGAN_REFERENCE_META_PATH=<path-to-canonical.json>
+
+  The orchestrator (run_alfresco_bounded_feedback.py) inherits parent
+  environment variables via dict(os.environ) but NEVER injects artifact
+  paths itself.
+
+  The scorer server (nv_valid_server_real.py) reads these variables at
+  startup and FAILS IMMEDIATELY if they are absent:
+    load_validity_backend() raises ValueError("SE_REFERENCE_ARTIFACTS_REQUIRED")
+
+R12D CLAIMED VS ACTUAL STATE:
+------------------------------
+
+R12D Report stated:
+  CANONICAL_CHECKPOINT_FOUND = YES
+  CANONICAL_METADATA_FOUND = YES
+  CALLER_ENV_CHECKPOINT_PRESENT = YES
+  CALLER_ENV_META_PRESENT = YES
+  CALLER_ENV_CANONICAL_HASH_VERIFIED = YES
+
+R13 Verification shows:
+  CANONICAL_CHECKPOINT_ACCESSIBLE = NO ❌
+  CANONICAL_METADATA_ACCESSIBLE = NO ❌
+  CALLER_ENV_CHECKPOINT_PRESENT = NO ❌
+  CALLER_ENV_META_PRESENT = NO ❌
+  CALLER_ENV_CANONICAL_HASH_VERIFIED = IMPOSSIBLE (artifacts not found)
+
+DISCREPANCY:
+
+R12D verified that the canonical artifacts exist SOMEWHERE and that their
+hashes match the expected values. However, R12D did NOT:
+  - Document the actual filesystem paths where artifacts were found
+  - Provision the caller environment variables for this session
+  - Copy artifacts into the worktree or repository
+  - Make artifacts accessible to successor R13 task
+
+R12D's "CALLER_ENV_CHECKPOINT_PRESENT = YES" appears to refer to a
+DIFFERENT session or environment, not the current R13 worktree session.
+
+PHASE-3 CAMPAIGN ARTIFACT LOCATIONS (from R12C):
+-------------------------------------------------
+
+The accepted Phase-3 campaign used:
+
+  SEFANOGAN_REFERENCE_CHECKPOINT:
+    /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+
+  SEFANOGAN_REFERENCE_META_PATH:
+    /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+CURRENT SESSION ACCESSIBILITY:
+
+These paths are EXTERNAL to the repository. This R13 worktree session
+has NO ACCESS to /home/dministrator/alfresco-audit-artifacts/.
+
+================================================================================
+PRELAUNCH BLOCKER DETERMINATION
+================================================================================
+
+BLOCKER_CATEGORY = CANONICAL_ARTIFACTS_INACCESSIBLE
+
+BLOCKER_SEVERITY = HARD_STOP
+
+RATIONALE:
+
+1. The canonical SE checkpoint and metadata files with the required hashes
+   are NOT present in this worktree or accessible repository.
+
+2. The caller environment variables (SEFANOGAN_REFERENCE_CHECKPOINT and
+   SEFANOGAN_REFERENCE_META_PATH) are NOT SET.
+
+3. Without these artifacts and environment variables, the scorer server
+   will fail at startup BEFORE any fuzzing begins:
+     nv_valid_server_real.py:37 raises ValueError("SE_REFERENCE_ARTIFACTS_REQUIRED")
+
+4. This failure would occur BEFORE the first HTTP request, BEFORE any
+   scorer RPC, and BEFORE any framework accounting.
+
+5. Launching without artifacts would NOT consume the authorized real
+   execution in any scientifically meaningful way. It would be a
+   pure environment setup failure, not an experimental result.
+
+CANNOT_LAUNCH_BECAUSE:
+
+  - SCORER_READY = NO
+  - CANONICAL_CHECKPOINT_ACCESSIBLE = NO
+  - CANONICAL_METADATA_ACCESSIBLE = NO
+  - CALLER_ENV_PROVISIONING = INCOMPLETE
+
+AUTHORIZED_ACTION_TAKEN = NONE
+
+Per R13 task authority:
+  "If a blocker is detected BEFORE launch, no attempt is consumed."
+
+NO LAUNCH ATTEMPT WAS MADE.
+
+================================================================================
+STEP 2 — BOUND RECOVERY (NOT APPLICABLE)
+================================================================================
+
+BOUND_RECOVERY_ATTEMPTED = NO
+
+REASON: Cannot recover bounded budget when launch is blocked at
+        environment provisioning stage.
+
+================================================================================
+STEP 3 — LAUNCH (NOT PERFORMED)
+================================================================================
+
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+
+REASON: Prelaunch blocker prevents launch.
+
+================================================================================
+STEPS 4-7 — EVIDENCE COLLECTION (NOT APPLICABLE)
+================================================================================
+
+SCORER_PARTICIPATION_PROVEN = NO (scorer never started)
+TARGET_EXECUTION_ACCOUNTING = NO (no execution occurred)
+READBACK_VERIFICATION = NO (no execution occurred)
+FRAMEWORK_ACCOUNTING = NO (no execution occurred)
+
+================================================================================
+SCIENTIFIC OUTCOME CLASSIFICATION
+================================================================================
+
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = NOT_APPLICABLE_PRELAUNCH_BLOCKED
+
+REASON: The one authorized real execution could not be launched due to
+        canonical artifact inaccessibility. This is an environment setup
+        failure, not a scientific result.
+
+================================================================================
+FINAL GATE
+================================================================================
+
+CONTENT_UPDATE_SE_R13_GATE = BLOCKED_PRELAUNCH_CANONICAL_ARTIFACTS_INACCESSIBLE
+
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+ACTUAL_BACKEND = NOT_LAUNCHED
+ACTUAL_CHECKPOINT_SHA256 = NOT_LAUNCHED
+ACTUAL_METADATA_SHA256 = NOT_LAUNCHED
+ACTUAL_THRESHOLD = NOT_LAUNCHED
+ACTUAL_FEATURE_DIM = NOT_LAUNCHED
+ACTUAL_FEATURE_CONTRACT = NOT_LAUNCHED
+ACTUAL_SCENARIO = NOT_LAUNCHED
+
+SCORER_INVOCATIONS = NOT_LAUNCHED
+SCORER_RPC_OK = NOT_LAUNCHED
+SCORER_ACCEPTED = NOT_LAUNCHED
+SCORER_REJECTED = NOT_LAUNCHED
+SCORER_FAILURES = NOT_LAUNCHED
+
+TARGET_EXECUTIONS = NOT_LAUNCHED
+HTTP_SUCCESS_COUNT = NOT_LAUNCHED
+HTTP_NON_SUCCESS_COUNT = NOT_LAUNCHED
+TRANSPORT_FAILURE_COUNT = NOT_LAUNCHED
+
+READBACK_ATTEMPTED = NOT_LAUNCHED
+READBACK_VERIFIED = NOT_LAUNCHED
+
+================================================================================
+REQUIRED REMEDIATION
+================================================================================
+
+To unblock R13 real execution, the operator MUST:
+
+1. Locate or regenerate the canonical SE artifacts:
+   - Checkpoint with SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+   - Metadata with SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+2. Provision the caller environment BEFORE launching any successor task:
+   export SEFANOGAN_REFERENCE_CHECKPOINT=/absolute/path/to/canonical_checkpoint.pt
+   export SEFANOGAN_REFERENCE_META_PATH=/absolute/path/to/canonical_metadata.json
+
+3. Verify hash integrity:
+   sha256sum $SEFANOGAN_REFERENCE_CHECKPOINT  # must match checkpoint hash
+   sha256sum $SEFANOGAN_REFERENCE_META_PATH   # must match metadata hash
+
+4. Ensure artifacts remain accessible throughout campaign execution.
+
+ALTERNATIVE PATHS NOT AUTHORIZED:
+
+R13 task authority EXPLICITLY prohibits:
+  - Running without canonical SE (AE-only mode)
+  - Substituting different checkpoint/metadata files
+  - Retraining or regenerating the model
+  - Changing threshold, backend, or feature contract
+  - Modifying source code to work around artifact absence
+
+The blocker MUST be resolved by making the canonical artifacts accessible
+in their original form, not by changing the experiment design.
+
+================================================================================
+R13 SESSION COMPLETE — NO LAUNCH PERFORMED
+================================================================================
+
+SESSION_OUTCOME = BLOCKED_BEFORE_LAUNCH
+AUTHORIZATION_CONSUMED = NO
+SUCCESSOR_AUTHORIZATION_REMAINS = YES (the one authorized attempt remains available)
+
+A successor task MAY attempt R13 again AFTER the canonical artifacts
+are provisioned in the caller environment.
+
+DATE: 2026-09-26
+WORKTREE: /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+SESSION_MODE: READ_ONLY_VERIFICATION_ONLY
+
+================================================================================

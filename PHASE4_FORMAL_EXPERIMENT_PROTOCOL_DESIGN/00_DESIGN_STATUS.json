@@ -1,0 +1,23 @@
+{
+  "protocol_version": "1.0.0",
+  "design_date": "2026-09-21",
+  "design_status": "AWAITING_HUMAN_APPROVAL",
+  "phase3_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+  "phase3_acceptance": "PASS",
+  "engineering_variance_pilot": "PASS",
+  "formal_experiment_execution_gate": "BLOCKED_PENDING_HUMAN_DESIGN_APPROVAL",
+  "real_experiment_runs": 0,
+  "source_changed": false,
+  "tests_changed": false,
+  "model_files_changed": false,
+  "commit": false,
+  "push": false,
+  "design_objectives": [
+    "Define preregistration-style protocol for paired AE-vs-SE comparison",
+    "Bind to frozen Phase-3 evidence package",
+    "Establish reproducible experiment contract",
+    "Identify human decision gates before execution"
+  ],
+  "supersedes": null,
+  "notes": "This design does not execute experiments. All experimental units, seeds, and outcomes remain undefined until human approval and formal execution begin."
+}

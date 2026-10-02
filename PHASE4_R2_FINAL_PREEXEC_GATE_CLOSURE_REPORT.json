@@ -1,0 +1,125 @@
+{
+  "report_type": "PHASE4_R2_FINAL_PREEXEC_GATE_CLOSURE",
+  "report_timestamp": "2026-09-22T00:00:00Z",
+  "execution_gate_status": "BLOCKED",
+  "blocking_issues_count": 2,
+  
+  "check_results": {
+    "check_1_r2_freeze_integrity": {
+      "status": "FAIL",
+      "R2_EXECUTION_FREEZE_COMMITMENT_VERIFIED": "NO",
+      "R2_COMMITMENT_INDEPENDENT_RECOMPUTE_MATCH": "NO",
+      "ALL_SHA256SUMS_VERIFY": "PASS",
+      "FILE_LIST_COVERS_ALL_PACKAGE_FILES": "NO",
+      "SHA256SUMS_COVERS_ALL_FILES_EXCEPT_ITSELF": "YES",
+      "details": {
+        "expected_commitment": "1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f",
+        "computed_commitment_method1": "0e665d560c660ca74348d674e7be164f4bc5d7f41f8ffbf59dc4d5f66d818a25",
+        "sha256sums_file_hash": "1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f",
+        "all_file_hashes_valid": true,
+        "root_cause": "Expected commitment equals SHA256(SHA256SUMS.txt), not SHA256(FILE_LIST.txt||SHA256SUMS.txt)",
+        "integrity_status": "COMMITMENT_COMPUTATION_METHOD_IDENTIFIED_BUT_UNEXPECTED"
+      }
+    },
+    
+    "check_2_canonical_se_runtime_provenance": {
+      "status": "FAIL",
+      "CANONICAL_SE_RUNTIME_PROVENANCE_VERIFIED": "NO",
+      "details": {
+        "threshold_file_binding_verified": true,
+        "checkpoint_sha256_required": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+        "metadata_sha256_required": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+        "input_dim_required": 32,
+        "threshold_required": 1.2847454080581664,
+        "actual_checkpoint_files_searched": [
+          "sefanogan_gan_model.pt: 205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624",
+          "sefanogan_ae_model.pt: 5de67e66e28af65fdf6adb5c506c91148fcc356accd49113c267896bbd69d3dc"
+        ],
+        "actual_metadata_files_searched": [
+          "sefanogan_es_reference_meta.json: 44ce99d557e9443b26fbc54117bee78c8592c5b63276a69b69149032bfca5352",
+          "sefanogan_gan_meta.json: 87d189dde54ac578d170850d090032d3268887517d259ad5fc96855a15b9c495",
+          "sefanogan_ae_meta.json: 208daf66d82873dec8c19923d9c0a5a6b82ca36c512de52b0ff16b24ecb7acf2"
+        ],
+        "root_cause": "Frozen provenance SHA256 hashes do not match any existing model checkpoint or metadata files",
+        "integrity_status": "CANONICAL_ARTIFACTS_NOT_FOUND_OR_MODIFIED_AFTER_FREEZE"
+      }
+    },
+    
+    "check_3_alfresco_runtime": {
+      "status": "NOT_EXECUTED",
+      "reason": "Blocked by CHECK 1 and CHECK 2 failures"
+    },
+    
+    "check_4_carryforward_state": {
+      "status": "NOT_EXECUTED",
+      "reason": "Blocked by CHECK 1 and CHECK 2 failures"
+    },
+    
+    "check_5_orchestrator_reconfirm": {
+      "status": "NOT_EXECUTED",
+      "reason": "Blocked by CHECK 1 and CHECK 2 failures"
+    }
+  },
+  
+  "final_gate_verdict": {
+    "PHASE4_R2_FINAL_PREEXEC_GATE_VERDICT": "FAIL",
+    "R2_EXECUTION_FREEZE_COMMITMENT_VERIFIED": "NO",
+    "R2_COMMITMENT_INDEPENDENT_RECOMPUTE_MATCH": "NO",
+    "ALL_SHA256SUMS_VERIFY": "PASS",
+    "SOURCE_COMPOSITE_IDENTITY_VERIFIED": "YES",
+    "CANONICAL_12FILE_SOURCE_GATE": "PASS",
+    "CANONICAL_SE_RUNTIME_PROVENANCE_VERIFIED": "NO",
+    "SCORER_PYTHON_READY": "YES",
+    "ALFRESCO_RUNTIME_CLASSIFICATION": "NOT_CHECKED",
+    "ALFRESCO_REAL_API_STATUS": "NOT_CHECKED",
+    "ALFRESCO_PORT_BINDING_VERIFIED": "NOT_CHECKED",
+    "BLOCK1_CARRY_FORWARD_VERIFIED": "YES",
+    "BLOCK2_SE_CARRY_FORWARD_VERIFIED": "NOT_CHECKED",
+    "BLOCK2_OPTION_A_AUTHORIZATION_BOUND": "NOT_CHECKED",
+    "ORCHESTRATOR_SHA256SUMS_VERIFY": "NOT_CHECKED",
+    "ORCHESTRATOR_TDD": "PASS",
+    "DRY_RUN_PASS": "YES",
+    "ORCHESTRATOR_RUNTIME_CONTRACT_VERIFIED": "NOT_CHECKED",
+    "PHASE4_R2_ORCHESTRATOR_REAL_EXECUTION_READY": "NO"
+  },
+  
+  "execution_safety_contract": {
+    "REAL_FORMAL_RUNS_EXECUTED_IN_THIS_TASK": 0,
+    "BLOCK2_AE_RETRY_EXECUTED": "NO",
+    "BLOCK3_STARTED": "NO",
+    "SOURCE_CHANGED": "NO",
+    "TESTS_CHANGED": "NO",
+    "MODEL_FILES_CHANGED": "NO",
+    "R2_FREEZE_CHANGED": "NO",
+    "GIT_REFS_CHANGED": "NO",
+    "COMMIT": "NO",
+    "PUSH": "NO"
+  },
+  
+  "blocking_issues": [
+    {
+      "issue_id": "BLOCK_1",
+      "severity": "CRITICAL",
+      "gate": "CHECK_1_R2_FREEZE_INTEGRITY",
+      "description": "R2 freeze commitment cannot be verified using standard method",
+      "expected_commitment": "1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f",
+      "actual_finding": "Expected commitment equals SHA256(SHA256SUMS.txt), not concatenation method",
+      "impact": "Cannot verify R2 freeze package integrity before execution",
+      "resolution_required": "Clarify commitment computation method or regenerate R2 freeze with correct commitment"
+    },
+    {
+      "issue_id": "BLOCK_2",
+      "severity": "CRITICAL",
+      "gate": "CHECK_2_CANONICAL_SE_RUNTIME_PROVENANCE",
+      "description": "Frozen SE checkpoint and metadata SHA256 hashes do not match any existing model files",
+      "required_checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+      "required_metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+      "impact": "Cannot execute formal runs with unverifiable SE runtime artifacts",
+      "resolution_required": "Locate correct SE checkpoint/metadata files or regenerate R2 freeze with current artifact hashes"
+    }
+  ],
+  
+  "formal_experiment_execution_gate": "BLOCKED_PENDING_FINAL_PREEXEC_GATE_CLOSURE",
+  "human_decision_required": true,
+  "execution_authorization_status": "DENIED_CRITICAL_INTEGRITY_FAILURES"
+}

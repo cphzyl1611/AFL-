@@ -1,0 +1,92 @@
+================================================================================
+PHASE 4 — PRE-APPROVAL EXACT BINDING VERIFICATION
+================================================================================
+
+Verification Date: 2026-09-21
+Task: Read-only verification of approval bindings
+Constraints: No approval, no experiments, no seed list, no source changes
+
+================================================================================
+CHECK 1: AUTHORITATIVE A/B/C/D SAMPLE-SIZE MAPPING
+================================================================================
+
+Frozen Design Package: PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/
+Source File: 05_SAMPLE_SIZE_PLAN.md
+
+Literal Frozen Mapping (from lines 32, 83, 130, 185):
+
+FROZEN_METHOD_A = Option A: Minimum Practically Important Difference (MPID) + Power
+FROZEN_METHOD_B = Option B: Precision-Based Design
+FROZEN_METHOD_C = Option C: Blinded Variance Re-estimation
+FROZEN_METHOD_D = Option D: Fixed Pragmatic N
+
+Original Commissioned Specification (from this task):
+  A = MPID + independently justified variance
+  B = blinded/internal variance re-estimation
+  C = precision-based design
+  D = fixed pragmatic N
+
+Comparison:
+  Commissioned A vs Frozen A: MATCH (MPID + variance)
+  Commissioned B vs Frozen B: NO MATCH (commissioned B = blinded, frozen B = precision)
+  Commissioned C vs Frozen C: NO MATCH (commissioned C = precision, frozen C = blinded)
+  Commissioned D vs Frozen D: MATCH (fixed pragmatic N)
+
+Finding: The frozen design package swapped B and C relative to commissioned spec.
+
+Frozen Package:
+  Method B = Precision-Based Design
+  Method C = Blinded Variance Re-estimation
+
+Original Commission:
+  Method B = Blinded variance re-estimation
+  Method C = Precision-based design
+
+Classification: FROZEN DESIGN PACKAGE LABELS ARE AUTHORITATIVE
+
+The frozen package (cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19)
+was created with these labels and must be honored as the authoritative definition.
+
+The original commission may have had different labels, but the frozen package
+committed to B=precision and C=blinded, so all downstream reconciliations must
+use the frozen labels, not the commissioned labels.
+
+Resolution:
+  FROZEN_METHOD_A = MPID + Power
+  FROZEN_METHOD_B = Precision-Based Design
+  FROZEN_METHOD_C = Blinded Variance Re-estimation
+  FROZEN_METHOD_D = Fixed Pragmatic N
+
+METHOD_MAPPING_MATCHES_ORIGINAL_COMMISSION = NO
+  (Frozen package swapped B/C relative to commissioned spec,
+   but frozen package is authoritative)
+
+Approval Fallback Semantic and Label:
+  APPROVAL_FALLBACK_METHOD_SEMANTIC_NAME = Blinded Variance Re-estimation
+  APPROVAL_FALLBACK_METHOD_LABEL = C
+
+Blocker Reconciliation Package Verification:
+  01_METHOD_LABEL_CORRECTION.md states:
+    "Method C = Blinded variance re-estimation"
+    "Method D = Fixed pragmatic N"
+  
+  This is CONSISTENT with frozen design package (not commissioned spec).
+
+Status: METHOD_MAPPING_UNAMBIGUOUS = YES (frozen labels honored)
+
+================================================================================
+CHECK 2: FULL SUCCESSOR PACKAGE COMMITMENT
+================================================================================
+
+Package: PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/
+
+Full Package Commitment (SHA256 of SHA256SUMS.txt):
+7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3
+
+Verification:
+  Character count: 64
+  Hexadecimal: YES
+  Format: Valid SHA256 hash
+
+SHA256SUMS.txt verification:
+FILE_LIST.txt: OK

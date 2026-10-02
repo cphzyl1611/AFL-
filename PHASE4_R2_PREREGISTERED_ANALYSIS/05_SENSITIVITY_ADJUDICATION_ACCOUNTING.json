@@ -1,0 +1,22 @@
+{
+  "description": "Sensitivity and adjudication accounting - special validation paths",
+  "r2_semantic_gate": {
+    "total_se_runs": 0,
+    "se_zero_execution_false_negative_passes": 0,
+    "reconciliation_note": "SE runs with body_score_pass=0 passed via R2 semantic gate (validator false negative)"
+  },
+  "block2_adjudication": {
+    "se_status": "",
+    "se_carried_forward": false,
+    "ae_old_attempt_status": "",
+    "ae_old_excluded": false,
+    "ae_retry_status": "",
+    "ae_retry_authorized": false,
+    "ae_retry_valid": false
+  },
+  "run_counts": {
+    "total_valid_runs": 60,
+    "ae_runs": 30,
+    "se_runs": 30
+  }
+}

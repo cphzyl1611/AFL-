@@ -1,0 +1,114 @@
+================================================================================
+STEP 3 — AE RUN EXECUTION COMPLETE
+================================================================================
+
+TIMESTAMP: 2026-09-23
+RUN_ROOT: /tmp/nv-alfresco-bounded-892680-de43d1f9c4c145738c5df29f957b92b4
+EVIDENCE_DIRECTORY: alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+BOUNDED_STOP_RECONCILIATION: STEP3_AE_BOUNDED_STOP_RECONCILIATION.txt
+
+================================================================================
+AE RUN EXECUTION SUMMARY
+================================================================================
+
+Backend: alfresco_ae_v1
+Seed: 6103669 (frozen pilot seed)
+Max Test Cases: 5
+Time Budget: 60 seconds
+Actual Runtime: 1 second
+Target: content_update (node 1d16a46c-5518-4f11-96a4-6c55188f1172)
+
+Execution Results:
+  - Total AFL executions: 8
+  - Valid HTTP executions: 5 (matches max_test_cases limit)
+  - Scorer invocations: 5 (all successful)
+  - MAB reward updates: 2
+  - Security state discoveries: 1
+  - HTTP 200 responses: 3
+  - Error executions: 3
+
+Stop Mechanism:
+  - Stop trigger: max_test_cases limit reached
+  - Stop type: Programmatic graceful stop (AFL++ internal)
+  - AFL++ stop_soon value: 2
+  - AFL++ exit code: 0
+  - Terminal message: "Testing aborted programmatically"
+
+Runner Results:
+  - Runner exit code: 0
+  - Runner exit status: "success"
+  - Artifact contract: PASS
+  - Model comparison validity: PASS
+  - Readback verdict: pass
+
+================================================================================
+BOUNDED-STOP SEMANTICS RECONCILIATION VERDICT
+================================================================================
+
+RECONCILIATION_CLASSIFICATION = A_EXPECTED_BOUNDED_COMPLETION
+
+The "Testing aborted programmatically" message represents NORMAL BOUNDED
+COMPLETION, not an abnormal abort or interruption. AFL++ stopped itself after
+reaching the max_test_cases=5 limit as designed.
+
+Key Findings (7-Check Protocol):
+  ✓ CHECK 1: Message source located (src/afl-fuzz.c:4139, stop_soon=2)
+  ✓ CHECK 2: Runner does NOT send signals; AFL++ self-terminates
+  ✓ CHECK 3: Stop occurred at exact execution count (5 >= 5)
+  ✓ CHECK 4: Pattern matches previously accepted bounded runs
+  ✓ CHECK 5: AFL++ returned exit code 0 (normal termination)
+  ✓ CHECK 6: No external signals or runner control
+  ✓ CHECK 7: Classification = EXPECTED_BOUNDED_COMPLETION
+
+All 15 evidence points support normal bounded completion with HIGH confidence.
+
+================================================================================
+ARTIFACT CONTRACT VALIDATION
+================================================================================
+
+Required Setup Artifacts: ✓
+  - task.json
+  - target.json
+  - seed_dir/seed.http
+  - evidence/ directory
+
+Required Execution Artifacts: ✓
+  - afl-out/fuzzer_stats
+  - nv_http_status.json
+  - nv_probe.json
+  - nv_state_db.json
+  - nv_state_trace.jsonl
+  - evidence/mab_updates.jsonl
+  - evidence/seed_selection.jsonl
+  - evidence/executions.jsonl
+
+Model-Comparison Artifacts: ✓
+  - nv_body_valid_stats.json (scorer_rpc_ok=5)
+  - scorer_trace.jsonl (backend=alfresco_ae_v1)
+  - evidence/model_comparison_validity.json (verdict=PASS)
+
+Readback Artifacts: ✓
+  - evidence/readback.json (run_completed=true, correlated with exec_seq=5)
+
+Runner Evidence: ✓
+  - evidence/artifact_report.json (exit_code=0, final_result=pass)
+
+ARTIFACT_CONTRACT_VERDICT = PASS
+
+================================================================================
+STEP 3 GATE VERDICT
+================================================================================
+
+AE_RUN_COMPLETED = YES
+AE_RUN_STATUS = SUCCESS
+AE_BOUNDED_STOP = EXPECTED_NORMAL_COMPLETION
+AE_ARTIFACT_CONTRACT = PASS
+AE_MODEL_COMPARISON = PASS
+AE_READBACK = PASS
+AE_EVIDENCE_COMPLETE = YES
+
+GATE_STATUS = OPEN_FOR_STEP4
+
+Next: STEP 4 (Reset and readiness verification before SE run)
+
+================================================================================

@@ -1,0 +1,97 @@
+================================================================================
+STEP 3: PROTOCOL V2 ALIGNMENT - COMPLETE
+================================================================================
+
+PROTOCOL_REPAIR_FILE = src/afl-fuzz-run.c
+PROTOCOL_REPAIR_FUNCTION = nv_validity_rpc_score_unix
+C_PROTOCOL_VERSION_AFTER_REPAIR = V2
+LOGICAL_CONTENT_UPDATE_BODY_REMAINS_RAW_TEXT = YES
+
+================================================================================
+CHANGES MADE
+================================================================================
+
+1. Added nv_base64_encode() function (lines ~777-817)
+   - Standard base64 encoding with padding
+   - Returns malloc'd string (caller must free)
+   - Used for body encoding in Protocol V2 envelope
+
+2. Modified nv_validity_rpc_score_unix() to send Protocol V2
+   - Extracts HTTP body from full HTTP request
+   - Determines scenario from endpoint path:
+     * Path ends with "/content" → "content_update"
+     * Otherwise → "metadata_update"
+   - Base64-encodes body-only portion
+   - Builds JSON envelope using cJSON:
+     {
+       "scenario": "content_update" | "metadata_update",
+       "endpoint": "",
+       "body": "<base64-encoded body>"
+     }
+   - Sends [4-byte length header][JSON envelope]
+   - Added SO_RCVTIMEO timeout (2 seconds) - see Step 4
+
+3. Body extraction logic
+   - Finds separator (\n\n or \r\n\r\n) between headers and body
+   - If no separator found, treats entire buffer as body
+   - Extracted body is raw UTF-8 text for content_update
+   - No JSON parsing of body (preserves raw-text semantics)
+
+4. Scenario detection logic
+   - Parses HTTP first line to extract method and path
+   - Checks if path ends with "/content" (case-sensitive)
+   - content_update: PUT /nodes/.../content
+   - metadata_update: everything else
+
+================================================================================
+PROTOCOL V2 ALIGNMENT VERIFIED
+================================================================================
+
+AFL++ C code now sends:
+  [4-byte length][{"scenario":"content_update","endpoint":"","body":"<base64>"}]
+
+Python reference (nv_body_valid.py lines 250-258):
+  [4-byte length][{"scenario":"content_update","endpoint":"","body":"<base64>"}]
+
+Scorer expects (model_stage/nv_valid_server_real.py lines 241-252):
+  [4-byte length][JSON envelope with scenario, endpoint, body]
+
+PROTOCOL_MATCH_AFTER_REPAIR = YES
+
+================================================================================
+RAW TEXT BODY SEMANTICS PRESERVED
+================================================================================
+
+For content_update scenario:
+- Input to AFL++: HTTP request with raw UTF-8 text body
+- Extracted by C code: Raw UTF-8 text (no JSON parsing)
+- Encoded: Base64(raw UTF-8 text)
+- Sent in envelope: {"scenario":"content_update", "body":"<base64>"}
+- Decoded by scorer: base64.b64decode() → raw UTF-8 text
+- Fed to model: Raw UTF-8 text (SE model expects this)
+
+For metadata_update scenario:
+- Input to AFL++: HTTP request with JSON body
+- Extracted by C code: Raw JSON string
+- Encoded: Base64(JSON string)
+- Sent in envelope: {"scenario":"metadata_update", "body":"<base64>"}
+- Decoded by scorer: base64.b64decode() → JSON string
+- Parsed by scorer: json.loads(JSON string) → dict
+
+LOGICAL_CONTENT_UPDATE_BODY_REMAINS_RAW_TEXT = YES (verified)
+
+================================================================================
+BUILD VERIFICATION
+================================================================================
+
+Command: make clean && make
+Result: SUCCESS
+
+afl-fuzz built successfully with Protocol V2 code.
+Optional LLVM/gcc_plugin warnings ignored (expected, not blocking).
+
+Binary: ./afl-fuzz (in repo root)
+
+================================================================================
+STEP 3 COMPLETE
+================================================================================

@@ -1,0 +1,76 @@
+{
+  "ae_backend": "alfresco_ae_v1",
+  "ae_run_directory": "/tmp/phase2-ae-run-1789752534",
+  "ae_threshold": 1.623614,
+  "afl_seed": 20260915,
+  "files": [
+    {
+      "name": "calibrate_se_realrun_threshold.py",
+      "path": "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/scripts/calibrate_se_realrun_threshold.py",
+      "sha256": "c4d6667529e70433d82ee5562b0a042def5af01562ee29670c13a02cfaf94ec1"
+    },
+    {
+      "name": "sefanogan_es_realrun_threshold.json",
+      "path": "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/model_stage/models/sefanogan_es_realrun_threshold.json",
+      "sha256": "aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599"
+    },
+    {
+      "name": "ae_artifact_report.json",
+      "path": "/tmp/phase2-ae-run-1789752534/evidence/artifact_report.json",
+      "sha256": "8ecf2e2c7834292492bef016b94c8868837a4e5b5c6c395ff1b3c24342e807c4"
+    },
+    {
+      "name": "ae_model_comparison_validity.json",
+      "path": "/tmp/phase2-ae-run-1789752534/evidence/model_comparison_validity.json",
+      "sha256": "6d406954ff5c73231c3e7a5cd95172343ddbdf4b1bbfabb187e40c0fea0cb7b6"
+    },
+    {
+      "name": "ae_executions.jsonl",
+      "path": "/tmp/phase2-ae-run-1789752534/evidence/executions.jsonl",
+      "sha256": "930283e4324dacd2fbf8c26058eb744fa3865fccedbfdf10489c200b9f9f8a47"
+    },
+    {
+      "name": "ae_readback.json",
+      "path": "/tmp/phase2-ae-run-1789752534/evidence/readback.json",
+      "sha256": "80ae2e35e5f8e654232b083f1be1d3bbb3e9aba61956c9ed7150e3556d3d67ac"
+    },
+    {
+      "name": "se_artifact_report.json",
+      "path": "/tmp/phase2-se-run-1789753302/evidence/artifact_report.json",
+      "sha256": "ca1e3f8a66cb67cbee04abd9404d1a74ebc69e1551b9af49b138a393f37d0dc5"
+    },
+    {
+      "name": "se_model_comparison_validity.json",
+      "path": "/tmp/phase2-se-run-1789753302/evidence/model_comparison_validity.json",
+      "sha256": "1ce19ad07d41110e799409ce4322e7314be5a12fbfcf322430c830160e9a13e1"
+    },
+    {
+      "name": "se_executions.jsonl",
+      "path": "/tmp/phase2-se-run-1789753302/evidence/executions.jsonl",
+      "sha256": "386f3f79a566d87057514c2bd4dfab1e6dc5f89433c7f0f7e023c2eb316e3e5c"
+    },
+    {
+      "name": "se_readback.json",
+      "path": "/tmp/phase2-se-run-1789753302/evidence/readback.json",
+      "sha256": "11fcc563a974e881ebbee22e536407effece7795a07d023ec46efbf24de64c99"
+    },
+    {
+      "name": "ae_fuzzer_stats",
+      "path": "/tmp/phase2-ae-run-1789752534/afl-out/fuzzer_stats",
+      "sha256": "dec8e90e830b4500a39d7fe4dccff61a301abbcac98b49dc1d23c5292aa0c301"
+    },
+    {
+      "name": "se_fuzzer_stats",
+      "path": "/tmp/phase2-se-run-1789753302/afl-out/fuzzer_stats",
+      "sha256": "4a4d67f970f68453d931df93fe6fea52a7e32afaa0d5eaa7afb748464db757a3"
+    }
+  ],
+  "generation_timestamp": 1789753500,
+  "manifest_sha256": "cf19ee9c05375ca61201a56c590c9d59a6798bbe435e4bd0067d5b2867385e01",
+  "purpose": "phase2_final_fresh_ae_se_pair_acceptance_manifest",
+  "repository_head": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+  "schema_version": 1,
+  "se_backend": "sefanogan_es_reference",
+  "se_run_directory": "/tmp/phase2-se-run-1789753302",
+  "se_threshold": 1.2847454080581664
+}

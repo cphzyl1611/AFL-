@@ -1,0 +1,15 @@
+{
+  "analysis_status": {
+    "package_name": "PHASE4_R2_PREREGISTERED_ANALYSIS_R1",
+    "package_type": "SUCCESSOR_CORRECTED_PRIMARY_ENDPOINT",
+    "creation_timestamp": "2026-09-22T00:00:00Z",
+    "predecessor_package": "PHASE4_R2_PREREGISTERED_ANALYSIS",
+    "predecessor_status": "DEFECTIVE_PRIMARY_ENDPOINT_EXTRACTION",
+    "correction_reason": "Predecessor extracted body_rule_pass instead of frozen primary endpoint security_state_new_total",
+    "new_experiment_runs_executed": 0,
+    "raw_evidence_modified": false,
+    "final_evidence_freeze_modified": false,
+    "predecessor_analysis_modified": false,
+    "analysis_population_changed": false
+  }
+}

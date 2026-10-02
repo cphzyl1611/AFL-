@@ -1,0 +1,115 @@
+=============================================================================
+ALFRESCO_CONTENT_UPDATE_SE_R27_EXEC_SEQ_STATUS_TDD_REPAIR
+EXECUTIVE SUMMARY
+=============================================================================
+
+TASK: ALFRESCO_CONTENT_UPDATE_SE_R27_EXEC_SEQ_STATUS_TDD_REPAIR
+DATE: 2026-09-29
+STATUS: COMPLETE
+GATE: PASS
+
+=============================================================================
+PROBLEM
+=============================================================================
+
+R26C reported post-launch harness contract failure:
+  - TARGET_EXECUTIONS = 0
+  - HTTP_SUCCESS_COUNT = 0
+  - MAB_updates = 0
+  - Cause: invalid_exec_identity timeouts
+
+Root cause: HttpBodyAdapterError rejection path in nv_http_harness.py did
+NOT call write_status(), causing exec_seq to never advance. C-side fuzzer
+waited indefinitely for execution identity, triggering timeout.
+
+=============================================================================
+SOLUTION
+=============================================================================
+
+Applied TDD-driven minimal repair:
+  - Added write_status() call in HttpBodyAdapterError exception handler
+  - Location: nv_http_harness.py:1008-1021
+  - Change: Single function call (6 lines added)
+  - Semantics: Preserves validation_reject=1, exit code 0, http_code=0
+
+=============================================================================
+VERIFICATION
+=============================================================================
+
+TDD Regression Test (test_r27_exec_seq_status_adapter_error.py):
+  ✓ 3/3 tests pass
+  ✓ Proves adapter error path now writes status
+  ✓ Proves exec_seq advances on adapter errors
+
+Integration Test (test_r27_exec_seq_monotonicity_integration.py):
+  ✓ 67 executions with bounded afl-fuzz
+  ✓ exec_seq strictly monotonic: 1-67, no gaps, no duplicates
+  ✓ invalid_exec_identity_count = 0
+  ✓ Mixed rejection types: adapter errors + normal validation rejects
+  ✓ C↔harness execution identity contract satisfied
+
+Focused Regression:
+  ✓ 57 tests pass
+  ✓ 2 tests skipped (expected)
+  ✓ 0 R27-caused failures
+  ✓ All harness/validation/protocol tests clean
+
+=============================================================================
+IMPACT
+=============================================================================
+
+RISK: LOW
+  - Additive change (no removal of existing logic)
+  - Isolated to error handling path
+  - Preserves all existing semantics
+  - Comprehensive test coverage
+
+DEPLOYMENT: READY
+  - R27 repair enables target executions
+  - Prevents invalid_exec_identity timeouts
+  - Unblocks MAB arm performance tracking
+  - Satisfies C-side execution identity contract
+
+=============================================================================
+BOUNDARY COMPLIANCE
+=============================================================================
+
+R27_REAL_CAMPAIGN_PERFORMED = NO
+R27_REAL_TARGET_REQUESTS_SENT = 0
+R27_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+All hard boundaries satisfied:
+  ✓ No real Alfresco contact
+  ✓ No real-run authorization consumed
+  ✓ No broad refactoring
+  ✓ No git mutation beyond TDD test creation
+  ✓ No semantic changes to validation/MAB/scheduler
+
+=============================================================================
+FILES CHANGED
+=============================================================================
+
+Production code (1 file):
+  - nv_http_harness.py (+6 lines in except HttpBodyAdapterError block)
+
+Test code (3 files):
+  - tests/test_r27_exec_seq_status_adapter_error.py (NEW, 176 lines)
+  - tests/test_r27_exec_seq_monotonicity_integration.py (NEW, 198 lines)
+  - tests/test_nv_http_harness_representation_bridge.py (updated 1 test)
+
+=============================================================================
+RECOMMENDATION
+=============================================================================
+
+APPROVE for next bounded real-run.
+
+R27 repair satisfies all verification criteria. Integration test proves the
+C-side execution identity contract is now satisfied across all rejection
+paths. Ready to deploy.
+
+Monitor next bounded run for:
+  - TARGET_EXECUTIONS > 0 (confirms repair enables target contact)
+  - invalid_exec_identity_count = 0 (confirms timeout prevention)
+  - MAB reward updates > 0 (confirms execution attribution works)
+
+=============================================================================

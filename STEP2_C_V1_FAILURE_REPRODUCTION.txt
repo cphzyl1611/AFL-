@@ -1,0 +1,53 @@
+================================================================================
+STEP 2: REPRODUCE C PROTOCOL V1 FAILURE
+================================================================================
+
+Starting canonical scorer subprocess...
+Scorer PID: 115377
+Socket: /tmp/test_c_v1_6bgsh2t5/scorer.sock
+Tmpdir: /tmp/test_c_v1_6bgsh2t5
+
+Sending C Protocol V1 request (raw HTTP bytes)...
+Request length: 304 bytes
+Request start: b'PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/workspace://SpacesS'...
+
+RPC OK: False
+Response: NO_RESPONSE
+
+Scorer stdout:
+--------------------------------------------------------------------------------
+[OK] nv_valid_server_real listening: /tmp/test_c_v1_6bgsh2t5/scorer.sock (fmt=text)
+[REQ] scenario=metadata_update endpoint= bytes=304
+[ERR] request handling failed: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')
+
+--------------------------------------------------------------------------------
+
+Scorer stderr:
+--------------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/model_stage/nv_valid_server_real.py", line 326, in serve
+    result = score_and_trace(scenario, buf)
+  File "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/model_stage/nv_valid_server_real.py", line 208, in score_and_trace
+    result = predict_score_from_body(scenario, body)
+  File "/home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/model_stage/nv_valid_server_real.py", line 295, in predict_score_from_body
+    payload = json.loads(body.decode("utf-8"))
+  File "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/lib/python3.10/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/lib/python3.10/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/lib/python3.10/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+--------------------------------------------------------------------------------
+
+================================================================================
+STEP 2 RESULTS
+================================================================================
+PRE_REPAIR_C_TO_SCORER_RPC_OK = NO
+PRE_REPAIR_SCORER_ERROR_CLASS = JSONDecodeError
+PRE_REPAIR_FAILURE_STAGE = REQUEST_DESERIALIZATION
+
+SUCCESS: C Protocol V1 failure reproduced exactly as expected.
+Scorer attempted to parse raw HTTP request as JSON → JSONDecodeError
+

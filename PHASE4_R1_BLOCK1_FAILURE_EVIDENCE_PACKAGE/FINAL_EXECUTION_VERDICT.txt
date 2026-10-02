@@ -1,0 +1,117 @@
+PHASE4 R1 FORMAL EXECUTION - FINAL VERDICT
+==========================================
+
+EXECUTION_STATUS: BLOCKED_AT_BLOCK_1
+FAIL_FAST_TRIGGERED: YES
+HUMAN_ADJUDICATION_REQUIRED: YES
+
+EXECUTION SUMMARY
+-----------------
+Authorized freeze: R1 (commitment 5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52)
+Protocol: 30 paired blocks, 15 AE-first / 15 SE-first counterbalanced
+Budget: max_test_cases=5, time_budget=60s, scorer_ready_timeout=10s
+
+Blocks attempted: 1
+Blocks completed: 0
+Valid paired comparisons: 0
+
+BLOCKING FAILURE
+----------------
+Block: 1
+Seed: 1120356083
+Schedule: AE-first (alfresco_ae_v1 → sefanogan_es_reference)
+
+First run (AE): VALID ✓
+  - body_score_pass: 5
+  - body_score_reject: 0
+  - security_state_new_total: 1
+  - artifact_contract: PASS
+
+Second run (SE): INVALID ✗
+  - body_score_pass: 0
+  - body_score_reject: 5
+  - security_state_new_total: 1 (seed only)
+  - artifact_contract: FAILED
+  - missing_artifacts: nv_probe.json, nv_state_db.json
+
+ROOT CAUSE
+----------
+The SE validity backend (sefanogan_es_reference, threshold 1.2847454080581664)
+rejected 100% of mutated inputs that the AE backend (alfresco_ae_v1, threshold
+1.623614) accepted.
+
+With zero valid executions in the SE run:
+- No HTTP requests reached the target
+- No state tracking artifacts were created
+- No primary endpoint observation beyond seed
+- Paired comparison delta cannot be computed
+
+SCIENTIFIC IMPLICATION
+----------------------
+The paired comparison experimental design requires both backends to produce
+valid executions for the same seed. When one backend rejects all mutations
+that the other accepts, the fundamental premise of the comparison breaks down.
+
+This is not a transient failure or implementation defect. It is a protocol-level
+incompatibility between the two validity backends' acceptance criteria.
+
+PROTOCOL COMPLIANCE
+-------------------
+Per R1 fail-fast contract (09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md):
+
+✓ Invalid run detected via artifact contract failure
+✓ Campaign stopped immediately before next run
+✓ No automatic rerun attempted
+✓ No seed replacement attempted
+✓ No protocol modification attempted
+✓ Evidence frozen at point of failure
+✓ Human adjudication invoked
+
+ADJUDICATION OPTIONS
+--------------------
+1. Threshold adjustment
+   - Recalibrate SE threshold to match AE acceptance rate
+   - Requires new threshold validation campaign
+   - Requires new R2 freeze with modified SE config
+
+2. Protocol modification
+   - Disable body score validation for SE backend
+   - Use rule-based validation only
+   - Requires new R2 freeze with modified validity contract
+
+3. Seed filtering
+   - Pre-screen seeds for backend compatibility
+   - Generate new seed list excluding incompatible seeds
+   - Requires new R2 freeze with filtered seed list
+
+4. Design revision
+   - Accept that backends have different acceptance envelopes
+   - Modify comparison methodology to account for this
+   - Requires new experimental design (Phase 4 revision)
+
+5. Abandon current approach
+   - Accept that paired comparison is not viable
+   - Pursue alternative experimental design
+
+AUTONOMOUS CONTINUATION: PROHIBITED
+-----------------------------------
+No modification, rerun, or continuation is permitted without explicit human
+authorization of a new execution freeze.
+
+The R1 freeze stands as executed: 1 block attempted, 0 blocks completed,
+campaign blocked at Block 1 second run.
+
+EVIDENCE PRESERVATION
+---------------------
+Complete execution artifacts preserved in:
+  ./PHASE4_R1_BLOCK1_FAILURE_EVIDENCE_PACKAGE/
+  /tmp/phase4_r1_formal_execution/
+
+Package commitment:
+  b3e68dd9dcb5bf4c40ed42c227910d18cd72ffe577296a12d9fd12dfd778b4a3
+
+NEXT GATE
+---------
+BLOCKED_PENDING_HUMAN_ADJUDICATION
+
+Awaiting human decision on resolution path.

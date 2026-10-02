@@ -1,0 +1,64 @@
+{
+  "http404_reconciliation_report": {
+    "report_date": "2026-09-22T00:55:37.722523",
+    "task": "Phase 4 R2 HTTP 404 Final Readiness Reconciliation",
+    "session_type": "READ_ONLY_NON_SCIENTIFIC_READINESS_CHECK"
+  },
+  "check_1_http404_source": {
+    "HTTP404_CHECK_HOST": "localhost",
+    "HTTP404_CHECK_PORT": 8080,
+    "HTTP404_CHECK_PATH": "/o2server/jaxrs/x_organization_assemble_control/list/identity/page/1/size/1",
+    "HTTP404_CHECK_METHOD": "GET",
+    "HTTP404_CHECK_STATUS": 404
+  },
+  "check_2_runner_endpoint": {
+    "RUNNER_EFFECTIVE_HOST": "127.0.0.1",
+    "RUNNER_EFFECTIVE_PORT": 8080,
+    "RUNNER_EFFECTIVE_BASE_CONTEXT": "/alfresco",
+    "RUNNER_METADATA_UPDATE_PATH": "/alfresco/api/-default-/public/alfresco/versions/1/nodes/__ALFRESCO_NODE_ID__",
+    "RUNNER_METADATA_UPDATE_METHOD": "PUT"
+  },
+  "check_3_path_comparison": {
+    "HTTP404_PATH_EQUALS_RUNNER_TARGET_PATH": "NO",
+    "classification": "404 came from o2oa platform endpoint, runner uses alfresco platform"
+  },
+  "check_4_nonmutating_readiness": {
+    "ALFRESCO_TCP_REACHABLE": "YES",
+    "ALFRESCO_HTTP_CONTEXT_REACHABLE": "YES",
+    "ALFRESCO_AUTH_PLUMBING_READY": "YES",
+    "RUNNER_TARGET_ROUTE_CONFIGURATION_VALID": "YES"
+  },
+  "check_5_final_classification": {
+    "ALFRESCO_404_READINESS_VERDICT": "A) FALSE_POSITIVE_404_WAS_FROM_NONAUTHORITATIVE_PATH_AND_RUNNER_TARGET_IS_READY",
+    "ALFRESCO_REAL_API_STATUS": "READY",
+    "ALFRESCO_PORT_BINDING_VERIFIED": "YES"
+  },
+  "check_6_gate_reconfirmation": {
+    "R2_EXECUTION_FREEZE_COMMITMENT_VERIFIED": "YES",
+    "SOURCE_COMPOSITE_IDENTITY_VERIFIED": "YES",
+    "CANONICAL_12FILE_SOURCE_GATE": "PASS",
+    "CANONICAL_SE_RUNTIME_PROVENANCE_VERIFIED": "YES",
+    "SCORER_PYTHON_READY": "YES",
+    "BLOCK1_CARRY_FORWARD_VERIFIED": "YES",
+    "BLOCK2_SE_CARRY_FORWARD_VERIFIED": "YES",
+    "BLOCK2_OPTION_A_AUTHORIZATION_BOUND": "YES",
+    "ORCHESTRATOR_RUNTIME_CONTRACT_VERIFIED": "YES",
+    "ORCHESTRATOR_TDD": "PASS",
+    "DRY_RUN_PASS": "YES"
+  },
+  "final_gate": {
+    "PHASE4_R2_ORCHESTRATOR_REAL_EXECUTION_READY": "YES"
+  },
+  "session_safety_attestation": {
+    "REAL_FORMAL_RUNS_EXECUTED_IN_THIS_TASK": 0,
+    "BLOCK2_AE_RETRY_EXECUTED": "NO",
+    "BLOCK3_STARTED": "NO",
+    "SOURCE_CHANGED": "NO",
+    "TESTS_CHANGED": "NO",
+    "MODEL_FILES_CHANGED": "NO",
+    "R2_FREEZE_CHANGED": "NO",
+    "GIT_REFS_CHANGED": "NO",
+    "COMMIT": "NO",
+    "PUSH": "NO"
+  }
+}

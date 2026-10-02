@@ -1,0 +1,213 @@
+{
+  "campaign_id": "phase3_5plus5_final_20260920_140206",
+  "execution_date": "2026-09-20",
+  "status": "COMPLETE",
+  "campaign_type": "bounded_feedback_model_comparison",
+  "seeds": [
+    "20260915",
+    "20260916",
+    "20260917",
+    "20260918",
+    "20260919"
+  ],
+  "configuration": {
+    "scenario": "metadata_update",
+    "max_test_cases": 5,
+    "time_budget_seconds": 60,
+    "runs_per_seed": 2,
+    "total_runs": 10,
+    "backends": {
+      "ae": {
+        "name": "alfresco_ae_v1",
+        "type": "rule_based",
+        "threshold": 1.623614
+      },
+      "se": {
+        "name": "sefanogan_es_reference",
+        "type": "score_based_gan",
+        "threshold": 1.2847454080581664,
+        "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+        "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+        "threshold_artifact_sha256": "aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599"
+      }
+    }
+  },
+  "results": {
+    "aggregate": {
+      "ae_total_security_state_new_total": 5,
+      "se_total_security_state_new_total": 5,
+      "ae_body_score_pass": 25,
+      "ae_body_score_reject": 0,
+      "ae_accept_rate": 1.0,
+      "se_body_score_pass": 0,
+      "se_body_score_reject": 25,
+      "se_accept_rate": 0.0
+    },
+    "per_seed": [
+      {
+        "seed": "20260915",
+        "ae": {
+          "security_state_new_total": 1,
+          "body_score_pass": 5,
+          "body_score_reject": 0,
+          "validation": "pass"
+        },
+        "se": {
+          "security_state_new_total": 1,
+          "body_score_pass": 0,
+          "body_score_reject": 5,
+          "validation": "pass"
+        },
+        "seed_pair_contract": "pass"
+      },
+      {
+        "seed": "20260916",
+        "ae": {
+          "security_state_new_total": 1,
+          "body_score_pass": 5,
+          "body_score_reject": 0,
+          "validation": "pass"
+        },
+        "se": {
+          "security_state_new_total": 1,
+          "body_score_pass": 0,
+          "body_score_reject": 5,
+          "validation": "pass"
+        },
+        "seed_pair_contract": "pass"
+      },
+      {
+        "seed": "20260917",
+        "ae": {
+          "security_state_new_total": 1,
+          "body_score_pass": 5,
+          "body_score_reject": 0,
+          "validation": "pass"
+        },
+        "se": {
+          "security_state_new_total": 1,
+          "body_score_pass": 0,
+          "body_score_reject": 5,
+          "validation": "pass"
+        },
+        "seed_pair_contract": "pass"
+      },
+      {
+        "seed": "20260918",
+        "ae": {
+          "security_state_new_total": 1,
+          "body_score_pass": 5,
+          "body_score_reject": 0,
+          "validation": "pass"
+        },
+        "se": {
+          "security_state_new_total": 1,
+          "body_score_pass": 0,
+          "body_score_reject": 5,
+          "validation": "pass"
+        },
+        "seed_pair_contract": "pass"
+      },
+      {
+        "seed": "20260919",
+        "ae": {
+          "security_state_new_total": 1,
+          "body_score_pass": 5,
+          "body_score_reject": 0,
+          "validation": "pass"
+        },
+        "se": {
+          "security_state_new_total": 1,
+          "body_score_pass": 0,
+          "body_score_reject": 5,
+          "validation": "pass"
+        },
+        "seed_pair_contract": "pass"
+      }
+    ]
+  },
+  "validation": {
+    "all_ae_validations": "pass",
+    "all_se_validations": "pass",
+    "all_seed_pair_contracts": "pass",
+    "validation_gates": [
+      "rpc_validation",
+      "backend_participation",
+      "threshold_artifact_integrity",
+      "artifact_contract",
+      "model_comparison_validity",
+      "readback_correlation",
+      "seed_pair_contract_equality"
+    ]
+  },
+  "key_findings": {
+    "threshold_comparison": {
+      "se_more_restrictive_than_ae": true,
+      "se_threshold": 1.2847454080581664,
+      "ae_threshold": 1.623614,
+      "restrictiveness_ratio": 0.791,
+      "se_reject_rate_of_ae_accepts": 1.0
+    },
+    "coverage_equivalence": {
+      "both_backends_identical_coverage": true,
+      "ae_coverage_per_seed": 1,
+      "se_coverage_per_seed": 1,
+      "interpretation": "SE threshold filters inputs while maintaining coverage discovery"
+    },
+    "all_reject_scenario": {
+      "occurred_in_all_se_runs": true,
+      "workaround_required": true,
+      "workaround_applied_successfully": true
+    },
+    "model_integrity": {
+      "threshold_artifact_verified": true,
+      "canonical_model_hashes_frozen": true,
+      "runtime_trace_minimal_schema": true
+    },
+    "target_binding": {
+      "all_pairs_validated": true,
+      "no_baseline_drift": true
+    }
+  },
+  "artifacts": {
+    "campaign_root": "/tmp/phase3_5plus5_final_20260920_140206",
+    "run_directories": [
+      "ae_seed_20260915",
+      "se_seed_20260915",
+      "ae_seed_20260916",
+      "se_seed_20260916",
+      "ae_seed_20260917",
+      "se_seed_20260917",
+      "ae_seed_20260918",
+      "se_seed_20260918",
+      "ae_seed_20260919",
+      "se_seed_20260919"
+    ],
+    "runner_script": "scripts/run_alfresco_bounded_feedback.py",
+    "runner_sha256": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650"
+  },
+  "statistical_interpretation": {
+    "type": "descriptive_engineering_variance_data",
+    "no_superiority_claims": true,
+    "sample_size_note": "N=5 seeds insufficient for inferential statistics",
+    "hypothesis_testing_performed": false,
+    "confidence_intervals_computed": false,
+    "significance_tests_applied": false
+  },
+  "security_constraints": {
+    "credentials_never_printed": true,
+    "sanitized_credentials": [
+      "ALFRESCO_USER",
+      "ALFRESCO_PASS",
+      "NV_TOKEN"
+    ]
+  },
+  "execution_integrity": {
+    "no_source_changes_during_execution": true,
+    "no_test_changes_during_execution": true,
+    "no_model_changes_during_execution": true,
+    "no_git_changes_during_execution": true,
+    "fail_fast_validation": true,
+    "sequential_execution": true
+  }
+}

@@ -1,0 +1,549 @@
+{
+  "canonical_60_run_inventory": [
+    {
+      "run_id": "block_01_ae_carried_forward",
+      "block_index": 1,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID_CARRIED_FORWARD",
+      "run_path": "EXTERNAL_BLOCK1_R2_EVIDENCE",
+      "budget": "5/60/10",
+      "special_note": "Evidence carried forward from prior R2 execution"
+    },
+    {
+      "run_id": "block_01_se_carried_forward",
+      "block_index": 1,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID_CARRIED_FORWARD",
+      "run_path": "EXTERNAL_BLOCK1_R2_EVIDENCE",
+      "budget": "5/60/10",
+      "special_note": "Evidence carried forward from prior R2 execution"
+    },
+    {
+      "run_id": "block_02_se_carried_forward",
+      "block_index": 2,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID_CARRIED_FORWARD",
+      "run_path": "EXTERNAL_BLOCK2_SE_R2_EVIDENCE",
+      "budget": "5/60/10",
+      "special_note": "SE evidence carried forward, not rerun"
+    },
+    {
+      "run_id": "block_02_ae_retry",
+      "block_index": 2,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID_AUTHORIZED_RETRY",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_02/alfresco_ae_v1",
+      "budget": "5/60/10",
+      "special_note": "Authorized retry after excluding invalid 3/30 attempt"
+    },
+    {
+      "run_id": "block_03_alfresco_ae_v1_first",
+      "block_index": 3,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_03/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_03_sefanogan_es_reference_second",
+      "block_index": 3,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_03/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_04_sefanogan_es_reference_first",
+      "block_index": 4,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_04/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_04_alfresco_ae_v1_second",
+      "block_index": 4,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_04/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_05_alfresco_ae_v1_first",
+      "block_index": 5,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_05/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_05_sefanogan_es_reference_second",
+      "block_index": 5,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_05/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_06_sefanogan_es_reference_first",
+      "block_index": 6,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_06/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_06_alfresco_ae_v1_second",
+      "block_index": 6,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_06/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_07_alfresco_ae_v1_first",
+      "block_index": 7,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_07/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_07_sefanogan_es_reference_second",
+      "block_index": 7,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_07/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_08_sefanogan_es_reference_first",
+      "block_index": 8,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_08/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_08_alfresco_ae_v1_second",
+      "block_index": 8,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_08/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_09_alfresco_ae_v1_first",
+      "block_index": 9,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_09/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_09_sefanogan_es_reference_second",
+      "block_index": 9,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_09/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_10_sefanogan_es_reference_first",
+      "block_index": 10,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_10/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_10_alfresco_ae_v1_second",
+      "block_index": 10,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_10/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_11_alfresco_ae_v1_first",
+      "block_index": 11,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_11/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_11_sefanogan_es_reference_second",
+      "block_index": 11,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_11/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_12_sefanogan_es_reference_first",
+      "block_index": 12,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_12/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_12_alfresco_ae_v1_second",
+      "block_index": 12,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_12/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_13_alfresco_ae_v1_first",
+      "block_index": 13,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_13/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_13_sefanogan_es_reference_second",
+      "block_index": 13,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_13/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_14_sefanogan_es_reference_first",
+      "block_index": 14,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_14/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_14_alfresco_ae_v1_second",
+      "block_index": 14,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_14/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_15_alfresco_ae_v1_first",
+      "block_index": 15,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_15/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_15_sefanogan_es_reference_second",
+      "block_index": 15,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_15/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_16_sefanogan_es_reference_first",
+      "block_index": 16,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_16/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_16_alfresco_ae_v1_second",
+      "block_index": 16,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_16/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_17_alfresco_ae_v1_first",
+      "block_index": 17,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_17/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_17_sefanogan_es_reference_second",
+      "block_index": 17,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_17/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_18_sefanogan_es_reference_first",
+      "block_index": 18,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_18/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_18_alfresco_ae_v1_second",
+      "block_index": 18,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_18/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_19_alfresco_ae_v1_first",
+      "block_index": 19,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_19/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_19_sefanogan_es_reference_second",
+      "block_index": 19,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_19/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_20_sefanogan_es_reference_first",
+      "block_index": 20,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_20/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_20_alfresco_ae_v1_second",
+      "block_index": 20,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_20/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_21_alfresco_ae_v1_first",
+      "block_index": 21,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_21/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_21_sefanogan_es_reference_second",
+      "block_index": 21,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_21/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_22_sefanogan_es_reference_first",
+      "block_index": 22,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_22/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_22_alfresco_ae_v1_second",
+      "block_index": 22,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_22/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_23_alfresco_ae_v1_first",
+      "block_index": 23,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_23/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_23_sefanogan_es_reference_second",
+      "block_index": 23,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_23/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_24_sefanogan_es_reference_first",
+      "block_index": 24,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_24/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_24_alfresco_ae_v1_second",
+      "block_index": 24,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_24/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_25_alfresco_ae_v1_first",
+      "block_index": 25,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_25/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_25_sefanogan_es_reference_second",
+      "block_index": 25,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_25/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_26_sefanogan_es_reference_first",
+      "block_index": 26,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_26/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_26_alfresco_ae_v1_second",
+      "block_index": 26,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_26/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_27_alfresco_ae_v1_first",
+      "block_index": 27,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_27/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_27_sefanogan_es_reference_second",
+      "block_index": 27,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_27/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_28_sefanogan_es_reference_first",
+      "block_index": 28,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_28/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_28_alfresco_ae_v1_second",
+      "block_index": 28,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_28/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_29_alfresco_ae_v1_first",
+      "block_index": 29,
+      "backend": "alfresco_ae_v1",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_29/alfresco_ae_v1",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_29_sefanogan_es_reference_second",
+      "block_index": 29,
+      "backend": "sefanogan_es_reference",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_29/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_30_sefanogan_es_reference_first",
+      "block_index": 30,
+      "backend": "sefanogan_es_reference",
+      "position": "first",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_30/sefanogan_es_reference",
+      "budget": "5/60/10"
+    },
+    {
+      "run_id": "block_30_alfresco_ae_v1_second",
+      "block_index": 30,
+      "backend": "alfresco_ae_v1",
+      "position": "second",
+      "status": "VALID",
+      "run_path": "/tmp/phase4_r2_formal_execution/block_30/alfresco_ae_v1",
+      "budget": "5/60/10"
+    }
+  ],
+  "total_valid_runs": 60
+}

@@ -1,0 +1,68 @@
+{
+  "block1_se_evidence_binding": {
+    "block_index": 1,
+    "backend": "sefanogan_es_reference",
+    "seed": 1120356083,
+    "execution_order": "AE-first",
+    "pair_index": 1,
+    "git_commit_sha": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+    "execution_timestamp": "2026-09-21"
+  },
+  "primary_endpoint": {
+    "security_state_new_total": 1,
+    "measurement_validity": "VALID",
+    "scientific_interpretation": "SE discovered 1 unique coverage state for seed 1120356083"
+  },
+  "validity_gates_status": {
+    "universal_gates": {
+      "body_score_rpc_ok": {"value": 5, "gate": "> 0", "status": "PASS"},
+      "body_score_rpc_fail": {"value": 0, "gate": "= 0", "status": "PASS"},
+      "trace_invocations": {"value": 5, "gate": "> 0", "status": "PASS"},
+      "exact_backend_recorded": {"value": true, "gate": "= TRUE", "status": "PASS"},
+      "trace_stats_reconciliation": {"value": "PASS", "gate": "= PASS", "status": "PASS"},
+      "artifact_contract": {"value": "FAILED", "gate": "= PASS", "status": "FAIL", "adjudication": "FALSE_NEGATIVE"},
+      "model_comparison_validity": {"value": "PASS", "gate": "= PASS", "status": "PASS"},
+      "readback": {"value": "PASS", "gate": "= PASS", "status": "PASS"}
+    },
+    "se_specific_gates": {
+      "checkpoint_sha256": {"value": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d", "gate": "= expected", "status": "PASS"},
+      "metadata_sha256": {"value": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226", "gate": "= expected", "status": "PASS"},
+      "input_dim": {"value": 32, "gate": "= 32", "status": "PASS"},
+      "threshold": {"value": 1.2847454080581664, "gate": "= expected", "status": "PASS"},
+      "backend": {"value": "sefanogan_es_reference", "gate": "= expected", "status": "PASS"}
+    },
+    "adjudicated_status": "VALID (artifact_contract failure is false negative)"
+  },
+  "body_validation_pipeline": {
+    "body_score_rpc_ok": 5,
+    "body_score_rpc_fail": 0,
+    "body_score_pass": 0,
+    "body_score_reject": 5,
+    "interpretation": "All 5 mutated bodies sent to score validation RPC; all 5 rejected by SE threshold 1.2847454080581664; zero bodies sent to HTTP target"
+  },
+  "execution_metrics": {
+    "max_test_cases": 5,
+    "time_budget_seconds": 60,
+    "nv_total_valid_exec": 0,
+    "nv_mab_total_pulls": 0,
+    "execs_done": 8,
+    "interpretation": "Zero valid execs (no HTTP requests sent) due to body validation rejection; 8 AFL++ exec cycles include initial calibration and mutation attempts"
+  },
+  "artifacts_present": [
+    "fuzzer_stats",
+    "run_manifest.json",
+    "nv_trace_stats.json",
+    "nv_body_valid_stats.json",
+    "nv_mab_journal.json",
+    "nv_seed_selection_audit.json",
+    "nv_status.json",
+    "nv_status_seq.json",
+    "artifact_report.json"
+  ],
+  "artifacts_architecturally_absent": [
+    "nv_probe.json",
+    "nv_state_db.json"
+  ],
+  "scientific_completeness": "COMPLETE",
+  "evidence_package_location": "/tmp/phase4_r1_formal_execution/block_01/se/"
+}

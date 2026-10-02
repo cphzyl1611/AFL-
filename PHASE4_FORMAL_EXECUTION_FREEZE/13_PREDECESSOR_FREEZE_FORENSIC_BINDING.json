@@ -1,0 +1,64 @@
+{
+  "predecessor_freeze_forensic_binding": {
+    "original_directory": "PHASE4_FORMAL_EXECUTION_FREEZE",
+    "original_reported_commitment": "fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed",
+    "forensic_investigation_date": "2026-09-21",
+    "forensic_report": "PHASE4_PREFLIGHT_FORENSIC_RECONCILIATION_VERDICT.txt",
+    "forensic_verdict": "PACKAGE_CONTENT_CHANGED_AFTER_ORIGINAL_COMMITMENT_BUT_BEFORE_HUMAN_APPROVAL",
+    "integrity_status": "CANNOT_VERIFY_AGAINST_APPROVED_COMMITMENT",
+    "actual_current_file_inventory": {
+      "core_freeze_files": 12,
+      "infrastructure_files": 3,
+      "total_files": 15,
+      "files_present": [
+        "00_EXECUTION_FREEZE_STATUS.json",
+        "02_COMPOSITE_SOURCE_IDENTITY.json",
+        "03_RUNTIME_MODEL_PROVENANCE.json",
+        "04_FORMAL_SEED_LIST.json",
+        "05_FORMAL_PAIRED_ORDER_SCHEDULE.json",
+        "06_FORMAL_RUN_BUDGET.json",
+        "07_ENDPOINT_AND_ANALYSIS_ROLES.json",
+        "08_FULL_VALIDITY_GATE_CONTRACT.json",
+        "09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md",
+        "10_EXECUTION_PLAN.md",
+        "11_PROVENANCE_CHAIN.json",
+        "README.md",
+        "FILE_LIST.txt",
+        "SHA256SUMS.txt",
+        "SHA256SUMS_COMPLETE.txt"
+      ]
+    },
+    "actual_current_sha256sums_hash": "527be51338df9d7189fd07bef4e78d7a64d309fae097c0e5b79343502dc497d0",
+    "known_defects": [
+      {
+        "defect_id": "DEFECT_1",
+        "description": "README.md omitted from SHA256SUMS.txt coverage",
+        "impact": "Checksum coverage incomplete (11 entries vs 12 files)"
+      },
+      {
+        "defect_id": "DEFECT_2",
+        "description": "01_HUMAN_APPROVAL_BINDING.json referenced in README.md line 24 but file never created",
+        "impact": "Documented file missing from package"
+      },
+      {
+        "defect_id": "DEFECT_3",
+        "description": "Original reported commitment not reproducible from current package contents",
+        "impact": "Cannot verify package integrity against human authorization",
+        "timeline_evidence": {
+          "sha256sums_created": "2026-09-21T14:28:14Z",
+          "sha256sums_modified": "2026-09-21T14:31:21Z",
+          "human_approval_issued": "2026-09-21T14:34:00Z"
+        }
+      }
+    ],
+    "reproduction_attempts": {
+      "mechanism": "(sha256sum SHA256SUMS.txt; cat SHA256SUMS.txt) | sha256sum",
+      "current_sha256sums_result": "4c071c1d257c8f464b8fa09355ffbac399d198f44e14244b5f6d097df2e71223",
+      "sha256sums_complete_result": "28769b384ca619c652cc5415916a12c9150e972d1ca39c491af0a920e49a7fc5",
+      "match_with_approved_commitment": false
+    },
+    "successor_required": true,
+    "successor_directory": "PHASE4_FORMAL_EXECUTION_FREEZE_R1",
+    "preservation_note": "This forensic binding preserves the history of the defective original package. The original directory must not be edited or overwritten."
+  }
+}

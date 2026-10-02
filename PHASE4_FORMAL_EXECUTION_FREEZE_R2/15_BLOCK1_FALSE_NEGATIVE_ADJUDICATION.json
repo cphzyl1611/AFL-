@@ -1,0 +1,21 @@
+{
+  "block1_false_negative_adjudication": {
+    "adjudication_package": "PHASE4_BLOCK1_SE_FALSE_NEGATIVE_ADJUDICATION",
+    "adjudication_commitment": "f7c4ace060e26a87723c5f5500a7458c326f44568562bf33be844121a12a9d20",
+    "forensic_analysis_commitment": "d9ef9cca8ae7f6b5cec96a2677a12e725d0fde38d8803b23be12c0ec1fe32643",
+    "semantic_reconciliation_commitment": "5f82bb23b60ad81da566da5350fba13723ab5e643c47167bde1a53ae9170994e"
+  },
+  "governance_verdict": {
+    "classification": "A_VALIDATOR_FALSE_NEGATIVE_UNDER_EXISTING_R1_SEMANTICS",
+    "r1_contract_interpretation": "R1 artifact_contract description lists 'fuzzer_stats, manifest JSON, trace files' without explicitly enumerating nv_probe.json or nv_state_db.json",
+    "validator_behavior": "Validator implementation requires probe and state_db beyond frozen R1 semantic specification",
+    "scientific_evidence_status": "COMPLETE",
+    "phase3_precedent_alignment": "EXACT_MATCH"
+  },
+  "r2_resolution": {
+    "resolution_option_selected": "3_CREATE_R2_SUCCESSOR_FREEZE",
+    "semantic_adapter_implemented": true,
+    "adapter_tdd_status": "PASS",
+    "block1_revalidation_outcome": "VALID_BY_SEMANTIC_GATE"
+  }
+}

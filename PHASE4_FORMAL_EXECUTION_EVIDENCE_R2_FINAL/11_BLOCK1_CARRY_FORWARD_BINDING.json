@@ -1,0 +1,19 @@
+{
+  "block_index": 1,
+  "carry_forward_status": "CARRIED_FORWARD_FROM_PRIOR_R2_EXECUTION",
+  "ae_run": {
+    "backend": "alfresco_ae_v1",
+    "status": "VALID",
+    "source": "PRIOR_R2_EXECUTION",
+    "not_rerun_in_current_campaign": true
+  },
+  "se_run": {
+    "backend": "sefanogan_es_reference",
+    "status": "VALID",
+    "source": "PRIOR_R2_EXECUTION",
+    "not_rerun_in_current_campaign": true
+  },
+  "pair_contract": "PASS",
+  "included_in_final_60_count": true,
+  "evidence_location": "SEPARATE_BLOCK1_EVIDENCE_PACKAGE"
+}

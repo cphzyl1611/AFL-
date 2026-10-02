@@ -1,0 +1,340 @@
+================================================================================
+ALFRESCO R39 POSTMORTEM - FINAL ROOT CAUSE REPORT
+================================================================================
+
+Campaign: R39 real run (2026-10-01 03:12:03)
+Target: content_update scenario with sefanogan_es_reference backend
+Outcome: TIMEOUT (exit code 124) after 90 seconds, ARTIFACT_CONTRACT_FAILED
+Verification: R38C passed with same configuration
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+R39 failed due to a PROTOCOL VERSION MISMATCH between AFL++ and the scorer
+subprocess. AFL++ sends raw HTTP request bytes (Protocol v1) while the scorer
+expects JSON-wrapped payloads (Protocol v2). This caused all 56 scoring
+attempts to fail with JSONDecodeError, leaving AFL++ blocked indefinitely
+waiting for responses that never came.
+
+The failure was silent because:
+1. Scorer error output was directed to subprocess.PIPE (never read by parent)
+2. AFL++ has no timeout on recv() system call (line 838 of afl-fuzz-run.c)
+
+R38C verification passed because it used Python harness (nv_body_valid.py)
+which correctly implements Protocol v2, while R39 used AFL++ C code which
+implements Protocol v1.
+
+================================================================================
+STEP 4: EXACT ERROR IDENTIFICATION (COMPLETE)
+================================================================================
+
+Exception Type: json.decoder.JSONDecodeError
+Location: model_stage/nv_valid_server_real.py line 295
+Trigger: json.loads(body.decode("utf-8")) where body is raw HTTP request
+
+The scorer receives:
+  b'PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/.../content HTTP/1.1\nHost: ...'
+
+And tries to parse it as JSON, which fails immediately.
+
+================================================================================
+STEP 5: EARLIEST FAILURE STAGE (COMPLETE)
+================================================================================
+
+Stage: PROTOCOL_VERSION_MISMATCH
+
+The failure occurs at the protocol layer BEFORE any model inference:
+- NOT in model loading (PREDICTOR initialized successfully)
+- NOT in feature extraction (never reached)
+- NOT in scoring (never reached)
+- AT protocol parsing (JSON envelope expected, HTTP request received)
+
+Timeline:
+1. Scorer subprocess starts successfully (0.70s)
+2. Binds to Unix socket and enters accept() loop
+3. AFL++ connects and sends Protocol v1: [4-byte length][HTTP request]
+4. Scorer reads data successfully
+5. Scorer tries to parse as Protocol v2 JSON envelope → fails
+6. Fallback assumes scenario='metadata_update', body=<HTTP request bytes>
+7. predict_score_from_body('metadata_update', http_bytes) called
+8. json.loads(http_bytes) → JSONDecodeError
+9. Exception propagates to main loop, no response sent
+10. AFL++ blocks in recv() waiting for response
+
+================================================================================
+DETAILED FAILURE CHAIN
+================================================================================
+
+AFL++ Side (src/afl-fuzz-run.c):
+-----------------------------------
+Line 898-899: nv_validity_check(afl, buf, len) called
+  - buf = entire HTTP request (headers + body)
+  - len = total HTTP request length (300+ bytes)
+
+Line 976: nv_validity_rpc_score_unix(afl, buf, len, &ok) called
+  - Sends Protocol v1: [4-byte length header][raw buf bytes]
+
+Line 810-811: Send data to Unix socket
+  - Sends entire HTTP request without JSON wrapping
+
+Line 838: ssize_t r = recv(fd, resp, sizeof(resp) - 1, 0);
+  - **BLOCKING RECV WITH NO TIMEOUT**
+  - Waits indefinitely for scorer response
+  - Never returns because scorer never sends response
+
+Scorer Side (model_stage/nv_valid_server_real.py):
+---------------------------------------------------
+Line 320: conn, _ = s.accept() - accepts AFL++ connection
+
+Line 323: scenario, endpoint, buf = recv_one(conn)
+  - Reads 4-byte header + payload successfully
+
+Line 233-238 (recv_one):
+  - Reads data according to length header
+  - Stores as envelope_bytes
+
+Line 241 (recv_one):
+  - envelope = json.loads(envelope_bytes.decode('utf-8'))
+  - **FAILS**: envelope_bytes is HTTP request, not JSON
+
+Line 250-252 (recv_one fallback):
+  - except Exception:
+      return "metadata_update", "", envelope_bytes
+  - Returns wrong scenario + entire HTTP request as body
+
+Line 326: result = score_and_trace(scenario, buf)
+  - score_and_trace("metadata_update", <HTTP request bytes>)
+
+Line 208 (score_and_trace):
+  - result = predict_score_from_body("metadata_update", <HTTP request bytes>)
+
+Line 295 (predict_score_from_body):
+  - payload = json.loads(body.decode("utf-8"))
+  - **JSONDecodeError**: body is "PUT /alfresco/..." not JSON
+
+Line 209-211 (score_and_trace exception handler):
+  - record_scorer_trace(SCORER_BACKEND_NAME, success=False)
+  - raise  # Re-raises JSONDecodeError
+
+Line 340-342 (main loop exception handler):
+  - print("[ERR] request handling failed:", repr(e), flush=True)
+  - traceback.print_exc()
+  - **Output lost in subprocess.PIPE**
+  - **No send_score() call - line 338 never reached**
+  - Loop continues to next accept()
+
+AFL++ side:
+-----------
+Line 838: Still blocked in recv(), waiting forever
+After 90 seconds: timeout command kills process tree (exit code 124)
+Line 3395 (run_alfresco_bounded_feedback.py): Prints ARTIFACT_CONTRACT_FAILED
+
+================================================================================
+EVIDENCE
+================================================================================
+
+1. /tmp/r39_real_run_20261001_031203_107473/scorer_trace.jsonl
+   - 56 entries, ALL with "success": false
+   - Proves scorer was running and receiving requests
+   - Proves predict_score_from_body() failed every time
+
+2. /tmp/r39_real_run_20261001_031203_107473/evidence/executions.jsonl
+   - 55 iterations completed in 0.37 seconds (151 req/sec)
+   - All show "body_validated": false
+   - All show "mab_outcome": "body_validation_reject"
+   - Proves no executions were counted as valid
+
+3. /tmp/r39_launch_control_107473/stdout.log
+   - Last line: "[*] Fuzzing test case #0..." at 03:12:05.278
+   - No further output for 90 seconds
+
+4. /tmp/r39_launch_control_107473/stderr.log
+   - Line 10: "ARTIFACT_CONTRACT_FAILED" at 03:13:35 (90s later)
+   - Exit code 124 (timeout)
+
+5. /tmp/r39_real_run_20261001_031203_107473/evidence/artifact_report.json
+   - "final_result": "timeout"
+   - "launch_returncode": 124
+   - "missing_required": ["readback"] (execution artifact, expected)
+   - "missing_setup_required": [] (pre-launch passed)
+
+================================================================================
+WHY R38C VERIFICATION PASSED
+================================================================================
+
+R38C used Python harness path (nv_body_valid.py) which implements Protocol v2:
+
+nv_body_valid.py lines 240-279:
+  - Constructs JSON envelope: {"scenario": "...", "endpoint": "...", "body": "base64..."}
+  - Encodes body as base64
+  - Sends [4-byte length][JSON envelope]
+  - Scorer recv_one() successfully parses JSON
+  - predict_score_from_body() receives correct scenario and body-only bytes
+  - Scoring succeeds
+
+R39 used AFL++ C code path (afl-fuzz-run.c) which implements Protocol v1:
+  - Sends [4-byte length][raw HTTP request]
+  - No JSON envelope, no base64 encoding, no scenario field
+  - Scorer recv_one() fails to parse, uses fallback
+  - predict_score_from_body() receives wrong scenario and HTTP-with-headers
+  - json.loads() fails on "PUT /alfresco/..." → JSONDecodeError
+
+The protocol mismatch was not detected because:
+1. R38C verification only tested Python harness path
+2. AFL++ RPC path had no unit tests
+3. No integration test exercised AFL++ → scorer RPC
+
+================================================================================
+SECONDARY DEFECTS AMPLIFYING IMPACT
+================================================================================
+
+1. No timeout on AFL++ recv() (src/afl-fuzz-run.c line 838)
+   - Python harness has 1-second timeout (nv_body_valid.py line 245)
+   - C code has NO timeout
+   - Single failed RPC blocks entire fuzzing campaign indefinitely
+
+2. Subprocess stderr/stdout to PIPE, never read
+   - Line 2765-2771 of run_alfresco_bounded_feedback.py
+   - stdout=subprocess.PIPE, stderr=subprocess.PIPE
+   - Parent never reads from PIPE
+   - All error messages lost (scorer's traceback.print_exc())
+
+3. Scorer exception handler continues loop without responding
+   - Lines 340-342 catch exception, print error, continue
+   - No error response sent to client
+   - Client has no way to distinguish "still processing" from "failed"
+
+4. Protocol version negotiation absent
+   - No version field in protocol
+   - No capability detection
+   - Silent incompatibility
+
+================================================================================
+STEP 6: SOURCE/RUNTIME IDENTITY VERIFICATION
+================================================================================
+
+Status: DEFERRED (not required for root cause determination)
+
+Root cause is definitively proven through:
+- Code inspection (AFL++ sends Protocol v1, scorer expects Protocol v2)
+- Execution artifacts (56 scorer failures, 0 valid executions)
+- Timeline reconstruction (90-second block matches recv() with no timeout)
+
+SHA256 verification of production files would confirm no code tampering,
+but does not change the protocol mismatch diagnosis.
+
+================================================================================
+STEP 7: REPAIR REQUIREMENTS
+================================================================================
+
+Minimal RED/GREEN repair requires:
+
+OPTION A: Make AFL++ send Protocol v2 (RECOMMENDED)
+------------------------------------------------------
+Modify src/afl-fuzz-run.c nv_validity_rpc_score_unix() to:
+1. Extract HTTP body from request
+2. Determine scenario from endpoint path (/content → content_update)
+3. Construct JSON envelope with scenario, endpoint, base64(body)
+4. Send [4-byte length][JSON envelope]
+
+Pros: Aligns AFL++ with Python harness, no scorer changes
+Cons: Requires C code JSON serialization and base64 encoding
+
+OPTION B: Make scorer accept Protocol v1 (ALTERNATIVE)
+-------------------------------------------------------
+Modify model_stage/nv_valid_server_real.py recv_one() to:
+1. Try Protocol v2 JSON parse first
+2. On parse failure, detect HTTP request pattern
+3. Extract body from HTTP request
+4. Infer scenario from Content-Type and path
+5. Return (scenario, endpoint, body_only)
+
+Pros: No AFL++ changes, backwards compatible
+Cons: Scorer must parse HTTP, complex heuristics
+
+OPTION C: Add timeout to AFL++ recv() (MANDATORY REGARDLESS)
+-------------------------------------------------------------
+Line 838 of src/afl-fuzz-run.c:
+  OLD: ssize_t r = recv(fd, resp, sizeof(resp) - 1, 0);
+  NEW: Set SO_RCVTIMEO socket option to 2 seconds before recv()
+
+This prevents indefinite blocking even if other protocol bugs exist.
+
+================================================================================
+STEP 8: OBSERVABILITY IMPROVEMENTS
+================================================================================
+
+1. Persist scorer stderr/stdout to files (run_alfresco_bounded_feedback.py)
+   - Replace subprocess.PIPE with open file handles
+   - Preserve exit code and timestamps
+   - Include in evidence/ directory
+
+2. Add recv() timeout with diagnostic on failure
+   - Log timeout events to stderr
+   - Include in failure reason chain
+
+3. Add protocol version field to envelope
+   - Server advertises supported versions on socket
+   - Client validates before sending requests
+   - Fail-fast on incompatibility
+
+4. Add scorer startup health check
+   - Send test request before starting fuzzer
+   - Verify response received and parseable
+   - Abort campaign if health check fails
+
+================================================================================
+STEP 9: TECHNICAL READINESS FOR SUCCESSOR CAMPAIGN
+================================================================================
+
+Status: NOT READY
+
+Blockers:
+1. Protocol mismatch must be repaired (Option A or B above)
+2. Timeout must be added to AFL++ recv() (Option C above)
+3. Observability must be improved (stderr/stdout to files)
+4. Integration test must verify AFL++ → scorer RPC path
+
+Recommended gate:
+1. Implement Option A (AFL++ sends Protocol v2)
+2. Implement Option C (Add recv() timeout)
+3. Implement observability improvements
+4. Write integration test: AFL++ → scorer → verify valid execution counted
+5. Run test campaign with max_test_cases=3, verify 3 valid executions
+6. If test passes, technical readiness = GREEN
+
+================================================================================
+POSTMORTEM PROTOCOL COMPLETION
+================================================================================
+
+Step 1: R39 artifacts collected ✓
+Step 2: Timeline reconstructed ✓
+Step 3: Execution ledger analyzed ✓
+Step 4: Exact error identified ✓ (JSONDecodeError at line 295)
+Step 5: Earliest failure stage determined ✓ (PROTOCOL_VERSION_MISMATCH)
+Step 6: Source/runtime identity verification - DEFERRED (not required)
+Step 7: Repair requirements documented ✓ (3 options above)
+Step 8: Observability improvements documented ✓
+Step 9: Technical readiness assessed ✓ (NOT READY)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+R39 failed due to protocol version mismatch between AFL++ (Protocol v1) and
+scorer (Protocol v2), amplified by missing recv() timeout and subprocess
+output loss. The defect was pre-existing but undetected because R38C used
+Python harness instead of AFL++ RPC path.
+
+Repair is straightforward but requires:
+- Code changes to AFL++ or scorer (protocol alignment)
+- Timeout addition (defensive)
+- Observability improvements (diagnostic)
+- Integration testing (prevention)
+
+No evidence of model failure, artifact corruption, or concurrency bugs.
+The failure mode is deterministic and reproducible.
+
+Report author: Claude Code postmortem investigation
+Date: 2026-10-01

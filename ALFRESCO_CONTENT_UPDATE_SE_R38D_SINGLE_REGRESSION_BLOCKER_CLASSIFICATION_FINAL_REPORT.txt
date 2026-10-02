@@ -1,0 +1,194 @@
+=============================================================================
+ALFRESCO_CONTENT_UPDATE_SE_R38D_SINGLE_REGRESSION_BLOCKER_CLASSIFICATION
+FINAL REPORT
+=============================================================================
+
+DATE: 2026-10-01
+TASK: R38D - Classify single non-passing test from R38C focused regression
+STATUS: COMPLETE
+
+=============================================================================
+REQUIRED REPORTING FORMAT
+=============================================================================
+
+NONPASSING_TEST_NODEID = tests/test_real_alfresco_metadata_ae_se_runner.py::test_canonical_se_serving_unchanged
+NONPASSING_TEST_ERROR_CLASS = ModuleNotFoundError
+NONPASSING_TEST_FIRST_ERROR_LINE = model_stage/sefanogan_es_reference.py:17: import numpy as np
+
+NONPASSING_TEST_EXTERNAL_DEPENDENCY = numpy module in system Python
+NONPASSING_TEST_TOUCHES_R38C_PRODUCTION_PATH = NO
+NONPASSING_TEST_TOUCHES_SCORER_ENV_BINDING = NO
+
+R38D_FAILURE_CLASS = UNRELATED_ENVIRONMENTAL_BLOCKER
+
+R38C_CORE_TESTS_DISCOVERED = 4
+R38C_CORE_TESTS_PASSED = 4
+R38C_CORE_TESTS_FAILED = 0
+R38C_CORE_TESTS_ERRORS = 0
+
+R38C_CORE_REPAIR_ACCEPTED = YES
+R38C_SINGLE_BLOCKER_CLEARED_FOR_READINESS = YES
+SUCCESSOR_REAL_RUN_TECHNICALLY_READY = YES
+CONTENT_UPDATE_SE_R38D_GATE = PASS_SINGLE_REGRESSION_BLOCKER_CLASSIFIED_NON_BLOCKING
+
+=============================================================================
+CLASSIFICATION EVIDENCE
+=============================================================================
+
+FAILURE ANALYSIS:
+- Test: test_canonical_se_serving_unchanged()
+- Purpose: Verify model_stage/sefanogan_es_reference.py remains importable
+- Failure: ModuleNotFoundError: No module named 'numpy'
+- Failure location: model_stage/sefanogan_es_reference.py line 17
+- Test environment: system Python (pytest default)
+- System Python numpy availability: NO
+- Canonical Python numpy availability: YES
+
+CODE PATH SEPARATION:
+- R38C production path: ScorerLifecycleManager → canonical Python → numpy available
+- Failing test path: pytest system Python → numpy unavailable
+- Path overlap: NONE
+
+MODIFICATION HISTORY:
+- model_stage/sefanogan_es_reference.py: Added in commit e6d17ad (pre-R38C)
+- R38C did NOT modify: model_stage/sefanogan_es_reference.py
+- R38C did NOT modify: test_canonical_se_serving_unchanged
+- R38C modified: scripts/run_alfresco_bounded_feedback.py (scorer env binding only)
+
+DEPENDENCY VERIFICATION:
+System Python Import Test:
+  IMPORT_SUCCESS = NO
+  MISSING_MODULE = numpy
+
+Canonical Python Import Test:
+  CANONICAL_PYTHON_IMPORT_SUCCESS = YES
+  REFERENCE_SCORER_EXISTS = True
+
+FUNCTIONAL VERIFICATION:
+R38C Core Test Suite (4 tests):
+  - test_r38c_canonical_artifact_binding.py: PASS
+  - test_r38c_post_repair_binding.py: PASS
+  - test_r38c_content_update_alignment.py: PASS
+  - test_r38c_scorer_lifecycle.py: PASS
+
+Production Scorer Lifecycle:
+  - Uses canonical Python: YES
+  - Canonical artifact binding: VERIFIED (exact SHA256 match)
+  - Feature contract: alfresco_fixed_32 (32D)
+  - Protocol V2 RPC: OPERATIONAL
+
+=============================================================================
+CLASSIFICATION RATIONALE
+=============================================================================
+
+The failing test attempts to import model_stage/sefanogan_es_reference.py
+using system Python, which lacks numpy. This is an ENVIRONMENTAL LIMITATION,
+not an R38C functional regression.
+
+Evidence:
+1. R38C production code uses canonical Python (with numpy)
+2. Failing test uses system Python (without numpy)
+3. R38C did NOT modify model_stage/sefanogan_es_reference.py
+4. R38C did NOT modify the failing test
+5. model_stage/sefanogan_es_reference.py predates R38C (commit e6d17ad)
+6. All R38C core tests pass with canonical Python
+7. Production scorer lifecycle verified operational
+
+The test failure is NOT caused by R38C changes. The test was written to
+verify importability in system Python, but model_stage/sefanogan_es_reference.py
+requires numpy which is only present in canonical Python. R38C scorer lifecycle
+uses canonical Python exclusively and functions correctly.
+
+Classification: UNRELATED_ENVIRONMENTAL_BLOCKER
+
+=============================================================================
+TECHNICAL READINESS ASSESSMENT
+=============================================================================
+
+R38C Core Repair Status:
+✓ Canonical 32D artifact binding: VERIFIED EXACT
+  - Checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  - Metadata SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+✓ Production scorer environment: OPERATIONAL
+✓ Feature contract alignment: alfresco_fixed_32 (32D)
+✓ Scorer lifecycle: VERIFIED with canonical Python
+✓ Protocol V2 RPC: FUNCTIONAL
+✓ 38D contamination: ABSENT
+
+Single Blocker Impact:
+✓ Affects R38C production path: NO
+✓ Affects scorer environment binding: NO
+✓ Affects canonical Python execution: NO
+✓ Blocking successor real-run: NO
+
+Regression Status:
+✓ R38C core tests: 4/4 PASS
+✓ R38C-introduced regressions: 0
+✓ Environmental blocker: 1 (non-blocking)
+
+Conclusion:
+R38C core repair is ACCEPTED. The single blocker is environmental and does
+not affect technical readiness for successor real-run execution.
+
+=============================================================================
+BOUNDARY COMPLIANCE
+=============================================================================
+
+R38D_REAL_CAMPAIGN_PERFORMED = NO
+R38D_REAL_TARGET_REQUESTS_SENT = 0
+R38D_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+Boundaries Respected:
+✓ No real Alfresco campaign
+✓ No AFL++ runs
+✓ No production code modifications
+✓ No model/checkpoint/metadata changes
+✓ No INPUT_DIM or encoder changes
+✓ No mutator/validator/reward changes
+✓ No git operations
+✓ Classification limited to single blocker
+
+=============================================================================
+FINAL GATE DECISION
+=============================================================================
+
+CONTENT_UPDATE_SE_R38D_GATE = PASS_SINGLE_REGRESSION_BLOCKER_CLASSIFIED_NON_BLOCKING
+
+Gate Decision Rationale:
+1. Single blocker identified: test_canonical_se_serving_unchanged
+2. Blocker classified: UNRELATED_ENVIRONMENTAL_BLOCKER
+3. Root cause: numpy unavailable in system Python (environmental limitation)
+4. R38C production path: Uses canonical Python with numpy (unaffected)
+5. All R38C core tests: PASS (4/4)
+6. Canonical 32D artifact binding: VERIFIED OPERATIONAL
+7. Production scorer lifecycle: VERIFIED FUNCTIONAL
+8. Technical readiness: CONFIRMED for successor real-run
+
+The single non-passing test is an environmental blocker unrelated to R38C
+functional changes. R38C core repair is accepted and technically ready for
+successor real-run execution.
+
+GATE STATUS: PASS ✓
+
+=============================================================================
+CONCLUSION
+=============================================================================
+
+R38D classification complete. The single non-passing test from R38C focused
+regression has been classified as UNRELATED_ENVIRONMENTAL_BLOCKER. The test
+fails because system Python lacks numpy, while R38C production code uses
+canonical Python with numpy and functions correctly.
+
+All R38C core tests pass. Canonical 32D artifact binding is verified exact.
+Production scorer lifecycle is operational. No functional regressions introduced.
+
+R38C core repair is accepted. Technical readiness for successor real-run
+execution is confirmed.
+
+Classification: COMPLETE
+Readiness: VERIFIED
+Gate: PASS
+
+=============================================================================
+END OF REPORT
+=============================================================================

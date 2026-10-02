@@ -1,0 +1,137 @@
+═══════════════════════════════════════════════════════════════════════════════
+ALFRESCO CONTENT_UPDATE INVALID_TYPE_COUNT INVESTIGATION
+EXECUTIVE SUMMARY FOR STAKEHOLDERS
+═══════════════════════════════════════════════════════════════════════════════
+
+Date: 2026-09-24
+Investigation: Offline forensic analysis (no network, no reruns, no modifications)
+
+QUESTION
+════════
+Does the invalid_type_count=1.0 value for content_update seed represent a 
+feature-bridge bug (code can be fixed) or a canonical specification issue
+(model/seed must change)?
+
+ANSWER
+══════
+ROOT_CAUSE_CLASSIFICATION: B (CANONICAL SPEC INCOMPATIBILITY)
+
+The frozen content_update seed is incompatible with the SE training distribution
+under BOTH metadata_update AND text_content_update extraction scenarios.
+
+NO CODE REPAIR CAN FIX THIS. The issue requires model retraining or seed replacement.
+
+KEY FINDINGS
+════════════
+
+1. OFFLINE RESCORING RESULTS:
+   
+   Scenario A (metadata_update extraction):
+     - invalid_type_count = 1.0 (missing "name" field)
+     - SE score = 100,000,000.61
+     - Decision: REJECT (78 million× above threshold)
+   
+   Scenario B (text_content_update extraction):
+     - invalid_type_count = 0.0 (not applicable to text)
+     - SE score = 11.32
+     - Decision: REJECT (8.8× above threshold)
+   
+   CRITICAL: Even when invalid_type_count=0.0, the seed STILL rejects.
+            This proves OTHER dimensions are also out-of-distribution.
+
+2. ROOT CAUSE:
+   
+   The frozen seed body is a JSON properties payload:
+     {"properties":{"cm:title":"seed title","cm:description":"seed description"}}
+   
+   This is a HYBRID that matches neither scenario:
+     - Too structured for natural text (JSON syntax, 76 bytes)
+     - Too text-like for metadata (no Alfresco API context)
+   
+   The SE model was trained on real text files for content_update scenarios,
+   not JSON payloads. The seed is fundamentally incompatible with the training
+   distribution.
+
+3. SECONDARY BUGS IDENTIFIED (but not blocking):
+   
+   a) RPC Protocol Bug: endpoint_name is discarded (nv_body_valid.py:234)
+   b) Scorer Dispatch Bug: SE scorer hardcodes extract_metadata_features()
+   
+   These ARE bugs, but fixing them would NOT resolve the SE failure because
+   the seed rejects under BOTH scenarios.
+
+RECOMMENDED PATH FORWARD
+═════════════════════════
+
+PATH 3 (RECOMMENDED): ACCEPT AE-ONLY VALIDATION + DEFER SE
+  
+  ✓ The AE run PASSED (5/5 valid executions, HTTP 200)
+  ✓ Accept AE validation for content_update scenario
+  ✓ Mark SE as "deferred pending model retrain"
+  ✓ Document limitation in evidence package
+  
+  Timeline: Immediate
+  Risk: Low (preserves evidence, no protocol changes)
+
+PATH 1 (PARALLEL): RETRAIN SE MODEL
+  
+  - Expand training set to include samples with invalid_type_count ∈ [0,1,2+]
+  - Add variance floor (ε=1e-6) to normalization layer
+  - Retrain f-AnoGAN with corrected distribution
+  - Generate new canonical checkpoint + metadata
+  
+  Timeline: 2-4 weeks
+  Risk: High (requires new external authority)
+  Status: Required for operational SE deployment
+
+PATH 2 (ALTERNATIVE): REPLACE SEED WITH REAL TEXT FILE
+  
+  - Use actual text content (prose, logs, documents) instead of JSON
+  - Verify new seed is SE-compatible before freezing
+  - Requires new seed authorization and protocol re-freeze
+  
+  Timeline: 1-2 weeks
+  Risk: Medium (seed change requires authorization)
+  Status: Exploratory
+
+IMMEDIATE ACTION
+════════════════
+
+1. Accept verdict: ALFRESCO_CONTENT_UPDATE_DUAL_BACKEND_1P1 = AE_PASS_SE_DEFERRED
+
+2. Document SE incompatibility in evidence package
+
+3. Initiate PATH 1 (SE model retrain) as parallel track
+
+4. Preserve all evidence for post-retrain comparison
+
+RECONCILIATION WITH PRIOR DIAGNOSIS
+═══════════════════════════════════
+
+The prior OFFLINE_SE_ROOT_CAUSE_DIAGNOSIS_FINAL.txt correctly identified:
+  - Root cause: TRAINING DISTRIBUTION DEFECT
+  - Classification: B (threshold/distribution mismatch)
+  - Recommendation: PATH 3 (Accept AE-only + Parallel retrain)
+
+This investigation CONFIRMS that diagnosis and adds quantitative proof via
+offline rescoring under both scenarios.
+
+CONSTRAINT COMPLIANCE
+═════════════════════
+
+All investigation constraints adhered:
+✓ No network use
+✓ No real Alfresco/SE reruns
+✓ No threshold/model/seed changes
+✓ No source modifications
+✓ No commits/pushes
+
+Analysis performed OFFLINE using preserved evidence and canonical artifacts.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Full technical report:
+  ALFRESCO_CONTENT_UPDATE_INVALID_TYPE_COUNT_FEATURE_BRIDGE_INVESTIGATION_FINAL_REPORT.txt
+
+Investigation completed: 2026-09-24
+Status: COMPLETE — Classification B confirmed, TDD repair not applicable

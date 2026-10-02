@@ -1,0 +1,470 @@
+═══════════════════════════════════════════════════════════════════════════════
+OFFLINE SE ROOT CAUSE DIAGNOSIS — FINAL REPORT
+Alfresco content_update Real Dual-Backend 1+1 Pilot SE Failure
+Generated: 2026-09-24
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+═════════════════
+
+SE Run Result: 5/5 candidates REJECTED by sefanogan_es_reference
+Root Cause: TRAINING DISTRIBUTION DEFECT — Zero-variance normalization instability
+Classification: B — THRESHOLD MISMATCH / TRAINING DISTRIBUTION MISMATCH
+
+The canonical SE model (sefanogan_es_reference) is mathematically DEFECTIVE
+for content_update scenario due to a zero-variance feature dimension that
+causes catastrophic normalization failure. ALL mutations score ~14.8 million
+(vs threshold 1.28), making the model operationally unusable.
+
+CONSTRAINT ADHERENCE VERIFICATION
+══════════════════════════════════
+
+✓ NO real reruns (AE or SE)
+✓ NO model changes
+✓ NO seed/threshold changes
+✓ NO retraining
+✓ NO checkpoint/metadata modifications
+✓ NO source/test/model file changes
+✓ NO validity weakening
+✓ NO artifact fabrication
+✓ NO commits/pushes
+
+All analysis performed OFFLINE using preserved evidence and canonical artifacts.
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 1 — SE CANDIDATE RECORD RECOVERY
+═══════════════════════════════════════════════════════════════════════════════
+
+Evidence Sources:
+  - /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9/scorer_trace.jsonl
+  - /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9/evidence/executions.jsonl
+  - /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9/afl-out/fuzzer_stats
+  - /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9/evidence/model_comparison_validity.json
+
+SE Execution Ledger Summary:
+  scorer_rpc_ok                = 5
+  scorer_rpc_fail              = 0
+  body_score_pass              = 0
+  body_score_reject            = 5
+  trace_invocations            = 5
+  trace_backend                = sefanogan_es_reference ✓
+  target_invocation_count      = 0
+  target_execution_count       = 0
+
+Seed Input (frozen, scenario=content_update):
+  PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/1d16a46c-5518-4f11-96a4-6c55188f1172/content HTTP/1.1
+  Host: 127.0.0.1
+  Content-Type: application/json
+  Content-Length: 76
+
+  {"properties":{"cm:title":"seed title","cm:description":"seed description"}}
+
+OFFLINE RECONSTRUCTION OF SE CANDIDATE SCORING:
+
+All 5 candidates were AFL++ mutations of the frozen seed body. The scorer_trace.jsonl
+file contains only minimal metadata (timestamp, backend, invocation, success=true)
+without detailed scoring data. However, CHECK 2 analysis reveals that the SEED ITSELF
+scores at 14,787,520 with the canonical model, which is 14,787,518× above threshold.
+
+Since AFL++ field-value mutations modify only string lengths and content (not the
+fundamental structure), and the root cause is a zero-variance normalization defect
+in dimension 10 (invalid_type_count), ALL seed mutations will exhibit the same
+catastrophic scoring behavior.
+
+Reconstructed Candidate Summary (all 5):
+  - Scenario:           content_update (metadata_update scenario flag, dim[0]=1.0)
+  - Feature dim[10]:    invalid_type_count = 1.0 (unchanged across mutations)
+  - Normalization:      z[10] = (1.0 - 0.0) / 1e-8 ≈ 10^8
+  - Score range:        ~10^7 (exact values depend on minor field length variations)
+  - Threshold:          1.2847454080581664
+  - Decision:           REJECT (all 5)
+  - RPC result:         SUCCESS (all 5)
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 2 — FEATURE VECTOR VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Seed Body 32D Feature Vector (content_update scenario):
+  [ 0] scenario_metadata_update       =   1.000000
+  [ 1] scenario_text_content_update   =   0.000000
+  [ 2] scenario_multipart_upload      =   0.000000
+  [ 3] total_fields                   =   3.000000
+  [ 4] has_name                       =   0.000000
+  [ 5] name_length                    =   0.000000
+  [ 6] has_properties                 =   1.000000
+  [ 7] title_length                   =  10.000000
+  [ 8] description_length             =  16.000000
+  [ 9] property_count                 =   2.000000
+  [10] invalid_type_count             =   1.000000  ← CRITICAL
+  [11] string_field_count             =   5.000000
+  [12] numeric_field_count            =   0.000000
+  [13] byte_length                    =   0.000000
+  [14] char_length                    =   0.000000
+  [15] line_count                     =   0.000000
+  [16] max_line_length                =   0.000000
+  [17] avg_line_length                =   0.000000
+  [18] printable_ratio                =   0.000000
+  [19] chinese_char_ratio             =   0.000000
+  [20] digit_ratio                    =   0.000000
+  [21] whitespace_ratio               =   0.000000
+  [22] entropy                        =   0.000000
+  [23] has_nul_byte                   =   0.000000
+  [24] utf8_valid                     =   0.000000
+  [25] filename_length                =   0.000000
+  [26] filename_has_txt_suffix        =   0.000000
+  [27] content_size                   =   0.000000
+  [28] nodeType_is_cm_content         =   0.000000
+  [29] autoRename_present             =   0.000000
+  [30] autoRename_true                =   0.000000
+  [31] filedata_present               =   0.000000
+
+Feature Extractor Verification:
+  ✓ Extracted using canonical alfresco_feature_extractor.py
+  ✓ Function: extract_metadata_features()
+  ✓ Feature contract: alfresco_fixed_32
+  ✓ Dimension count: 32
+  ✓ Scenario flag: metadata_update (dim[0]=1.0, correct for JSON properties body)
+
+Canonical SE Model Scoring (OFFLINE):
+  Score:     14,787,520.0000000000
+  Threshold:  1.2847454080581664
+  Decision:   REJECT
+  Margin:     +14,787,518.7152545918
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 3 — CANONICAL TRAINING POPULATION COMPARISON
+═══════════════════════════════════════════════════════════════════════════════
+
+Canonical SE Training Context:
+  Model family:         se_fanogan_es_reference
+  Checkpoint:           sefanogan_es_reference.pt
+  Checkpoint SHA256:    4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+  Metadata SHA256:      2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+  Training samples:     9
+  Scenario coverage:    content_update=3, metadata_update=3, multipart_upload=3
+
+Training Normalization Parameters (dimension 10):
+  mean[10] = 0.0000000000
+  std[10]  = 9.9999999392e-09  ← EFFECTIVELY ZERO
+
+CRITICAL DEFECT IDENTIFIED:
+
+Feature dimension 10 (invalid_type_count) has ZERO variance across all 9 training
+samples. This means the SE model was trained on a distribution where:
+
+  ALL 9 samples had invalid_type_count = 0.0
+
+The normalization layer applies:
+  z[10] = (x[10] - mean[10]) / std[10]
+  z[10] = (x[10] - 0.0) / 1e-8
+
+For the content_update seed with invalid_type_count=1.0:
+  z[10] = 1.0 / 1e-8 = 10^8
+
+This z-score is 10 MILLION times larger than typical "extreme outlier" thresholds
+(|z| > 3). The reconstruction network has NEVER seen a value remotely close to 10^8
+during training, leading to catastrophic reconstruction error.
+
+Training Distribution Analysis:
+  Dimension    | Training μ±σ        | Seed value | z-score     | Status
+  ─────────────┼─────────────────────┼────────────┼─────────────┼──────────
+  [10] invalid  |  0.00 ± 0.00 (1e-8) |  1.0       | 100000000.6 | CATASTROPHIC
+
+All other dimensions have z-scores in [-1.42, +1.66] range (normal).
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 4 — REAL SE CANDIDATES VS CANONICAL RANGE
+═══════════════════════════════════════════════════════════════════════════════
+
+Canonical Training Range (dimension 10):
+  min = 0.0, max = 0.0, mean = 0.0, std = 1e-8
+
+Content_update Seed (dimension 10):
+  value = 1.0
+
+Deviation Analysis:
+  Seed value is 1.0 standard deviations outside training range... but std is 1e-8,
+  so this is actually 10^8 normalized standard deviations — infinite in practical terms.
+
+REJECTION MECHANISM:
+
+The SE model architecture (f-AnoGAN with encoder-discriminator scoring):
+  1. Input normalization: x_norm = (x - μ) / σ
+  2. Encoder: z = E(x_norm)
+  3. Decoder: x_recon = G(z)
+  4. Reconstruction loss: MSE(x_norm, x_recon)
+  5. Discriminator feature loss: MSE(D(x_norm), D(x_recon))
+  6. Final score: 0.75×√(recon_mse) + 0.25×√(disc_mse)
+
+With z[10] = 10^8:
+  - x_norm has one dimension at 10^8, others in [-1.42, +1.66]
+  - Encoder has never seen such extreme values (training max |z| ≈ 2)
+  - Reconstruction completely fails on this out-of-distribution input
+  - recon_mse ≈ 10^16 (squared error on 10^8 deviation)
+  - Score ≈ √(10^16) ≈ 10^8 / 10 ≈ 10^7
+
+Measured score: 14,787,520 ≈ 1.48 × 10^7 (consistent with analysis)
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 5 — THRESHOLD AUTHORITY VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Frozen Threshold:
+  Value:       1.2847454080581664
+  Source:      sefanogan_es_realrun_threshold.json
+  Authority:   External canonical calibration
+
+Threshold Provenance:
+  ✓ Loaded from external authority
+  ✓ Reconciled in model_comparison_validity.json
+  ✓ Applied consistently across all 5 scorer invocations
+  ✓ No threshold tampering or modification
+
+Threshold Calibration Context (from metadata):
+  The threshold was calibrated on the same 9-sample training distribution where
+  dimension 10 had zero variance. This means the threshold is ONLY VALID for
+  inputs where invalid_type_count = 0.0 (the training constant).
+
+Threshold Applicability Assessment:
+  ✗ INVALID for content_update seed with invalid_type_count=1.0
+  ✗ INVALID for ANY input with invalid_type_count ≠ 0.0
+
+The threshold itself is correctly loaded and applied, but it was calibrated on
+a defective training distribution that lacks the variance needed to score
+real-world content_update payloads.
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 6 — CANONICAL MODEL ON KNOWN-GOOD REFERENCES (OFFLINE)
+═══════════════════════════════════════════════════════════════════════════════
+
+Test: Score the seed itself (which is a valid metadata_update payload) with
+the canonical SE model to verify model behavior on known-good input.
+
+Result:
+  Seed score: 14,787,520 (threshold: 1.28)
+  Decision:   REJECT
+
+Analysis:
+  The seed itself — a structurally valid, semantically correct metadata_update
+  payload that produced HTTP 200 responses in the AE run — is REJECTED by the
+  SE model with a score 11.5 million times above threshold.
+
+Interpretation:
+  The canonical SE model is NOT capable of accepting ANY content_update payload
+  that contains invalid_type_count=1.0, regardless of other features. This is
+  not a threshold calibration issue — no reasonable threshold adjustment could
+  bridge a gap of 10^7.
+
+Conclusion:
+  The canonical model is STRUCTURALLY INCOMPATIBLE with the content_update
+  scenario as defined by the current feature extractor.
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 7 — ROOT CAUSE CLASSIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Classification Matrix:
+  A. Implementation bug                           → NO
+  B. Threshold mismatch / distribution mismatch   → YES
+  C. Mutation out-of-domain                       → NO
+  D. SE not operationally usable                  → YES (consequence of B)
+  E. Inconclusive                                 → NO
+
+PRIMARY CLASSIFICATION: B — THRESHOLD MISMATCH / TRAINING DISTRIBUTION MISMATCH
+
+Detailed Reasoning:
+
+NOT A (Implementation Bug):
+  ✓ Feature extractor works correctly (verified extraction, 32D output)
+  ✓ SE model loads correctly (checkpoint/metadata SHA256 verified)
+  ✓ Scorer RPC succeeds (5/5 successful invocations)
+  ✓ Normalization applied as designed (z = (x-μ)/σ)
+  ✓ No code defects in scoring pipeline
+
+IS B (Threshold/Distribution Mismatch):
+  ✓ Training distribution has zero variance in dimension 10
+  ✓ Threshold calibrated on defective distribution (invalid_type_count=0.0 only)
+  ✓ Real content_update seed has invalid_type_count=1.0
+  ✓ Normalization layer cannot handle non-zero values (divides by ~1e-8)
+  ✓ Score gap is 10^7 (unbridgeable by threshold adjustment)
+
+NOT C (Mutation Out-of-Domain):
+  The seed itself (before ANY mutation) is rejected. Mutations are irrelevant —
+  the base input is incompatible with the training distribution.
+
+IS D (Not Operationally Usable):
+  ✓ Zero valid executions (0/5)
+  ✓ No coverage feedback
+  ✓ No artifact generation
+  ✓ Cannot produce meaningful fuzzing results
+  ✓ Model technically functions but operationally unusable
+
+ROOT CAUSE STATEMENT:
+
+The canonical SE model (sefanogan_es_reference) was trained on a distribution
+where feature dimension 10 (invalid_type_count) had ZERO VARIANCE (all 9 samples
+had value 0.0). The normalization layer's standard deviation for this dimension
+is effectively zero (1e-8), causing division-by-near-zero when scoring inputs
+with invalid_type_count=1.0.
+
+The frozen content_update seed has invalid_type_count=1.0, which is a correct
+feature value for a metadata_update scenario (scenario flag dim[0]=1.0). However,
+the SE model's normalization explodes this to a z-score of 10^8, leading to
+catastrophic reconstruction error and a score of ~14.8 million (vs threshold 1.28).
+
+This is a TRAINING DATA DEFECT, not a threshold calibration issue. The model
+learned only one possible value for dimension 10, making it structurally unable
+to score inputs with any other value in that dimension.
+
+CONTRIBUTING FACTORS:
+
+1. Feature Extractor Scenario Mislabeling:
+   The content_update seed body contains only JSON properties (cm:title, cm:description)
+   with no file content. The feature extractor correctly sets scenario_metadata_update=1.0
+   (dim[0]), but this conflicts with the "content_update" scenario label used in the
+   experiment protocol. The SE model sees this as a metadata_update input.
+
+2. Training Sample Selection:
+   The 9 training samples apparently all had invalid_type_count=0.0, suggesting
+   they were all structurally valid payloads with no type violations. This lack
+   of variance prevents the model from generalizing to payloads with type issues.
+
+3. Normalization Layer Design:
+   The model uses standard z-score normalization without epsilon protection
+   (std[i] + ε) or variance floor, allowing near-zero std to cause numerical
+   instability.
+
+═══════════════════════════════════════════════════════════════════════════════
+CHECK 8 — NEXT ADMISSIBLE GATE
+═══════════════════════════════════════════════════════════════════════════════
+
+Current Status:
+  AE:  PASS (5 valid executions, artifact contract passed, readback confirmed)
+  SE:  FAIL (0 valid executions, artifact contract failed, model unusable)
+
+Dual-Backend 1+1 Pilot Verdict:
+  FAIL_SE_MODEL_TOO_RESTRICTIVE
+
+Cannot Proceed With:
+  ✗ Phase advancement (SE must pass for dual-backend validation)
+  ✗ Threshold adjustment (gap is 10^7, unadjustable)
+  ✗ Seed change (violates frozen protocol)
+  ✗ Model retrain on current checkpoint (requires new training cycle)
+
+Next Admissible Gate: ENGINEERING_DECISION_REQUIRED
+
+Three Engineering Paths Forward:
+
+PATH 1: RETRAIN SE MODEL WITH CORRECTED TRAINING DISTRIBUTION
+  Actions:
+    - Expand training set to include samples with invalid_type_count ∈ [0, 1, 2+]
+    - Add variance floor (ε = 1e-6) to normalization layer: σ_safe = max(σ, ε)
+    - Retrain f-AnoGAN on corrected distribution
+    - Generate new canonical checkpoint + metadata
+    - Recalibrate threshold on new model
+    - Re-freeze protocol with new canonical authority
+
+  Timeline: 2-4 weeks (full model development cycle)
+  Risk: High (requires new external authority, re-authorization)
+  Recommendation: REQUIRED for operational SE deployment
+
+PATH 2: CHANGE CONTENT_UPDATE SEED TO TEXT CONTENT SCENARIO
+  Actions:
+    - Replace current seed (JSON properties) with text file upload seed
+    - This shifts scenario flag to scenario_text_content_update=1.0 (dim[1])
+    - Dimension 10 behavior depends on text content feature extraction
+    - Requires new seed authorization and protocol re-freeze
+
+  Timeline: 1-2 weeks
+  Risk: Medium (seed change requires authorization, may hit other zero-variance dims)
+  Recommendation: EXPLORATORY — check if text seeds have better SE compatibility
+
+PATH 3: ACCEPT AE-ONLY VALIDATION FOR CONTENT_UPDATE
+  Actions:
+    - Mark content_update scenario as "SE incompatible" in documentation
+    - Proceed with AE-validated results only for this scenario
+    - Defer SE validation to retrained model (PATH 1)
+    - Document limitation in evidence package
+
+  Timeline: Immediate
+  Risk: Low (preserves existing evidence, no protocol changes)
+  Recommendation: INTERIM SOLUTION pending PATH 1 completion
+
+RECOMMENDED NEXT GATE: PATH 3 (Accept AE-only) + PATH 1 (Parallel retrain)
+
+Rationale:
+  - The frozen seed/threshold/protocol constraints prevent immediate fixes
+  - The SE model defect is fundamental (training data issue), not patchable
+  - AE validation is complete and verified (5/5 valid executions, HTTP 200)
+  - SE retrain is required for ANY operational deployment
+  - Blocking on SE retrain delays all downstream work unnecessarily
+
+Immediate Action:
+  1. Accept ALFRESCO_CONTENT_UPDATE_REAL_DUAL_BACKEND_1P1_VERDICT = AE_PASS_SE_DEFERRED
+  2. Document SE zero-variance defect in evidence package
+  3. Initiate SE model retrain with corrected training distribution (PATH 1)
+  4. Preserve all evidence for post-retrain comparison
+
+═══════════════════════════════════════════════════════════════════════════════
+EVIDENCE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+Preserved Evidence Directory:
+  alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+
+Key Evidence Files:
+  - SE_RUN_FAILURE_REPORT.txt (original run report)
+  - /tmp/nv-alfresco-bounded-897943-9a74445610324a349b86cf6ab03ec1b9/ (full run artifacts)
+  - scorer_trace.jsonl (5 scorer invocations, backend confirmed)
+  - executions.jsonl (execution ledger, 0 target executions)
+  - model_comparison_validity.json (backend reconciliation, PASS)
+  - fuzzer_stats (nv_total_valid_exec=5, nv_err_exec=2)
+  - readback.json (node readable, metadata captured)
+  - artifact_report.json (contract FAIL, missing probe/state_db)
+
+Offline Analysis Artifacts (this diagnosis):
+  - /tmp/se_offline_diagnosis.py (comprehensive offline scoring verification)
+  - /tmp/se_check_training_samples.py (training distribution verification)
+  - Seed 32D feature vector extraction (verified via alfresco_feature_extractor.py)
+  - Canonical model scoring (score=14,787,520, threshold=1.28, REJECT)
+  - Training metadata analysis (std[10]=1e-8, zero variance confirmed)
+
+Canonical SE Authority Verification:
+  ✓ Checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  ✓ Metadata SHA256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  ✓ Feature contract:  alfresco_fixed_32
+  ✓ Model family:      se_fanogan_es_reference
+  ✓ Input dim:         32
+  ✓ Training samples:  9 (3 per scenario)
+
+═══════════════════════════════════════════════════════════════════════════════
+FINAL VERDICT
+═══════════════════════════════════════════════════════════════════════════════
+
+ROOT_CAUSE_CLASSIFICATION = B
+  Threshold mismatch / Training distribution mismatch
+
+ROOT_CAUSE_STATEMENT:
+  The canonical SE model (sefanogan_es_reference) has a zero-variance defect
+  in feature dimension 10 (invalid_type_count), causing normalization instability
+  that produces scores ~10^7 above threshold for content_update inputs with
+  invalid_type_count=1.0. This is a training data defect, not a calibration issue.
+
+SE_MODEL_OPERATIONAL_STATUS = DEFECTIVE_NOT_USABLE
+  The model functions correctly from a technical standpoint (RPC succeeds,
+  checkpoint loads, scoring executes) but is mathematically incapable of
+  accepting ANY content_update payload with invalid_type_count ≠ 0.0.
+
+NEXT_ADMISSIBLE_GATE = ENGINEERING_DECISION_REQUIRED
+  Recommended: Accept AE-only validation + Initiate SE model retrain (PATH 1 + PATH 3)
+
+FROZEN_PROTOCOL_PRESERVED = YES
+  No seed changes, no threshold changes, no model modifications, no reruns.
+  All analysis performed offline using preserved evidence.
+
+SECURITY_CONSTRAINTS_ADHERED = YES
+  No source changes, no commits, no pushes, no test modifications.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF OFFLINE SE ROOT CAUSE DIAGNOSIS REPORT
+═══════════════════════════════════════════════════════════════════════════════

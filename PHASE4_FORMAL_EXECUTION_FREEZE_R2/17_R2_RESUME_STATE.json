@@ -1,0 +1,36 @@
+{
+  "r2_resume_state": {
+    "completed_blocks": 1,
+    "valid_ae_runs": 1,
+    "valid_se_runs": 1,
+    "total_valid_runs": 2,
+    "last_completed_block": 1,
+    "resume_from_block": 2
+  },
+  "block1_status": {
+    "block_index": 1,
+    "formal_seed": 1120356083,
+    "execution_order": "AE-first",
+    "ae_status": "VALID",
+    "se_status": "VALID_BY_SEMANTIC_GATE",
+    "paired_block_status": "VALID",
+    "delta_se_minus_ae": 0
+  },
+  "remaining_execution": {
+    "blocks_remaining": 29,
+    "blocks_2_through_30": "NOT_YET_EXECUTED",
+    "seeds_remaining": 29
+  },
+  "execution_gate_status": {
+    "r2_execution_freeze_status": "PASS_PENDING_NEW_HUMAN_EXECUTION_AUTHORIZATION",
+    "formal_experiment_execution_gate": "BLOCKED_PENDING_HUMAN_EXECUTION_FREEZE_R2_APPROVAL"
+  },
+  "no_scientific_changes": {
+    "formal_seed_list_changed": false,
+    "paired_order_schedule_changed": false,
+    "run_budget_changed": false,
+    "thresholds_changed": false,
+    "model_provenance_changed": false,
+    "source_identity_changed": false
+  }
+}

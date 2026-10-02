@@ -1,0 +1,576 @@
+{
+  "description": "Primary validity endpoint metrics from nv_body_valid_stats.json for all 58 runs (blocks 2-30)",
+  "total_runs": 57,
+  "metrics": [
+    {
+      "block_index": 2,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 3,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 3,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 4,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 4,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 5,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 5,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 6,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 6,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 7,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 7,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 8,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 8,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 9,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 9,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 10,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 10,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 11,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 11,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 12,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 12,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 13,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 13,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 14,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 14,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 15,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 15,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 16,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 16,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 17,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 17,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 18,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 18,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 19,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 19,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 20,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 20,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 21,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 21,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 22,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 22,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 23,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 23,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 24,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 24,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 25,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 25,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 26,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 26,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 27,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 27,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 28,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 28,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 29,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 29,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 30,
+      "backend": "alfresco_ae_v1",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 5,
+      "body_score_reject": 0,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    },
+    {
+      "block_index": 30,
+      "backend": "sefanogan_es_reference",
+      "body_rule_pass": 5,
+      "body_rule_reject": 0,
+      "body_score_pass": 0,
+      "body_score_reject": 5,
+      "body_score_rpc_ok": 5,
+      "body_score_rpc_fail": 0
+    }
+  ]
+}

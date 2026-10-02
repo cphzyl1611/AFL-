@@ -1,0 +1,46 @@
+{
+  "human_approval_binding": {
+    "approved_d1_d15_count": 15,
+    "approval_materialization_commitment_sha256": "ed7fff25b1df98de46e6b70de7d967239cda2b5145d3ec7938c213cbf5c769ad",
+    "final_approval_template_sha256": "e825bfc9385b7ce7498824574c7012809afa3fb9e17d1776170d2c8f1644568e",
+    "phase4_design_commitment": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+    "phase3_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "human_approval_statement": "批准按最终 approval template 的推荐值执行 D1–D15",
+    "human_approval_interpretation": "All recommended values in the final bound D1-D15 approval template are approved",
+    "approved_decisions": {
+      "D1_sample_size_method": "STATISTICAL_PAIRED_COMPARISON_POWER_BASED",
+      "D2_null_hypothesis": "H0: μ_Δ = 0 (no systematic difference)",
+      "D3_alternative_hypothesis": "Ha: μ_Δ ≠ 0 (two-sided test)",
+      "D4_sample_size_N": 30,
+      "D5_estimand": "θ = E[Δᵢ] for security_state_new_total",
+      "D6_primary_endpoint": "security_state_new_total",
+      "D7_secondary_endpoints": "All other metrics exploratory",
+      "D8_order_strategy": "COUNTERBALANCED_ALTERNATING",
+      "D9_run_budget": {
+        "MAX_TEST_CASES": 5,
+        "TIME": 60,
+        "SCORER_READY_TIMEOUT": 10
+      },
+      "D10_validity_gates": "8 universal + 5 SE-specific + 2 AE-specific",
+      "D11_failure_handling": "EXCLUDE_ENTIRE_PAIRED_BLOCK_NO_REPLACEMENT",
+      "D12_master_seed": 3485535768,
+      "D13_source_identity": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+      "D14_runtime_provenance": {
+        "SE": {
+          "backend": "sefanogan_es_reference",
+          "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+          "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+          "metadata_input_dim": 32,
+          "threshold": 1.2847454080581664
+        },
+        "AE": {
+          "backend": "alfresco_ae_v1",
+          "threshold": 1.623614
+        }
+      },
+      "D15_statistical_method": "PAIRED_T_TEST_TWO_SIDED"
+    },
+    "execution_authorization_for_r1": "NOT_YET_GRANTED",
+    "r1_authorization_note": "The previous human authorization applied to the predecessor commitment fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed. This R1 successor package requires new human authorization against its corrected commitment."
+  }
+}

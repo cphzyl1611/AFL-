@@ -1,0 +1,31 @@
+{
+  "orchestrator_version": "campaign_orchestrator.py",
+  "orchestrator_location": "PHASE4_R2_CAMPAIGN_ORCHESTRATOR/campaign_orchestrator.py",
+  "r2_freeze_commitment": "1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f",
+  "frozen_budget": {
+    "max_test_cases": 5,
+    "time_budget_seconds": 60,
+    "scorer_ready_timeout_seconds": 10
+  },
+  "se_backend_provenance": {
+    "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+    "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+    "input_dim": 32
+  },
+  "ae_backend_provenance": {
+    "backend": "alfresco_ae_v1",
+    "validity_model": "NV_RULE_BASED_FILTER"
+  },
+  "execution_environment": {
+    "python_interpreter": "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3",
+    "bounded_feedback_script": "scripts/run_alfresco_bounded_feedback.py",
+    "execution_root": "/tmp/phase4_r2_formal_execution/"
+  },
+  "state_persistence": {
+    "campaign_state_file": "PHASE4_R2_CAMPAIGN_STATE/campaign_state.json",
+    "block_ledger_file": "PHASE4_R2_CAMPAIGN_STATE/block_ledger.jsonl",
+    "run_inventory_file": "PHASE4_R2_CAMPAIGN_STATE/run_inventory.jsonl",
+    "excluded_attempts_file": "PHASE4_R2_CAMPAIGN_STATE/excluded_attempts.jsonl",
+    "command_audit_file": "PHASE4_R2_CAMPAIGN_STATE/command_audit.jsonl"
+  }
+}

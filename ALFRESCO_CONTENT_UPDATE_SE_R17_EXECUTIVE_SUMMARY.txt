@@ -1,0 +1,96 @@
+================================================================================
+R17 SCORER LIFECYCLE DRY-RUN — EXECUTIVE SUMMARY
+================================================================================
+
+TASK: ALFRESCO_CONTENT_UPDATE_SE_R17_SCORER_LIFECYCLE_DRY_RUN
+DATE: 2026-09-28
+GATE: PASS_SCORER_LIFECYCLE_DRY_RUN
+
+================================================================================
+OUTCOME
+================================================================================
+
+✓ Scorer subprocess started successfully (PID 59615)
+✓ Unix socket endpoint established and connectable
+✓ Local RPC request succeeded (score: 1.290883)
+✓ Canonical artifacts verified by SHA256
+✓ Scorer terminated cleanly with no orphaned processes
+
+The sefanogan_es_reference scorer lifecycle is FUNCTIONAL.
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+CANONICAL ARTIFACT PARTICIPATION PROVEN:
+  Checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+  Metadata SHA256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+  Threshold:         1.2847454080581664 ✓
+  Feature Contract:  alfresco_fixed_32 (32 dimensions) ✓
+
+SCORER PYTHON: $HOME/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+
+PROTOCOL V2 VALIDATED:
+  Client → Server: [u32_le length][JSON envelope with base64 body]
+  Server → Client: [ASCII text float][EOF]
+
+================================================================================
+R14 FAILURE SCOPE RECONCILIATION
+================================================================================
+
+R14 Result: SCORER_INVOCATIONS = 0, trace_backend = null
+
+R17 Proves: Scorer lifecycle works correctly in isolation
+
+R14_FAILURE_SCOPE =
+  SCORER_LIFECYCLE_WORKS_LOCALLY_R14_FAILURE_REQUIRES_CAMPAIGN_INTEGRATION_TRACE
+
+The scorer starts successfully, accepts RPC requests, and returns valid scores.
+R14's zero invocations occurred DESPITE a working scorer lifecycle.
+
+Root cause lies in campaign-to-scorer integration, not scorer subprocess itself.
+
+================================================================================
+CODE REPAIR DECISION
+================================================================================
+
+CODE_REPAIR_REQUIRED_BEFORE_SUCCESSOR_REAL_RUN = NO
+
+No code repair can be justified until the integration failure boundary is traced.
+
+Next step: Add lifecycle logging to campaign runner and harness to capture:
+  - Scorer process PID and startup confirmation
+  - comparison_env contents before campaign spawn
+  - Harness environment read of NV_BODY_SCORE_ENDPOINT
+  - RPC attempt count and connection success/failure
+
+================================================================================
+ATTESTATIONS
+================================================================================
+
+R17_REAL_CAMPAIGN_PERFORMED = NO
+R17_REAL_TARGET_REQUESTS_SENT = 0
+R17_CONSUMED_REAL_ATTEMPT_COUNT = 0
+R17_REPOSITORY_MODIFICATIONS_MADE = NO
+
+R17 performed NO real fuzzing, sent NO Alfresco requests, and made NO
+functional code changes.
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+Successor task: R18 minimal campaign integration trace
+
+Trace the environment propagation chain:
+  ScorerLifecycleManager.start()
+    → comparison_env()
+    → campaign subprocess spawn
+    → AFL++ forkserver
+    → persistent-mode harness
+    → nv_body_valid.py RPC client
+
+Determine which link in this chain failed to propagate NV_BODY_SCORE_ENDPOINT
+in R14's live campaign.
+
+================================================================================

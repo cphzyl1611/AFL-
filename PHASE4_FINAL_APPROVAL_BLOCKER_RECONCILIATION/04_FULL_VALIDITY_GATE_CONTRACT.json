@@ -1,0 +1,136 @@
+{
+  "full_validity_gate_contract": {
+    "universal_gates_ae_and_se": {
+      "body_score_rpc_ok": {
+        "condition": "> 0",
+        "description": "At least one successful RPC call to the scoring backend occurred",
+        "source": "run manifest JSON",
+        "gate_type": "EVIDENCE_CONTRACT"
+      },
+      "body_score_rpc_fail": {
+        "condition": "= 0",
+        "description": "No RPC failures occurred during the run",
+        "source": "run manifest JSON",
+        "gate_type": "EVIDENCE_CONTRACT"
+      },
+      "trace_invocations": {
+        "condition": "> 0",
+        "description": "The scorer trace mechanism was invoked at least once",
+        "source": "run manifest JSON",
+        "gate_type": "EVIDENCE_CONTRACT"
+      },
+      "exact_backend_recorded": {
+        "condition": "= TRUE",
+        "description": "The run manifest records which backend (AE or SE) was used",
+        "source": "run manifest JSON",
+        "gate_type": "PROVENANCE"
+      },
+      "trace_stats_reconciliation": {
+        "condition": "= PASS",
+        "description": "Trace file contents reconcile with reported counters",
+        "source": "trace validation script",
+        "gate_type": "EVIDENCE_CONTRACT"
+      },
+      "artifact_contract": {
+        "condition": "= PASS",
+        "description": "All required run artifacts (fuzzer_stats, manifest JSON, trace files) are present and parseable",
+        "source": "artifact validation script",
+        "gate_type": "EVIDENCE_CONTRACT"
+      },
+      "model_comparison_validity": {
+        "condition": "= PASS",
+        "description": "The run is suitable for paired comparison (target baseline confirmed, seed recorded, budget respected)",
+        "source": "validation script",
+        "gate_type": "PAIRED_DESIGN"
+      },
+      "readback": {
+        "condition": "= PASS",
+        "description": "All emitted files can be read back and verified",
+        "source": "readback validation script",
+        "gate_type": "EVIDENCE_CONTRACT"
+      }
+    },
+    "se_specific_gates": {
+      "se_checkpoint_sha256": {
+        "condition": "= 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+        "description": "SE model checkpoint file SHA256 matches frozen artifact exactly",
+        "source": "run manifest JSON",
+        "gate_type": "SE_PROVENANCE"
+      },
+      "se_metadata_sha256": {
+        "condition": "= 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+        "description": "SE model metadata file SHA256 matches frozen artifact exactly",
+        "source": "run manifest JSON",
+        "gate_type": "SE_PROVENANCE"
+      },
+      "se_metadata_input_dim": {
+        "condition": "= 32",
+        "description": "SE model metadata input_dim field matches frozen value",
+        "source": "run manifest JSON",
+        "gate_type": "SE_PROVENANCE"
+      },
+      "se_threshold": {
+        "condition": "= 1.2847454080581664",
+        "description": "SE scoring threshold matches frozen value",
+        "source": "run manifest JSON",
+        "gate_type": "SE_PROVENANCE"
+      },
+      "se_backend": {
+        "condition": "= sefanogan_es_reference",
+        "description": "SE backend identifier matches frozen value",
+        "source": "run manifest JSON",
+        "gate_type": "SE_PROVENANCE"
+      }
+    },
+    "ae_specific_gates": {
+      "ae_backend": {
+        "condition": "= alfresco_ae_v1",
+        "description": "AE backend identifier matches frozen value",
+        "source": "run manifest JSON",
+        "gate_type": "AE_PROVENANCE"
+      },
+      "ae_threshold": {
+        "condition": "= 1.623614",
+        "description": "AE scoring threshold matches frozen value",
+        "source": "run manifest JSON",
+        "gate_type": "AE_PROVENANCE"
+      }
+    },
+    "paired_block_validity": {
+      "condition": "BOTH AE and SE runs in pair must pass all applicable gates",
+      "exclusion_rule": "If either run fails, entire paired block excluded (no replacement)",
+      "valid_zero_result": "security_state_new_total=0 is valid scientific observation, not failure"
+    }
+  },
+  "gate_count_summary": {
+    "universal_gates": 8,
+    "se_specific_gates": 5,
+    "ae_specific_gates": 2,
+    "total_gates_per_ae_run": 10,
+    "total_gates_per_se_run": 13
+  },
+  "blocker_4_resolution": {
+    "abbreviated_summary_found_in_prior_reconciliation": [
+      "body_score_rpc_ok > 0",
+      "body_score_rpc_fail = 0",
+      "trace_invocations > 0"
+    ],
+    "full_gate_set_now_preserved": true,
+    "all_8_universal_gates_documented": true,
+    "all_5_se_provenance_gates_documented": true,
+    "all_2_ae_provenance_gates_documented": true,
+    "execution_contract_completeness": "FULL"
+  },
+  "phase3_validation": {
+    "phase3_validated_these_gates": true,
+    "phase3_passed_all_10_ae_runs": true,
+    "phase3_passed_all_10_se_runs": true,
+    "phase3_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8"
+  },
+  "notes": [
+    "Abbreviated summaries are acceptable for human communication but must not replace the execution contract",
+    "Every formal experiment run must validate against the full gate set",
+    "SE provenance gates enforce exact canonical model artifact identity",
+    "Paired block validity requires both runs to pass independently before pairing"
+  ]
+}

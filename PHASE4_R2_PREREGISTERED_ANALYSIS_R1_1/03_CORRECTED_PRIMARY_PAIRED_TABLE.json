@@ -1,0 +1,262 @@
+{
+  "corrected_primary_paired_table": [
+    {
+      "block_index": 3,
+      "formal_seed": 679638914,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_03/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_03/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 4,
+      "formal_seed": 1291771079,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_04/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_04/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 5,
+      "formal_seed": 1925997588,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_05/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_05/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 6,
+      "formal_seed": 1164819555,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_06/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_06/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 7,
+      "formal_seed": 270788736,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_07/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_07/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 8,
+      "formal_seed": 597071697,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_08/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_08/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 9,
+      "formal_seed": 107262288,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_09/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_09/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 10,
+      "formal_seed": 1147441911,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_10/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_10/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 11,
+      "formal_seed": 1337758293,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_11/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_11/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 12,
+      "formal_seed": 715818928,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_12/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_12/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 13,
+      "formal_seed": 458057513,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_13/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_13/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 14,
+      "formal_seed": 1333315632,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_14/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_14/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 15,
+      "formal_seed": 1727188078,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_15/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_15/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 16,
+      "formal_seed": 499977047,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_16/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_16/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 17,
+      "formal_seed": 1538384009,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_17/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_17/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 18,
+      "formal_seed": 490013941,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_18/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_18/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 19,
+      "formal_seed": 1154573679,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_19/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_19/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 20,
+      "formal_seed": 20998844,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_20/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_20/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 21,
+      "formal_seed": 1520955372,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_21/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_21/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 22,
+      "formal_seed": 1366260976,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_22/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_22/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 23,
+      "formal_seed": 860140347,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_23/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_23/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 24,
+      "formal_seed": 1079511430,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_24/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_24/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 25,
+      "formal_seed": 767385935,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_25/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_25/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 26,
+      "formal_seed": 2009153664,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_26/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_26/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 27,
+      "formal_seed": 1420622181,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_27/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_27/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 28,
+      "formal_seed": 2034960800,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_28/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_28/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 29,
+      "formal_seed": 348560965,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_29/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_29/sefanogan_es_reference/nv_state_trace.jsonl"
+    },
+    {
+      "block_index": 30,
+      "formal_seed": 1332557731,
+      "AE_security_state_new_total": 1,
+      "SE_security_state_new_total": 1,
+      "paired_delta_SE_minus_AE": 0,
+      "AE_evidence_source": "/tmp/phase4_r2_formal_execution/block_30/alfresco_ae_v1/nv_state_db.json",
+      "SE_evidence_source": "/tmp/phase4_r2_formal_execution/block_30/sefanogan_es_reference/nv_state_trace.jsonl"
+    }
+  ],
+  "metadata": {
+    "primary_endpoint": "security_state_new_total",
+    "analysis_population": "blocks 3-30 (28 analysis-eligible pairs)",
+    "extraction_method": "AE: len(nv_state_db.json array), SE: count('new':1 in nv_state_trace.jsonl)",
+    "note": "This is the CORRECTED primary endpoint table. Predecessor used body_rule_pass instead."
+  }
+}

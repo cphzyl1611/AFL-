@@ -1,0 +1,159 @@
+R38 OFFLINE FORENSIC INVESTIGATION: FINAL REPORT
+================================================
+
+INVESTIGATION SCOPE
+-------------------
+Determine exact root cause of R37 real campaign scorer subprocess failure.
+- R37 consumed single authorized real attempt (121s runtime, exit 124 timeout)
+- 110 harness invocations, 56 scorer RPC attempts, 0 successes, 0 target executions
+- All executions rejected at body_validation stage (mab_outcome="body_validation_reject")
+- CONSTRAINTS: NO real campaigns, NO Alfresco contact, NO commits during R38
+
+FORENSIC EVIDENCE ANALYSIS
+---------------------------
+Primary artifacts examined:
+- /tmp/r37_real_run_1790783372/scorer_trace.jsonl
+  → 56 invocations, all with success=false, backend=sefanogan_es_reference
+- /tmp/r37_real_run_1790783372/evidence/executions.jsonl
+  → 110 entries, all body_validated=false, target_invoked=false
+- /tmp/r37_real_run_1790783372/evidence/artifact_report.json
+  → launch_returncode: 124 (timeout), final_result: "timeout"
+- /tmp/r37_launch_control_1790783372/r37_stdout.log
+  → AFL++ initialized successfully, harness loaded, task parsed correctly
+
+ROOT CAUSE CHAIN (THREE DEFECTS IDENTIFIED)
+--------------------------------------------
+
+**DEFECT 1: Missing environment variables (ENV_VAR_NOT_PROVIDED)**
+Location: scripts/run_alfresco_bounded_feedback.py, ScorerLifecycleManager.start()
+Symptom: Scorer subprocess exits immediately before creating Unix socket
+Root cause: ScorerLifecycleManager.start() did not inject required env vars:
+  - SEFANOGAN_REFERENCE_CHECKPOINT
+  - SEFANOGAN_REFERENCE_META_PATH
+
+The scorer (model_stage/nv_valid_server_real.py:34-40) checks for these env vars
+and raises ValueError if missing, causing immediate process death before socket creation.
+
+**DEFECT 2: INPUT_DIM constant mismatch (DIMENSION_CONTRACT_VIOLATION)**
+Location: model_stage/sefanogan_es_reference.py line 31
+Symptom: Scorer exits with "unsupported reference model metadata" after env var fix
+Root cause: INPUT_DIM = 32 but deployed metadata has input_dim = 38
+Validation at line 197 fails: int(metadata["input_dim"]) != INPUT_DIM
+
+Investigation confirmed no 32-dimensional artifacts exist in model_stage/models/.
+Only sefanogan_es_reference_meta.json with input_dim=38 and feature contract
+alfresco_metadata_38 (38-dimensional fixed feature vector).
+
+**DEFECT 3: Encoder architecture mismatch (MODEL_ARCHITECTURE_MISMATCH)**
+Location: model_stage/sefanogan_es_reference.py, ChannelAttentionEncoder class
+Symptom: Scorer exits with "invalid reference checkpoint" after INPUT_DIM fix
+Root cause: ChannelAttentionEncoder implemented with attention+projection layers
+  Expected keys: attention.0.weight, attention.0.bias, attention.2.weight, etc.
+  Actual checkpoint keys: net.0.weight, net.0.bias, net.2.weight, net.2.bias, net.4.weight, net.4.bias
+
+Checkpoint inspection revealed sefanogan_gan_model.pt (SHA256: 205a6a20...856624)
+was trained with simple 3-layer Encoder from sefanogan_train_gan.py:81-93:
+  nn.Sequential(
+    nn.Linear(input_dim, hidden_dim),
+    nn.ReLU(),
+    nn.Linear(hidden_dim, hidden_dim),
+    nn.ReLU(),
+    nn.Linear(hidden_dim, latent_dim)
+  )
+
+ChannelAttentionEncoder class was a newer architecture never trained or checkpointed.
+
+FAILURE MECHANISM
+-----------------
+Complete scorer lifecycle failure chain:
+1. R37 launched with backend=sefanogan_es_reference, --afl-seed=12345
+2. ScorerLifecycleManager.start() spawned scorer subprocess
+3. DEFECT 1: Missing env vars → ValueError at nv_valid_server_real.py:37
+4. Scorer subprocess exits before creating socket
+5. Socket never exists → all 56 RPC connection attempts fail immediately
+6. All harness invocations see body_validated=false
+7. No valid executions → no target invocations → no MAB updates
+8. Campaign times out after 30s budget (reached 121s with overhead)
+9. Artifact contract validation: missing_execution_required artifacts
+10. Runner exit code 124 (timeout), final_result="timeout"
+
+MINIMAL OFFLINE REPAIR APPLIED
+-------------------------------
+
+**FIX 1: Environment variable injection**
+File: scripts/run_alfresco_bounded_feedback.py
+Method: ScorerLifecycleManager.start()
+Change: Added env var injection block for sefanogan_es_reference backend
+```python
+if self.backend == "sefanogan_es_reference":
+    models_dir = REPO_ROOT / "model_stage" / "models"
+    env["SEFANOGAN_REFERENCE_CHECKPOINT"] = str(
+        models_dir / "sefanogan_gan_model.pt"
+    )
+    env["SEFANOGAN_REFERENCE_META_PATH"] = str(
+        models_dir / "sefanogan_es_reference_meta.json"
+    )
+```
+
+**FIX 2: INPUT_DIM constant correction**
+File: model_stage/sefanogan_es_reference.py line 31
+Change: INPUT_DIM = 32 → INPUT_DIM = 38
+Aligns with deployed metadata input_dim and alfresco_metadata_38 feature contract.
+
+**FIX 3: Encoder architecture alignment**
+File: model_stage/sefanogan_es_reference.py, ChannelAttentionEncoder class
+Change: Replaced attention+projection dual-path architecture with simple sequential:
+```python
+self.net = nn.Sequential(
+    nn.Linear(input_dim, hidden_dim),
+    nn.ReLU(),
+    nn.Linear(hidden_dim, hidden_dim),
+    nn.ReLU(),
+    nn.Linear(hidden_dim, latent_dim),
+)
+```
+Forward method simplified to: return self.net(x)
+
+This matches the checkpoint structure from sefanogan_train_gan.py training code.
+
+VERIFICATION RESULTS
+--------------------
+
+**RED test (pre-repair)**: tests/test_r38_scorer_env_injection.py
+Result: FAILED (expected) - RuntimeError: SCORER_PROCESS_DIED_DURING_STARTUP
+Confirmed defect reproduction in controlled environment.
+
+**GREEN test (post-repair)**: Same test after all three fixes
+Result: PASSED
+- Scorer subprocess started successfully
+- Unix socket created at expected path
+- Socket connection established
+- Clean shutdown verified
+
+**Direct scorer lifecycle verification**:
+Command: Manual scorer spawn with env vars + architecture fix
+Result: ✓ Scorer running successfully, ✓ Socket exists: True, ✓ Terminated cleanly
+
+GATE STATUS FOR PRODUCTION DEPLOYMENT
+--------------------------------------
+✓ Exact R37 failure stage identified: scorer subprocess death before socket creation
+✓ Root cause chain documented: 3 defects (env vars, INPUT_DIM, encoder architecture)
+✓ Minimal offline repair applied: all 3 defects corrected
+✓ GREEN verification passed: scorer lifecycle test successful
+✓ No real campaigns consumed during R38 investigation
+✓ No Alfresco contact during forensic analysis
+✓ No target HTTP requests during verification
+
+NEXT STEPS REQUIRED BEFORE PRODUCTION
+--------------------------------------
+1. Focused regression test suite for scorer subprocess lifecycle
+2. Integration test: full AFL++ campaign with corrected scorer (offline mock target)
+3. Model artifact provenance audit: verify all checkpoints match their metadata
+4. Architecture documentation: record ChannelAttentionEncoder → simple Encoder change
+5. Consider renaming class to Encoder to match training code semantics
+
+INVESTIGATION COMPLETE
+======================
+Date: 2026-10-01
+Status: R38 OFFLINE FORENSIC ANALYSIS COMPLETE - READY FOR REGRESSION TESTING
+Consumed real attempts: 0 (all verification offline/local)

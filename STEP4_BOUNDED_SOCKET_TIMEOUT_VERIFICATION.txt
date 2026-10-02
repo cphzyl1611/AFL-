@@ -1,0 +1,115 @@
+================================================================================
+STEP 4: BOUNDED SOCKET RECEIVE TIMEOUT - VERIFICATION
+================================================================================
+
+SO_RCVTIMEO_PRESENT = YES
+SO_RCVTIMEO_VALUE = 2 seconds
+TIMEOUT_CLASSIFIED_AS_RPC_FAILURE = YES
+
+================================================================================
+IMPLEMENTATION LOCATION
+================================================================================
+
+File: src/afl-fuzz-run.c
+Function: nv_validity_rpc_score_unix
+Lines: ~834-838
+
+Code:
+  /* Set receive timeout to prevent indefinite blocking (R39 fix) */
+  struct timeval tv;
+  tv.tv_sec = 2;
+  tv.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+
+================================================================================
+TIMEOUT BEHAVIOR
+================================================================================
+
+Before timeout:
+- AFL++ blocked indefinitely in recv() (line 952 after repair, ~838 pre-repair)
+- Single failed RPC blocked entire fuzzing campaign for 90 seconds
+- No diagnostic, no fallback, no error recovery
+
+After timeout:
+- recv() returns -1 after 2 seconds if no data received
+- errno set to EAGAIN or EWOULDBLOCK
+- Function returns (ok=0, score=0.0)
+- Caller treats as RPC failure (NV_V_REJ_RPC_FAIL)
+
+================================================================================
+TIMEOUT CLASSIFICATION
+================================================================================
+
+When recv() times out:
+1. nv_validity_rpc_score_unix() returns ok=0
+2. Caller (nv_validity_check at line ~1091) receives ok=0
+3. Returns NV_V_REJ_RPC_FAIL
+4. common_fuzz_stuff() receives NV_V_REJ_RPC_FAIL
+5. Calls nv_account_invalid(afl, NV_V_REJ_RPC_FAIL)
+6. Increments afl->nv_invalid_rpc_fail_cnt
+7. Skips execution (does not call fuzz_run_target)
+8. Returns 0 (continue fuzzing with next input)
+
+TIMEOUT_CLASSIFIED_AS_RPC_FAILURE = YES (verified in code)
+
+================================================================================
+COMPARISON WITH PYTHON REFERENCE
+================================================================================
+
+Python harness (nv_body_valid.py line 245):
+  fd.settimeout(1.0)  # 1-second timeout
+
+AFL++ C code:
+  tv.tv_sec = 2;      # 2-second timeout
+
+Python timeout is more aggressive (1s vs 2s).
+C code uses 2 seconds to allow for model inference latency.
+
+Both implementations:
+- Have bounded timeout (no indefinite blocking)
+- Classify timeout as RPC failure
+- Continue fuzzing after timeout
+
+================================================================================
+FAIL-CLOSED BEHAVIOR VERIFIED
+================================================================================
+
+Timeout does NOT bypass validity filtering.
+Timeout is treated as invalid input (rejected, not executed).
+
+From nv_account_invalid() (line ~982):
+  if (vr == NV_V_REJ_RPC_FAIL) {
+    afl->nv_invalid_rpc_fail_cnt++;
+    return;
+  }
+
+Input is counted as invalid, not valid.
+Target is NOT executed.
+No security-state observation recorded.
+No MAB reward update.
+
+FAIL_CLOSED_ON_TIMEOUT = YES (verified)
+
+================================================================================
+DEFENSIVE POSTURE
+================================================================================
+
+R39 failure mode eliminated:
+- Single RPC timeout no longer blocks campaign indefinitely
+- Timeout triggers fast fallback (skip input, continue fuzzing)
+- Campaign continues even if scorer becomes unresponsive
+- Maximum blocking time: 2 seconds per input (bounded)
+
+Observability preserved:
+- nv_invalid_rpc_fail_cnt visible in fuzzer_stats
+- Execution ledger records "body_validation_reject" with RPC failure
+- Scorer trace shows zero successful predictions
+
+================================================================================
+STEP 4 COMPLETE
+================================================================================
+
+Bounded timeout present: YES
+Timeout value: 2 seconds
+Classification: RPC failure (invalid input, skip execution)
+Fail-closed: YES (timeout does not bypass validity filter)

@@ -1,0 +1,53 @@
+{
+  "block1_evidence_binding": {
+    "block_index": 1,
+    "formal_seed": 1120356083,
+    "execution_order": "AE-first",
+    "git_commit": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+    "execution_date": "2026-09-21",
+    "evidence_package_commitment": "5b519874542be57f0431ebbbdeeff9e0104a12c36f693f1264d2e1e263a91506"
+  },
+  "block1_ae_run": {
+    "backend": "alfresco_ae_v1",
+    "status": "VALID",
+    "security_state_new_total": 1,
+    "nv_total_valid_exec": 5,
+    "nv_mab_total_pulls": 2,
+    "body_score_rpc_ok": 5,
+    "body_score_rpc_fail": 0,
+    "body_score_pass": 5,
+    "body_score_reject": 0,
+    "trace_invocations": 5,
+    "artifact_contract_r1": "PASS",
+    "artifact_contract_r2": "PASS",
+    "model_comparison_validity": "PASS"
+  },
+  "block1_se_run": {
+    "backend": "sefanogan_es_reference",
+    "status_r1": "INVALID_EXCLUDED",
+    "status_r2": "VALID_BY_SEMANTIC_GATE",
+    "security_state_new_total": 1,
+    "nv_total_valid_exec": 0,
+    "nv_mab_total_pulls": 0,
+    "body_score_rpc_ok": 5,
+    "body_score_rpc_fail": 0,
+    "body_score_pass": 0,
+    "body_score_reject": 5,
+    "trace_invocations": 5,
+    "artifact_contract_r1_base_validator": "FAIL",
+    "artifact_contract_r2_semantic_gate": "PASS_VALIDATOR_FALSE_NEGATIVE_ZERO_EXECUTION_CASE",
+    "model_comparison_validity": "PASS",
+    "missing_artifacts_r1": ["nv_probe.json", "nv_state_db.json"],
+    "r2_reconciliation": "Zero-execution case: probe/state_db architecturally absent due to body_score_pass=0"
+  },
+  "block1_paired_outcome_r2": {
+    "ae_valid": true,
+    "se_valid": true,
+    "paired_block_valid": true,
+    "delta_se_minus_ae": 0,
+    "security_state_new_total_ae": 1,
+    "security_state_new_total_se": 1
+  },
+  "block1_rerun_required": false,
+  "block1_evidence_preserved": true
+}

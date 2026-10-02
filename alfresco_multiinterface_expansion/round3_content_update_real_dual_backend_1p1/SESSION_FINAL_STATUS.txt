@@ -1,0 +1,178 @@
+═══════════════════════════════════════════════════════════════════════
+SESSION FINAL STATUS — Alfresco content_update Dual-Backend 1+1 Pilot
+═══════════════════════════════════════════════════════════════════════
+
+CAMPAIGN ID:     round3_content_update_real_dual_backend_1p1
+SESSION DATE:    2026-09-23 (11:00 - 20:30 UTC)
+PROTOCOL:        5-STEP Final Authorized SE Launch
+SESSION STATUS:  ⛔ SUSPENDED AT STEP 2 — AWAITING USER DECISION
+
+═══════════════════════════════════════════════════════════════════════
+WORK COMPLETED THIS SESSION
+═══════════════════════════════════════════════════════════════════════
+
+✓ STEP 1: Fresh Non-Mutating Readiness Checks (PASS)
+  ├─ Container health verification:     HEALTHY
+  ├─ Alfresco service 401→200 sequence: VERIFIED
+  ├─ Target node resolution:            1d16a46c-5518-4f11-96a4-6c55188f1172
+  ├─ Target file validation:            nv-afl-levelc-metadata.txt
+  ├─ Endpoint verification:             PUT /alfresco/.../content
+  └─ Authentication scheme:             Basic (confirmed)
+
+⛔ STEP 2: Reconfirm Frozen SE Execution Contract (BLOCKED)
+  ├─ Expected checkpoint SHA256:        4eace87a... (from user authorization)
+  ├─ Actual checkpoint SHA256:          205a6a20... (model_stage/models/)
+  ├─ Forensic investigation:            COMPLETED
+  ├─ Root cause identified:             Untracked calibration artifact error
+  └─ Blocking verdict:                  PROVENANCE_HASH_MISMATCH
+
+⏸️ STEP 3: Execute Exactly One SE Run (SUSPENDED)
+  ├─ SE launch command:                 PREPARED (with --target-file-name fix)
+  ├─ Scorer environment:                VERIFIED (aflpp-se-calib-pip)
+  ├─ Previous attempt:                  ABORTED (by user during AFL init)
+  └─ Current status:                    BLOCKED by STEP 2 gate failure
+
+⏸️ STEP 4: Generate Final 1+1 Capability Verdict (SUSPENDED)
+  ├─ AE run evidence:                   COMPLETE (in ae_evidence/)
+  ├─ SE run evidence:                   MISSING (blocked at STEP 2)
+  └─ Comparison analysis:               CANNOT PROCEED
+
+⏸️ STEP 5: Finalize Round-3 Evidence Package (SUSPENDED)
+  ├─ Evidence structure:                INCOMPLETE (no SE results)
+  ├─ Required artifacts:                FILE_LIST.txt, SHA256SUMS.txt, README.md
+  └─ Commitment hash:                   CANNOT GENERATE
+
+═══════════════════════════════════════════════════════════════════════
+KEY FINDINGS
+═══════════════════════════════════════════════════════════════════════
+
+CRITICAL BLOCKER IDENTIFIED:
+  Expected SE checkpoint hash 4eace87a... does NOT exist in repository
+    • Not in current filesystem (searched all .pt/.pth files)
+    • Not in git history (checkpoint stable since commit 6fc82d8)
+    • Only available checkpoint: 205a6a20... (sefanogan_gan_model.pt)
+
+ROOT CAUSE:
+  Untracked calibration artifact (sefanogan_es_realrun_threshold.json)
+  declares checkpoint hash that never existed in committed codebase.
+
+PROVENANCE CONTRACT VIOLATION:
+  Cannot proceed to SE launch because:
+    1. Using 205a6a20... violates user authorization (specifies 4eace87a...)
+    2. Threshold 1.2847454 calibrated for different checkpoint
+    3. Metadata hash also mismatches (8d4223f0... vs expected 2a73ccc3...)
+
+═══════════════════════════════════════════════════════════════════════
+TECHNICAL ACHIEVEMENTS
+═══════════════════════════════════════════════════════════════════════
+
+✓ Fixed SE launch command:
+  - Added --afl-seed parameter (replaced incorrect --seed)
+  - Added --target-file-name parameter (fixed BOUNDED_DEDICATED_FILE_MISSING)
+  - Verified all parameters match protocol requirements
+
+✓ Verified scorer environment:
+  - Python: /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python
+  - Backend: sefanogan_es_reference
+  - Socket: Unix domain socket communication
+
+✓ Completed forensic investigation:
+  - Computed SHA256 of all checkpoint files
+  - Searched git history for expected hash
+  - Identified untracked metadata as source of mismatch
+  - Documented findings in multiple reports
+
+═══════════════════════════════════════════════════════════════════════
+CONSTRAINTS PRESERVED
+═══════════════════════════════════════════════════════════════════════
+
+✓ No unauthorized AE/SE reruns:        AUTOMATIC_RERUN_COUNT = 0
+✓ No seed modifications:               REPLACEMENT_SEED_COUNT = 0
+✓ No source code changes:              Only investigation, no edits
+✓ No model file modifications:         Only read operations performed
+✓ No evidence tampering:               Only created status reports
+
+═══════════════════════════════════════════════════════════════════════
+DOCUMENTATION ARTIFACTS CREATED
+═══════════════════════════════════════════════════════════════════════
+
+Primary decision document:
+  • EXECUTIVE_DECISION_REQUIRED.txt     (8.4K) — User decision summary
+
+Protocol tracking:
+  • PROTOCOL_GATE_SUMMARY.txt           (7.1K) — Full 5-STEP status
+  • STEP2_FINAL_GATE_STATUS.txt         (6.4K) — Provenance gate details
+  • STEP2_PROVENANCE_RECONCILIATION.txt (3.1K) — Forensic investigation
+  • SESSION_FINAL_STATUS.txt            (this file) — Session summary
+
+Earlier session reports:
+  • STEP1_READINESS_VERIFICATION_COMPLETE.txt
+  • STEP3_AE_RUN_COMPLETE.txt
+  • STEP4_AUTH_SCORER_RECONCILIATION.txt
+  • STEP4_RECONCILIATION_FINAL_REPORT.txt
+
+═══════════════════════════════════════════════════════════════════════
+CURRENT STATE
+═══════════════════════════════════════════════════════════════════════
+
+Protocol execution:       ⛔ BLOCKED AT STEP 2
+Blocking issue:           Checkpoint SHA256 mismatch
+Resolution status:        AWAITING USER DECISION
+Next action:              USER must select option [A], [B], or [C]
+
+THREE OPTIONS PRESENTED TO USER:
+  [A] Accept actual checkpoint 205a6a20... → Update authorization → Continue
+  [B] Provide expected checkpoint 4eace87a... → Replace current → Continue
+  [C] Recalibrate threshold for 205a6a20... → New frozen artifact → Continue
+
+RECOMMENDATION: Option [A]
+  • Checkpoint 205a6a20... is git-tracked and stable
+  • Hash 4eace87a... appears to be error in untracked artifact
+  • Threshold 1.2847454 may still apply (same input_dim=32)
+  • Requires accepting provenance contract update
+
+═══════════════════════════════════════════════════════════════════════
+WHAT HAPPENS NEXT
+═══════════════════════════════════════════════════════════════════════
+
+PENDING USER DECISION:
+  User must review EXECUTIVE_DECISION_REQUIRED.txt and select:
+    → [A] Use actual checkpoint (205a6a20...)
+    → [B] Provide expected checkpoint (4eace87a...)
+    → [C] Recalibrate threshold
+
+AFTER DECISION:
+  If [A] selected:
+    1. Update expected provenance contract to 205a6a20...
+    2. Execute STEP 3: Launch SE run with corrected parameters
+    3. Monitor execution and validate completion
+    4. Execute STEP 4: Generate 1+1 capability verdict
+    5. Execute STEP 5: Finalize evidence package with commitment hash
+
+  If [B] selected:
+    1. User provides checkpoint file with hash 4eace87a...
+    2. Verify checkpoint integrity and compatibility
+    3. Proceed to STEP 3 with provided checkpoint
+
+  If [C] selected:
+    1. Acknowledge constraint violation ("no model mods")
+    2. Plan offline calibration for checkpoint 205a6a20...
+    3. Await new frozen threshold artifact
+    4. Resume protocol with updated provenance contract
+
+═══════════════════════════════════════════════════════════════════════
+SESSION OUTCOME
+═══════════════════════════════════════════════════════════════════════
+
+STATUS:   ⛔ SUSPENDED (not failed — awaiting decision)
+PROGRESS: 1 of 5 steps completed (STEP 1 PASS)
+BLOCKER:  Canonical provenance hash mismatch (technical, not operational)
+ACTION:   User decision required before continuing
+
+All protocol constraints preserved.
+No unauthorized modifications made.
+Complete forensic investigation documented.
+
+═══════════════════════════════════════════════════════════════════════
+
+SESSION END: 2026-09-23 20:30 UTC

@@ -1,0 +1,119 @@
+{
+  "reconciliation_metadata": {
+    "reconciliation_name": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION",
+    "reconciliation_date": "2026-09-21",
+    "reconciliation_type": "CRITICAL_BLOCKER_CORRECTION",
+    "prior_reconciliation": "PHASE4_HUMAN_DECISION_RECONCILIATION",
+    "prior_reconciliation_commitment": "f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44"
+  },
+  "blocker_summary": {
+    "total_blockers_identified": 6,
+    "blockers_resolved": 6,
+    "critical_errors_corrected": 2,
+    "nomenclature_corrections": 1,
+    "completeness_restorations": 1,
+    "specification_clarifications": 2
+  },
+  "blocker_resolution_status": {
+    "blocker_1_method_label": {
+      "status": "VERIFIED_CORRECT",
+      "finding": "NO_MISMATCH_DETECTED",
+      "action": "CONFIRMED_PRIOR_RECONCILIATION_LABELS_ACCURATE",
+      "corrected_fallback_method": "C (Blinded variance re-estimation)"
+    },
+    "blocker_2_master_seed_arithmetic": {
+      "status": "CORRECTED",
+      "finding": "ARITHMETIC_ERROR",
+      "prior_reported_value": 3469967646,
+      "corrected_value": 3485535768,
+      "correction_magnitude": 15568122,
+      "seed_domain": "32-bit unsigned integer",
+      "python_compatibility": "VERIFIED"
+    },
+    "blocker_3_nomenclature": {
+      "status": "CORRECTED",
+      "finding": "INACCURATE_TERMINOLOGY",
+      "prior_nomenclature": "4-SHA256 identity",
+      "corrected_nomenclature": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+      "reason": "git_head_commit is Git object ID (SHA-1/SHA-256), not one of the SHA256 provenance fields"
+    },
+    "blocker_4_validity_gates": {
+      "status": "RESTORED",
+      "finding": "ABBREVIATED_EXECUTION_CONTRACT",
+      "prior_gate_count": 3,
+      "corrected_gate_count": {
+        "universal_gates": 8,
+        "se_specific_gates": 5,
+        "ae_specific_gates": 2,
+        "total_per_ae_run": 10,
+        "total_per_se_run": 13
+      },
+      "action": "FULL_GATE_SET_PRESERVED_IN_CONTRACT"
+    },
+    "blocker_5_n30_interpretation": {
+      "status": "CLARIFIED",
+      "finding": "INFERENTIAL_STATUS_AMBIGUOUS",
+      "n30_role": "OPERATIONAL_FEASIBILITY_DRIVEN",
+      "n30_power_justified": false,
+      "n30_precision_justified": false,
+      "clt_heuristic_role": "DESCRIPTIVE_ONLY (not prescriptive)",
+      "human_acceptance_required": true
+    },
+    "blocker_6_order_rule": {
+      "status": "SPECIFIED",
+      "finding": "RULE_INSUFFICIENTLY_PRECISE",
+      "corrected_rule": "DETERMINISTIC_ALTERNATING",
+      "specification": "Block i: AE-first if (i mod 2) = 1, SE-first if (i mod 2) = 0",
+      "order_balance_for_n30": {
+        "ae_first_blocks": 15,
+        "se_first_blocks": 15
+      },
+      "adaptive_order_forbidden": true
+    }
+  },
+  "authoritative_commitments": {
+    "phase4_design_package": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+    "phase3_evidence_freeze": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8"
+  },
+  "corrected_values": {
+    "fallback_sample_size_method": "C (Blinded variance re-estimation)",
+    "derived_master_seed": 3485535768,
+    "master_seed_domain": "32-bit unsigned integer",
+    "source_baseline_identity_type": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+    "universal_validity_gates": 8,
+    "se_specific_gates": 5,
+    "ae_specific_gates": 2,
+    "n30_role": "OPERATIONAL_FEASIBILITY_DRIVEN",
+    "execution_order_rule": "DETERMINISTIC_ALTERNATING",
+    "order_balance_n30": "15 AE-first, 15 SE-first"
+  },
+  "execution_constraints": {
+    "real_experiment_runs": 0,
+    "source_modified": false,
+    "formal_seed_list_generated": false,
+    "git_commits": 0,
+    "formal_experiment_execution_gate": "BLOCKED_PENDING_HUMAN_DESIGN_APPROVAL"
+  },
+  "deliverables": {
+    "corrected_documents": [
+      "00_STATUS.json",
+      "01_METHOD_LABEL_CORRECTION.md",
+      "02_MASTER_SEED_CORRECTION.md",
+      "03_COMPOSITE_SOURCE_IDENTITY.json",
+      "04_FULL_VALIDITY_GATE_CONTRACT.json",
+      "05_PRAGMATIC_N_INTERPRETATION.md",
+      "06_COUNTERBALANCED_ORDER_RULE.md",
+      "07_FINAL_HUMAN_APPROVAL_TEMPLATE.md",
+      "FILE_LIST.txt",
+      "SHA256SUMS.txt",
+      "README.md"
+    ],
+    "final_report": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION_VERDICT.txt"
+  },
+  "human_approval_status": {
+    "prior_reconciliation_approval_status": "BLOCKED",
+    "blocker_reconciliation_complete": true,
+    "ready_for_human_review": true,
+    "approval_template_updated": true
+  }
+}

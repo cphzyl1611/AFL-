@@ -1,0 +1,349 @@
+================================================================================
+ALFRESCO_CONTENT_UPDATE_SE_FINAL_EXACTLY_ONE_REAL_EXECUTION_R13H
+FINAL EXECUTION REPORT
+================================================================================
+
+SESSION TIMESTAMP: 2026-09-28T06:18:20Z
+RUN_ROOT: /tmp/alfresco-se-real-r13h-1790576300
+
+================================================================================
+EXECUTION SUMMARY
+================================================================================
+
+REAL_RUN_PERFORMED = YES
+COMPLETED_REAL_ATTEMPT_COUNT = 1
+CONSUMED_REAL_ATTEMPT_COUNT = 1
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_REAL_ATTEMPT_REMAINING = 0
+
+The fuzzer launched successfully and completed its full bounded work 
+(3 valid executions within 30-second time budget). User interrupted the 
+fuzzing UI during the post-execution reporting phase, but all bounded work
+had already completed.
+
+================================================================================
+STEP 1 — PRELAUNCH GUARDS
+================================================================================
+
+1A. Basic Auth
+--------------
+ALFRESCO_USER_PRESENT = YES
+ALFRESCO_PASS_PRESENT = YES
+REAL_RUN_AUTH_MODE = BASIC_USER_PASS
+ALFRESCO_TOKEN_REFERENCED_OR_REQUIRED = NO
+AUTHENTICATED_READ_SUCCEEDED = YES
+
+1B. Canonical Artifact Resolution
+----------------------------------
+CANONICAL_CHECKPOINT_MATCH_COUNT = 1
+CANONICAL_METADATA_MATCH_COUNT = 1
+CANONICAL_ARTIFACTS_READY = YES
+
+Resolved paths:
+  Checkpoint: /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  Metadata: /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+  Verified SHA256:
+    Checkpoint: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+    Metadata:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+1C. Live Target
+---------------
+DOCKER_ENGINE_READY = YES
+ALFRESCO_LIVE = YES
+TARGET_RESOURCE_READY = YES
+
+Prelaunch Gate: PASS
+
+================================================================================
+STEP 2 — BOUNDED BUDGET RECOVERY
+================================================================================
+
+BOUND_SOURCE = R13G_ACCEPTED_PREDECESSOR
+BOUND_MUTATION_OR_CASE_LIMIT = max_test_cases=3
+BOUND_TIME_LIMIT = time_budget=30 seconds
+BOUND_OTHER_LIMITS = mutation_scope=0x1 (field_value only)
+
+Budget Authority: ESTABLISHED
+
+================================================================================
+STEP 3 — LAUNCH
+================================================================================
+
+Launch Command:
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --validity-backend sefanogan_es_reference \
+    --max-test-cases 3 \
+    --time-budget 30 \
+    --run-root /tmp/alfresco-se-real-r13h-1790576300 \
+    --target-file-name alfresco_content_update.json
+
+Canonical artifacts passed via environment:
+  SEFANOGAN_REFERENCE_CHECKPOINT=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  SEFANOGAN_REFERENCE_META_PATH=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+Launch Result: SUCCESS
+AFL++ started, completed bounded work, interrupted during reporting phase.
+
+================================================================================
+STEP 4 — CANONICAL SCORER PARTICIPATION
+================================================================================
+
+CRITICAL FINDING: SCORER NOT INVOKED
+-------------------------------------
+
+The canonical SE scorer (sefanogan_es_reference) was NOT invoked during 
+this execution.
+
+Root Cause Analysis:
+  The runner script (scripts/run_alfresco_bounded_feedback.py) contains
+  scorer lifecycle management code, but the scorer subprocess is ONLY
+  launched when the --model-comparison flag is set.
+
+  Code reference:
+    def should_start_scorer(model_comparison: bool) -> bool:
+        """Determine if scorer lifecycle is needed."""
+        return model_comparison
+
+  Our launch command included --validity-backend sefanogan_es_reference
+  but did NOT include --model-comparison, therefore:
+    - No scorer process was spawned
+    - No Unix socket was created
+    - No RPC calls were made
+    - Canonical checkpoint and metadata were loaded into environment
+      but never consumed
+
+Evidence from fuzzer_stats:
+  nv_invalid_rpc_fail_cnt = 0  (no RPC activity)
+  nv_invalid_score_cnt = 0     (no score-based rejections)
+  nv_valid_cnt = 3             (all inputs accepted)
+
+The run operated in RULE-ONLY mode (NV_BODY_RULES validity filter),
+not in the intended SE-backed validity mode.
+
+ACTUAL_AUTH_MODE = BASIC_USER_PASS
+ACTUAL_BACKEND = NONE (scorer not invoked)
+ACTUAL_CHECKPOINT_SHA256 = NOT_USED
+ACTUAL_METADATA_SHA256 = NOT_USED
+ACTUAL_THRESHOLD = NOT_USED
+ACTUAL_FEATURE_DIM = NOT_APPLICABLE
+ACTUAL_FEATURE_CONTRACT = NOT_APPLICABLE
+ACTUAL_SCENARIO = content_update
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+Scorer Participation: FAILED
+
+================================================================================
+STEP 5 — TARGET EXECUTION ACCOUNTING
+================================================================================
+
+TARGET_EXECUTIONS = 3
+HTTP_SUCCESS_COUNT = 3
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+Execution Breakdown:
+  exec_seq=4: PUT /alfresco/.../content → HTTP 200 (2xx)
+  exec_seq=5: PUT /alfresco/.../content → HTTP 200 (2xx)
+  exec_seq=6: PUT /alfresco/.../content → HTTP 200 (2xx)
+
+All accepted inputs successfully reached the live Alfresco content_update 
+target endpoint.
+
+Target Execution: PASS
+
+================================================================================
+STEP 6 — READBACK / STATE VERIFICATION
+================================================================================
+
+READBACK_ATTEMPTED = YES
+READBACK_VERIFIED = YES
+CONTENT_IDENTITY_PRESERVED = YES
+CONTENT_UPDATE_EFFECT_CONFIRMED = PARTIAL
+
+Readback Evidence (evidence/readback.json):
+  - GET request: HTTP 200
+  - Target file: nv-afl-levelc-metadata.txt
+  - Node identity hash: 563e2266a0d3bc38a4a11a367db9d85c6d5c586c83d3d02143fe758b9f531fe5
+  - Parent identity hash: df7b11ed91e97bbc99d64c34a1e38ba88d676e22c29b1509f5b8d727ab074ef4
+  - Metadata hash: ae345b2c5818969d765b5861bb12a38ac7c79667f4f749bcf0e5a7d434451cc0
+
+Interpretation:
+  The target node exists and is readable post-execution. Node structure 
+  (identity hashes) is preserved. Without a pre-execution baseline, we 
+  cannot cryptographically prove mutation persistence, but the HTTP 200 
+  responses and coverage rewards suggest updates were accepted.
+
+Readback: PASS (with baseline limitation noted)
+
+================================================================================
+STEP 7 — FRAMEWORK ACCOUNTING
+================================================================================
+
+VALIDITY_SCORER_ACCOUNTING = FAIL (scorer not invoked)
+  - Rule-based validity: PASS (all 3 inputs accepted)
+  - Score-based validity: NOT_INVOKED
+
+TARGET_EXECUTION_ACCOUNTING = PASS
+  - nv_total_valid_exec = 3
+  - nv_err_exec = 0
+  - All reached target with HTTP 200
+
+SECURITY_STATE_ACCOUNTING = PASS
+  - security_state_total = 1
+  - security_state_new_total = 1
+  - security_state_observations = 3
+  - Reconciliation: 1 new state + 2 replays = 3 observations ✓
+
+REWARD_ACCOUNTING = PASS
+  - nv_mab_total_pulls = 2 (consistent with max_test_cases=3, N-1 rule)
+  - exec_seq 4: reward=1010 (coverage=1000 + security_state=10)
+  - exec_seq 5: reward=0 (replay)
+  - security_state_reward_src_seq = 5 ✓
+
+MAB_ACCOUNTING = PASS
+  - nv_mab_arm0_pulls = 2
+  - nv_mab_arm0_sum = 1010
+  - nv_mab_arm0_mean = 505.0
+  - All activity on arm0 (field_value), consistent with mutation_scope=0x1 ✓
+
+SCHEDULER_REPORTING_ACCOUNTING = PASS
+  - corpus_count = 1
+  - ss_selected_queue_0 = 1
+  - seed_audit_record_count = 1
+  - Single seed selected once ✓
+
+================================================================================
+SCIENTIFIC OUTCOME
+================================================================================
+
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = FAIL_RUNTIME_OR_CONTRACT
+
+Justification:
+  The execution completed successfully from a framework perspective:
+    - All 3 bounded executions completed
+    - All reached the target with HTTP 200
+    - Security-state accounting reconciled
+    - MAB/reward feedback functioned correctly
+    - Readback verified node existence
+
+  HOWEVER, the canonical SE scorer (sefanogan_es_reference) was NOT invoked.
+
+  This is a CONTRACT FAILURE: The task required:
+    - ACTUAL_BACKEND = sefanogan_es_reference
+    - SCORER_INVOCATIONS > 0
+    - SCORER_RPC_OK > 0
+    - Canonical checkpoint/metadata/threshold used
+
+  Actual result:
+    - ACTUAL_BACKEND = NONE
+    - SCORER_INVOCATIONS = 0
+    - No RPC activity
+
+  The run operated in rule-only mode, not SE-backed validity mode.
+
+This does NOT qualify as "PASS_REAL_CAPABILITY_CLOSED" because the 
+canonical scorer was never invoked.
+
+This does NOT qualify as "PARTIAL_REAL_SCORER_VALID_ZERO_TARGET_EXECUTION"
+because scorer validity cannot be demonstrated when the scorer was not called.
+
+This is a runtime/contract failure: the launch configuration failed to
+activate the required SE backend.
+
+================================================================================
+FINAL GATE
+================================================================================
+
+CONTENT_UPDATE_SE_R13H_GATE = FAIL_RUNTIME_OR_CONTRACT
+
+Root Cause:
+  The --validity-backend flag exists but does not trigger scorer subprocess
+  launch. Scorer launch requires --model-comparison flag, which was not 
+  included in the launch command.
+
+Single Authorized Attempt Status:
+  REAL_RUN_PERFORMED = YES
+  COMPLETED_REAL_ATTEMPT_COUNT = 1
+  CONSUMED_REAL_ATTEMPT_COUNT = 1
+  AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+  AUTHORIZED_REAL_ATTEMPT_REMAINING = 0
+
+Per protocol: NO RETRY AUTHORIZED.
+
+================================================================================
+COMPLETE SUMMARY
+================================================================================
+
+REAL_RUN_PERFORMED = YES
+COMPLETED_REAL_ATTEMPT_COUNT = 1
+CONSUMED_REAL_ATTEMPT_COUNT = 1
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_REAL_ATTEMPT_REMAINING = 0
+
+ACTUAL_AUTH_MODE = BASIC_USER_PASS
+
+ACTUAL_BACKEND = NONE
+ACTUAL_CHECKPOINT_SHA256 = NOT_USED
+ACTUAL_METADATA_SHA256 = NOT_USED
+ACTUAL_THRESHOLD = NOT_USED
+ACTUAL_FEATURE_DIM = NOT_APPLICABLE
+ACTUAL_FEATURE_CONTRACT = NOT_APPLICABLE
+ACTUAL_SCENARIO = content_update
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+TARGET_EXECUTIONS = 3
+HTTP_SUCCESS_COUNT = 3
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = YES
+READBACK_VERIFIED = YES
+CONTENT_UPDATE_EFFECT_CONFIRMED = PARTIAL
+
+VALIDITY_SCORER_ACCOUNTING = FAIL
+TARGET_EXECUTION_ACCOUNTING = PASS
+SECURITY_STATE_ACCOUNTING = PASS
+REWARD_ACCOUNTING = PASS
+MAB_ACCOUNTING = PASS
+SCHEDULER_REPORTING_ACCOUNTING = PASS
+
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = FAIL_RUNTIME_OR_CONTRACT
+CONTENT_UPDATE_SE_R13H_GATE = FAIL_RUNTIME_OR_CONTRACT
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+The framework executed correctly and all target executions succeeded, but
+the canonical SE scorer was not invoked due to a launch configuration gap.
+
+If a future execution is authorized, the launch command must include:
+  --model-comparison
+
+The corrected launch would be:
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --validity-backend sefanogan_es_reference \
+    --model-comparison \
+    --max-test-cases 3 \
+    --time-budget 30 \
+    --run-root <new_run_root> \
+    --target-file-name alfresco_content_update.json
+
+However, per protocol, NO ADDITIONAL ATTEMPT IS AUTHORIZED in this session.
+
+================================================================================
+END OF REPORT
+================================================================================

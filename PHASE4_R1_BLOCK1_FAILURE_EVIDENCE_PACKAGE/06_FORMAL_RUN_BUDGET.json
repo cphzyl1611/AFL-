@@ -1,0 +1,23 @@
+{
+  "formal_run_budget": {
+    "max_test_cases": 5,
+    "time_budget_seconds": 60,
+    "scorer_ready_timeout_seconds": 10,
+    "authority": "Phase-3 validated budget (5+5 pilot)",
+    "approved_decision": "D6",
+    "frozen_timestamp": "2026-09-21T14:06:00Z"
+  },
+  "budget_constraints": {
+    "budget_identical_within_pair": true,
+    "budget_change_from_phase3": false,
+    "phase3_budget_values": {
+      "max_test_cases": 5,
+      "time_budget_seconds": 60
+    }
+  },
+  "saturation_status": {
+    "phase3_evidence": "INSUFFICIENT_EVIDENCE_TO_DETERMINE",
+    "phase3_all_runs_passed_gates": true,
+    "budget_increase_not_required": true
+  }
+}

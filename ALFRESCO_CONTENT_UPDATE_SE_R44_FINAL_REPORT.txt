@@ -1,0 +1,274 @@
+================================================================================
+ALFRESCO CONTENT UPDATE SE R44 FINAL REPORT
+================================================================================
+
+CAMPAIGN IDENTITY
+-----------------
+Campaign ID: R44
+Session Mode: Post-R43 Repair Continuation
+Scenario: content_update
+Authorization: One-shot real validation
+Checkpoint Commit: c42edb3
+Run Directory: /tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/
+Execution Timestamp: 2026-10-02 (Unix: 1790876804)
+
+CAMPAIGN PARAMETERS
+-------------------
+Scenario: content_update
+Mutator: nv_text_mutator.py
+Backend: sefanogan_es_reference
+Feature Contract: alfresco_fixed_32
+Feature Dimension: 32
+Protocol: V2
+Logical Content Body: raw UTF-8 text
+Transport Body: base64
+AFL Seed: 12345
+Max Test Cases: 3
+Time Budget: 30 seconds
+Scorer Python: /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+
+R43 IMMUTABLE RECORD (REFERENCE ONLY)
+--------------------------------------
+R43_GATE: FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION
+R43_CONSUMED_REAL_ATTEMPT_COUNT: 1
+R43_ROOT_CAUSE: Missing "scenario" field in render_content_update_runtime_config()
+
+POST-R43 REPAIR (REFERENCE ONLY)
+---------------------------------
+POST_R43_REPAIR_CLASSIFICATION: REPAIR_VERIFIED_OFFLINE
+Offline Test Results: 7/7 PASS
+Repair Description: Added "scenario": "content_update" to task.json generation
+
+R44 EXECUTION RESULTS
+---------------------
+
+FINAL CLASSIFICATION: R44_GATE = FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION
+
+Primary Failure Mode: Same root cause as R43 - harness failed to observe HTTP status
+Artifact Contract Status: artifact_contract_failed
+Runner Exit Code: 4
+Launch Return Code: 0
+
+CRITICAL EVIDENCE - EXECUTION LEDGER
+-------------------------------------
+Source: /tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/evidence/executions.jsonl
+
+Total Harness Invocations: 5
+Counted Executions: 2
+Status Observed Count: 0  ← CRITICAL FAILURE
+Target Invocations: 0
+Valid Target Executions: 0
+Invalid Execution Identity Count: 2
+Pending Cleanup Count: 3
+
+Execution Breakdown:
+- Iteration 1: harness_invoked=true, target_invoked=false, status_observed=false, http_status=0
+- Iteration 2: harness_invoked=true, target_invoked=false, status_observed=false, http_status=0
+- Iteration 3: harness_invoked=true, status_observed=false, http_status=0, pending_cleanup_reason=budget_boundary
+
+CRITICAL ROOT CAUSE
+-------------------
+Despite repair adding "scenario": "content_update" to task.json, the harness STILL failed to write nv_http_status.json.
+
+Investigation of nv_http_harness.py lines 918-1267 reveals:
+
+1. Scorer RPC was invoked successfully (3 invocations logged in scorer_stdout.txt)
+2. Scorer returned scores: 0.614251, 0.610883, 0.614251
+3. No threshold rejection occurred (no NV_BODY_SCORE_THRESHOLD set)
+4. body_score_pass branch should have been taken (line 1121)
+5. write_status() should have been called at line 1244
+
+But execution ledger shows:
+- target_invoked=false (no HTTP request sent)
+- status_observed=false (no nv_http_status.json written)
+- http_status=0 (no actual HTTP response)
+
+This indicates harness execution STOPPED after scorer validation, before reaching the HTTP request at lines 1143-1198.
+
+HYPOTHESIS: The harness is terminating early after scorer validation passes, possibly due to:
+1. Missing NV_ENDPOINT_NAME environment variable causing path=""
+2. body_only_mode configuration mismatch
+3. Early return path between scorer validation and HTTP execution
+
+MODEL COMPARISON VALIDITY
+--------------------------
+Verdict: INVALID_FOR_MODEL_COMPARISON
+Reason Codes: ["ZERO_SCORER_INVOCATIONS", "TRACE_COUNT_MISMATCH"]
+
+Anomaly: Scorer stdout shows 3 successful invocations, but artifact_report claims ZERO_SCORER_INVOCATIONS.
+This suggests the scorer process ran but the C-side fuzzer did not receive RPC responses, OR the trace validation logic is comparing against the wrong baseline.
+
+Trace Invocations: 3
+Scorer RPC OK: 0  ← Contradicts scorer_stdout evidence
+Scorer RPC Fail: 0
+
+AFL FUZZER STATISTICS
+----------------------
+Source: /tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/afl-out/fuzzer_stats
+
+Runtime: 3 seconds (stopped early, budget was 30 seconds)
+Total Executions: 6
+Executions/Second: 1.83
+Corpus Count: 1
+Coverage: 0.00%
+Edges Found: 0
+Saved Crashes: 0
+Saved Hangs: 0
+
+NV-Specific Counters:
+- nv_valid_cnt: 3 (all inputs passed validity)
+- nv_invalid_cnt: 0
+- nv_total_valid_exec: 3
+- nv_err_exec: 0
+- nv_rec_total: 0
+
+MAB Counters (all zero - no reward updates):
+- nv_mab_total_pulls: 0
+- nv_mab_arm0_pulls: 0
+- nv_mab_arm1_pulls: 0
+- nv_mab_arm2_pulls: 0
+- security_state_total: 0  ← No coverage credited
+
+SS Scheduler Counters:
+- ss_cov_cnt: 0
+- ss_selected_cnt: 1
+- ss_new_bits_any: 0
+- ss_new_bits_kept: 0
+
+MISSING RUNTIME ARTIFACTS
+--------------------------
+The following required files were NOT created:
+- nv_http_status.json (execution identity)
+- nv_http_status.json.seq (sequence file)
+- nv_probe.json (state probe)
+- nv_state_db.json (state database)
+- nv_state_trace.jsonl (state trace)
+- readback.json (readback verification)
+
+Present Files:
+- task.json ✓
+- target.json ✓
+- seed_input/seed.http ✓
+- afl-out/fuzzer_stats ✓
+- evidence/executions.jsonl ✓
+- evidence/mab_updates.jsonl ✓ (but empty - 3 records, 0 updates)
+- evidence/seed_selection.jsonl ✓
+
+SCORER PROCESS
+--------------
+Exit Code: -15 (SIGTERM - killed by runner)
+Stderr: ConnectionError('unexpected EOF') - initial connection, then 3 successful requests
+Stdout: 3 successful score computations logged
+
+Scorer Output:
+[OK] nv_valid_server_real listening: /tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/scorer.sock (fmt=text)
+[ERR] request handling failed: ConnectionError('unexpected EOF')
+[REQ] scenario=content_update endpoint= bytes=110
+[RESP] mode=sefanogan_es_reference score=0.614251 recon_err=0.000000 feat_err=0.000000
+[REQ] scenario=content_update endpoint= bytes=110
+[RESP] mode=sefanogan_es_reference score=0.610883 recon_err=0.000000 feat_err=0.000000
+[REQ] scenario=content_update endpoint= bytes=110
+[RESP] mode=sefanogan_es_reference score=0.614251 recon_err=0.000000 feat_err=0.000000
+
+Note: endpoint= is EMPTY in all 3 requests.
+
+TASK.JSON CONFIGURATION
+-----------------------
+{
+  "enable_validity": 1,
+  "input_format": "full_http",
+  "max_test_cases": 3,
+  "mutation_scope": ["field_value"],
+  "readback": "byte_exact_content",
+  "scenario": "content_update",  ← PRESENT (repair applied)
+  "seed_location": "/tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/seed_input",
+  "seed_source": "seed_file",
+  "target_endpoint": "content_update",
+  "target_kind": "existing_file",
+  "target_type": "http_api",
+  "time_budget": 30,
+  "validity_endpoint": "unix:///tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/scorer.sock"
+}
+
+Observations:
+1. "scenario": "content_update" is PRESENT ← R43 repair applied
+2. "input_format": "full_http" (not body_only_mode)
+3. "target_endpoint": "content_update" (but NV_ENDPOINT_NAME may not be set)
+
+COMPARISON TO R43
+-----------------
+R43 Status: FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION
+R44 Status: FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION
+
+Identical Failure Mode: YES
+Repair Applied: YES (scenario field present in task.json)
+Repair Effective: NO
+
+Conclusion: The scenario field repair was NECESSARY but NOT SUFFICIENT.
+
+SECONDARY FAILURE ANALYSIS
+---------------------------
+Examining harness flow for input_format="full_http" mode (lines 1068-1267):
+
+1. body_only_mode = 0 (since input_format="full_http")
+2. parse_http_seed(data) extracts method, path, headers, body
+3. NV_BODY_SCORE_ENDPOINT is set → scorer RPC invoked (lines 1088-1123)
+4. Scorer returns scores successfully
+5. No threshold set → body_score_pass branch taken
+6. BUT: execution ledger shows target_invoked=false
+
+SUSPECTED MISSING VARIABLE: NV_ENDPOINT_NAME
+The scorer RPC logs show endpoint= is EMPTY.
+Line 1099: endpoint_name = os.getenv("NV_ENDPOINT_NAME", str(cfg.get("default_endpoint", "")).strip())
+Line 1101: if not endpoint_name: endpoint_name = "unknown"
+
+So endpoint_name = "unknown" for scorer RPC.
+But the actual HTTP request construction (lines 1131-1148) uses:
+- url = BASE + path
+- path comes from parse_http_seed()
+
+If path is empty or invalid, the HTTP request may fail before write_status() is called.
+
+IMMEDIATE NEXT INVESTIGATION REQUIRED
+--------------------------------------
+1. Check seed_input/seed.http contents - does it have a valid HTTP request line?
+2. Check if NV_ENDPOINT_NAME was set in environment
+3. Add DEBUG logging to determine where harness exits between scorer validation and HTTP request
+4. Verify parse_http_seed() output for content_update scenario
+
+R44 CONSUMED ATTEMPT COUNT
+---------------------------
+R44_CONSUMED_REAL_ATTEMPT_COUNT: 1
+
+TOTAL CONSUMED ATTEMPTS: 2 (R43=1, R44=1)
+
+FINAL VERDICT
+-------------
+R44_GATE: FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION
+
+R44 confirms the scenario field repair was applied but did NOT resolve the runtime failure.
+The harness successfully validates inputs via scorer but fails to execute HTTP requests and write status files.
+
+Root cause remains UNRESOLVED. Further investigation required before R45.
+
+AUTHORIZATION FOR R45
+---------------------
+R44 authorization was for ONE ATTEMPT ONLY.
+R45 requires NEW AUTHORIZATION from user.
+Do NOT proceed to R45 without explicit user instruction.
+
+EVIDENCE PRESERVATION
+---------------------
+All R44 artifacts preserved at:
+/tmp/nv-alfresco-bounded-135492-266fe5b03b1540b1b4d2505eabb2f7c4/
+
+Critical files for next investigation:
+- seed_input/seed.http (seed contents)
+- evidence/executions.jsonl (execution ledger)
+- evidence/scorer_stdout.txt (scorer logs)
+- task.json (runtime config)
+- afl-out/fuzzer_stats (fuzzer counters)
+
+================================================================================
+END OF R44 FINAL REPORT
+================================================================================

@@ -1,0 +1,114 @@
+{
+  "validity_gate_contract": {
+    "version": "R2",
+    "contract_date": "2026-09-21",
+    "predecessor_contract": "R1",
+    "semantic_adapter_applied": true
+  },
+  "universal_gates": [
+    {
+      "gate_name": "body_score_rpc_ok",
+      "applies_to": "universal",
+      "condition": "> 0",
+      "description": "At least one body score RPC succeeded"
+    },
+    {
+      "gate_name": "body_score_rpc_fail",
+      "applies_to": "universal",
+      "condition": "= 0",
+      "description": "Zero body score RPC failures"
+    },
+    {
+      "gate_name": "trace_invocations",
+      "applies_to": "universal",
+      "condition": "> 0",
+      "description": "At least one trace invocation recorded"
+    },
+    {
+      "gate_name": "exact_backend_recorded",
+      "applies_to": "universal",
+      "condition": "= TRUE",
+      "description": "Backend name matches exact frozen identity"
+    },
+    {
+      "gate_name": "trace_stats_reconciliation",
+      "applies_to": "universal",
+      "condition": "= PASS",
+      "description": "Trace stats reconcile with execution ledger"
+    },
+    {
+      "gate_name": "artifact_contract_r2",
+      "applies_to": "universal",
+      "condition": "= PASS or PASS_VALIDATOR_FALSE_NEGATIVE_ZERO_EXECUTION_CASE",
+      "description": "All required run artifacts present and parseable, with R2 semantic adapter for zero-execution false-negative reconciliation",
+      "r2_semantic_adapter": "tools/r2_artifact_semantic_gate.py",
+      "r2_adapter_logic": "Reconciles missing nv_probe.json and nv_state_db.json only when body_score_pass=0 and zero target-valid execution occurred"
+    },
+    {
+      "gate_name": "model_comparison_validity",
+      "applies_to": "universal",
+      "condition": "= PASS",
+      "description": "Model comparison provenance valid (RPC OK, trace invocations match)"
+    },
+    {
+      "gate_name": "readback",
+      "applies_to": "universal",
+      "condition": "= PASS",
+      "description": "Target readback correlation valid"
+    }
+  ],
+  "se_specific_gates": [
+    {
+      "gate_name": "checkpoint_sha256",
+      "applies_to": "sefanogan_es_reference",
+      "condition": "= 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+      "description": "SE checkpoint file SHA256 matches frozen canonical"
+    },
+    {
+      "gate_name": "metadata_sha256",
+      "applies_to": "sefanogan_es_reference",
+      "condition": "= 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+      "description": "SE metadata file SHA256 matches frozen canonical"
+    },
+    {
+      "gate_name": "input_dim",
+      "applies_to": "sefanogan_es_reference",
+      "condition": "= 32",
+      "description": "SE input dimension matches frozen canonical"
+    },
+    {
+      "gate_name": "threshold",
+      "applies_to": "sefanogan_es_reference",
+      "condition": "= 1.2847454080581664",
+      "description": "SE threshold matches frozen canonical"
+    },
+    {
+      "gate_name": "backend",
+      "applies_to": "sefanogan_es_reference",
+      "condition": "= sefanogan_es_reference",
+      "description": "SE backend name exactly matches frozen canonical"
+    }
+  ],
+  "ae_specific_gates": [
+    {
+      "gate_name": "threshold",
+      "applies_to": "alfresco_ae_v1",
+      "condition": "= 1.623614",
+      "description": "AE threshold matches frozen canonical"
+    },
+    {
+      "gate_name": "backend",
+      "applies_to": "alfresco_ae_v1",
+      "condition": "= alfresco_ae_v1",
+      "description": "AE backend name exactly matches frozen canonical"
+    }
+  ],
+  "r2_artifact_gate_semantic_contract": {
+    "rule_1_normal_pass": "If base validator artifact_contract = PASS, then R2_ARTIFACT_SEMANTIC_GATE = PASS",
+    "rule_2_narrow_false_negative_reconciliation": "If base validator FAIL AND missing artifacts exactly {probe, state_db} AND body_score_pass=0 AND zero target-valid execution AND all other gates PASS, then R2_ARTIFACT_SEMANTIC_GATE = PASS_VALIDATOR_FALSE_NEGATIVE_ZERO_EXECUTION_CASE",
+    "rule_3_everything_else_remains_fail": "All other artifact failures remain FAIL",
+    "no_placeholder_files": "No fabricated or placeholder files permitted",
+    "adapter_implementation": "tools/r2_artifact_semantic_gate.py",
+    "adapter_tdd_coverage": "tests/test_r2_artifact_semantic_gate.py"
+  }
+}

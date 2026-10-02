@@ -1,0 +1,28 @@
+{
+  "runtime_model_provenance": {
+    "phase3_evidence_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "frozen_timestamp": "2026-09-21T14:06:00Z",
+    "authority": "Phase-3 frozen canonical runtime configuration"
+  },
+  "se_backend_provenance": {
+    "backend_name": "sefanogan_es_reference",
+    "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+    "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+    "metadata_input_dim": 32,
+    "threshold": 1.2847454080581664,
+    "provenance_requirement": "Every SE run must prove exact checkpoint and metadata SHA256 identity at runtime",
+    "verification_gate": "MANDATORY"
+  },
+  "ae_backend_provenance": {
+    "backend_name": "alfresco_ae_v1",
+    "threshold": 1.623614,
+    "provenance_requirement": "Every AE run must record exact backend name and threshold",
+    "verification_gate": "MANDATORY"
+  },
+  "runtime_verification_contract": {
+    "se_checkpoint_verification": "REQUIRED_AT_RUNTIME",
+    "se_metadata_verification": "REQUIRED_AT_RUNTIME",
+    "ae_backend_verification": "REQUIRED_AT_RUNTIME",
+    "backend_mismatch_consequence": "RUN_EXCLUDED_FROM_ANALYSIS"
+  }
+}

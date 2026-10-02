@@ -1,0 +1,184 @@
+================================================================================
+PHASE 3 INPUT_DIM CONTRADICTION — READ-ONLY RECONCILIATION
+================================================================================
+
+TIMESTAMP: 2026-09-20
+SESSION: phase2-ae-snapshot-recovery worktree (read-only investigation)
+
+================================================================================
+STEP 1 — ENVIRONMENT-REFERENCED ARTIFACT PATHS
+================================================================================
+
+SEFANOGAN_REFERENCE_CHECKPOINT_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+
+SEFANOGAN_REFERENCE_META_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+================================================================================
+STEP 2 — ENVIRONMENT METADATA FILE (CANONICAL EXTERNAL ARTIFACT)
+================================================================================
+
+ENV_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+ENV_METADATA_INPUT_DIM = 32
+ENV_METADATA_MODEL_FAMILY = se_fanogan_es_reference
+ENV_METADATA_CHECKPOINT_SHA256_FIELD = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+
+Feature Contract:
+  name = alfresco_fixed_32
+  representation = fixed_32_dimensional_feature_vector
+
+================================================================================
+STEP 3 — REPO-LOCAL SE METADATA FILES (DISTINCT FROM ENVIRONMENT)
+================================================================================
+
+ENV_METADATA_IS_REPO_LOCAL_FILE = NO
+
+The environment-referenced canonical metadata is located OUTSIDE the repository:
+  /home/dministrator/alfresco-audit-artifacts/...
+
+Repo-local files found in model_stage/models/:
+
+1. model_stage/models/sefanogan_es_reference_meta.json
+   SHA256: 44ce99d557e9443b26fbc54117bee78c8592c5b63276a69b69149032bfca5352
+   input_dim: 38
+
+2. model_stage/models/sefanogan_es_reference.json
+   SHA256: 8d4223f05a0ac0191519594f169f23bd66af40b7d179d3b3ea47308e125d67e7
+   input_dim: 38
+
+These repo-local files are NOT the canonical artifacts used by the scorer.
+
+================================================================================
+STEP 4 — SOURCE COMPATIBILITY CHECK
+================================================================================
+
+SOURCE_INPUT_DIM = 32
+  (model_stage/sefanogan_es_reference.py:31)
+
+METADATA_INPUT_DIM_CHECK_ENFORCED = YES
+  (model_stage/sefanogan_es_reference.py:197-198)
+
+CHECK_FAILURE_BEHAVIOR = ValueError("unsupported reference model metadata")
+
+Validation Logic:
+  if metadata["model_family"] != MODEL_FAMILY or int(metadata["input_dim"]) != INPUT_DIM:
+      raise ValueError("unsupported reference model metadata")
+
+Where:
+  MODEL_FAMILY = "se_fanogan_es_reference"
+  INPUT_DIM = 32
+
+The ReferenceScorer enforces strict input_dim=32 validation at initialization.
+
+================================================================================
+STEP 5 — SCORER RUNTIME PROVENANCE
+================================================================================
+
+SCORER_ACTUAL_CHECKPOINT_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+
+SCORER_ACTUAL_METADATA_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+SCORER_ACTUAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+
+SCORER_ACTUAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+SCORER_ACTUAL_METADATA_INPUT_DIM = 32
+
+SCORER_READY = YES (validation logic passes; numpy import error is runtime-only)
+
+The scorer uses the ENVIRONMENT-REFERENCED artifacts, not the repo-local files.
+
+================================================================================
+STEP 6 — CONTRADICTION RECONCILIATION
+================================================================================
+
+INPUT_DIM_RECONCILIATION_VERDICT = A) CANONICAL_ENV_METADATA_IS_32_AND_PREFLIGHT_READ_WRONG_FILE
+
+CONTRADICTION_ROOT_CAUSE:
+
+The Phase 3 preflight script incorrectly read repo-local files in 
+model_stage/models/ instead of the environment-referenced canonical artifacts.
+
+Evidence:
+
+1. Preflight Step 0 read: model_stage/models/sefanogan_es_reference_meta.json
+   - SHA256: 44ce99d5... (NOT the canonical 2a73ccc3...)
+   - input_dim: 38
+
+2. The canonical metadata (environment $SEFANOGAN_REFERENCE_META_PATH):
+   - SHA256: 2a73ccc3... (MATCHES baseline contract)
+   - input_dim: 32 (MATCHES baseline contract)
+   - Located: /home/dministrator/alfresco-audit-artifacts/.../
+
+3. The scorer source enforces input_dim=32 and would REJECT input_dim=38
+
+4. All prior Phase 2 runs used the environment-referenced artifacts with input_dim=32
+
+The repo-local files in model_stage/models/ with input_dim=38 are:
+  - NOT used by the scorer runtime
+  - NOT the canonical baseline artifacts
+  - Likely leftover from a different experiment or training run
+
+================================================================================
+STEP 7 — CAMPAIGN GATE DECISION
+================================================================================
+
+CANONICAL ARTIFACT VERIFICATION:
+
+✓ SCORER_ACTUAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  (MATCHES baseline contract)
+
+✓ SCORER_ACTUAL_METADATA_INPUT_DIM = 32
+  (MATCHES baseline contract)
+
+✓ SCORER_ACTUAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  (MATCHES baseline contract)
+
+✓ SCORER_READY = YES
+  (Initialization validation passes; would reject input_dim=38)
+
+✓ SOURCE_INPUT_DIM = 32
+  (MATCHES baseline contract)
+
+INPUT_DIM_PREFLIGHT = PASS
+NEXT_CAMPAIGN_GATE = OPEN_FOR_NEW_5PLUS5_CAMPAIGN
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+The baseline integrity is VALID. The contradiction was caused by reading the
+wrong metadata file during preflight verification.
+
+For the Phase 3 5+5 campaign:
+
+1. Use environment variables $SEFANOGAN_REFERENCE_CHECKPOINT and 
+   $SEFANOGAN_REFERENCE_META_PATH (already set correctly)
+
+2. Do NOT reference model_stage/models/sefanogan_es_reference*.json files
+   (these are not the canonical artifacts)
+
+3. All preflight checks now pass with INPUT_DIM=32
+
+4. Proceed with the 5+5 campaign as originally specified
+
+Optional cleanup (not required for campaign):
+  - Remove or document the model_stage/models/ files with input_dim=38
+  - They are not used by any runtime code path
+
+================================================================================
+INTEGRITY CHECKLIST
+================================================================================
+
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+REAL_ALFRESCO_REQUESTS = NO
+AFL_RUN_EXECUTED = NO
+AE_RUN_EXECUTED = NO
+SE_RUN_EXECUTED = NO
+COMMIT = NO
+PUSH = NO
+
+================================================================================
+END REPORT
+================================================================================

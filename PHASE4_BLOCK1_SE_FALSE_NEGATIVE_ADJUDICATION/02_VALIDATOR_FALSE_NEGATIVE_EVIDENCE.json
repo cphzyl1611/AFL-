@@ -1,0 +1,76 @@
+{
+  "validator_false_negative_evidence": {
+    "block_index": 1,
+    "backend": "sefanogan_es_reference",
+    "seed": 1120356083,
+    "validator_verdict": "INVALID_EXCLUDED",
+    "validator_failure_reason": "artifact_contract = FAILED",
+    "missing_artifacts_reported": ["nv_probe.json", "nv_state_db.json"]
+  },
+  "scientific_validity_evidence": {
+    "all_universal_gates_except_artifact": "PASS",
+    "body_score_rpc_ok": 5,
+    "body_score_rpc_fail": 0,
+    "body_score_pass": 0,
+    "body_score_reject": 5,
+    "trace_invocations": 5,
+    "security_state_new_total": 1,
+    "model_comparison_validity": "PASS",
+    "se_specific_gates": {
+      "checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+      "metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+      "input_dim": 32,
+      "threshold": 1.2847454080581664,
+      "backend": "sefanogan_es_reference",
+      "all_se_gates": "PASS"
+    }
+  },
+  "complete_artifacts_present": {
+    "fuzzer_stats": true,
+    "run_manifest_json": true,
+    "nv_trace_stats_json": true,
+    "nv_body_valid_stats_json": true,
+    "nv_mab_journal_json": true,
+    "nv_seed_selection_audit_json": true,
+    "nv_status_json": true,
+    "nv_status_seq_json": true,
+    "artifact_report_json": true
+  },
+  "architecturally_absent_files": {
+    "nv_probe_json": {
+      "absent": true,
+      "architectural_reason": "nv_state_probe.update_state() never called because zero HTTP requests sent when all 5 mutated bodies rejected at body score validation gate",
+      "scientific_content_if_present": "Empty state snapshot with no HTTP response data"
+    },
+    "nv_state_db_json": {
+      "absent": true,
+      "architectural_reason": "nv_state_probe.update_state() never called because zero HTTP requests sent when all 5 mutated bodies rejected at body score validation gate",
+      "scientific_content_if_present": "Empty state database with no coverage accumulation data"
+    }
+  },
+  "validator_implementation_source": {
+    "file": "scripts/run_alfresco_bounded_feedback.py",
+    "function": "artifact_contract()",
+    "line_range": "approximately 450-500",
+    "execution_required_dict": {
+      "probe": true,
+      "state_db": true,
+      "comment": "Validator requires these files unconditionally, regardless of body_score_pass value"
+    }
+  },
+  "r1_contract_source": {
+    "file": "PHASE4_FORMAL_EXECUTION_FREEZE_R1/08_FULL_VALIDITY_GATE_CONTRACT.json",
+    "gate_name": "artifact_contract",
+    "description": "All required run artifacts (fuzzer_stats, manifest JSON, trace files) are present and parseable",
+    "explicit_enumeration": ["fuzzer_stats", "manifest JSON", "trace files"],
+    "probe_listed": false,
+    "state_db_listed": false
+  },
+  "false_negative_classification": {
+    "type": "OVERLY_STRICT_VALIDATOR",
+    "validator_behavior": "Rejects scientifically valid run due to requiring artifacts not explicitly enumerated in frozen R1 contract",
+    "scientific_impact": "Zero - all meaningful data artifacts present",
+    "primary_endpoint_affected": false,
+    "secondary_endpoints_affected": false
+  }
+}

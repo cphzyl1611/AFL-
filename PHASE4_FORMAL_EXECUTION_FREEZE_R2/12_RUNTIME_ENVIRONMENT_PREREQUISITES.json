@@ -1,0 +1,55 @@
+{
+  "runtime_environment_prerequisites": {
+    "environment_variables": {
+      "ALFRESCO_USER": {
+        "requirement": "SET_NONBLANK",
+        "verification": "REQUIRED_BEFORE_EXECUTION",
+        "security_classification": "SECRET_DO_NOT_LOG"
+      },
+      "ALFRESCO_PASS": {
+        "requirement": "SET_NONBLANK",
+        "verification": "REQUIRED_BEFORE_EXECUTION",
+        "security_classification": "SECRET_DO_NOT_LOG"
+      },
+      "SEFANOGAN_REFERENCE_CHECKPOINT": {
+        "requirement": "SET_NONBLANK",
+        "verification": "REQUIRED_BEFORE_EXECUTION",
+        "security_classification": "PATH_TO_MODEL_ARTIFACT"
+      },
+      "SEFANOGAN_REFERENCE_META_PATH": {
+        "requirement": "SET_NONBLANK",
+        "verification": "REQUIRED_BEFORE_EXECUTION",
+        "security_classification": "PATH_TO_MODEL_ARTIFACT"
+      },
+      "SCORER_PYTHON": {
+        "requirement": "SET_NONBLANK",
+        "verification": "REQUIRED_BEFORE_EXECUTION",
+        "validated_value": "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python",
+        "security_classification": "SYSTEM_PATH"
+      }
+    },
+    "scorer_python_verification": {
+      "executable_check": "PASS",
+      "imports_check": "PASS",
+      "se_standalone_scorer_ready": "PASS",
+      "verified_interpreter": "/home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python"
+    },
+    "alfresco_endpoint_verification": {
+      "runner_effective_port": 8080,
+      "docker_container_port": 8080,
+      "http_readiness_expected": 200,
+      "port_18080_status": "NONAUTHORITATIVE_FOR_CURRENT_RUNNER",
+      "forensic_verdict": "FALSE_POSITIVE_NO_RUNTIME_CHANGE_REQUIRED"
+    }
+  },
+  "predecessor_environment_forensics": {
+    "scorer_python_reconciled": true,
+    "alfresco_port_reconciled": true,
+    "block1_pre_execution_failure_classified": "PRE_EXECUTION_ENVIRONMENT_FAILURE"
+  },
+  "change_classification": {
+    "documentation_repair_only": true,
+    "no_scientific_semantic_change": true,
+    "no_runtime_behavioral_change": true
+  }
+}

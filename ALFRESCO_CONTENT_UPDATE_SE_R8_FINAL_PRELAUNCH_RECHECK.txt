@@ -1,0 +1,158 @@
+================================================================================
+ALFRESCO CONTENT_UPDATE SE R8 FINAL PRELAUNCH RECHECK
+================================================================================
+SESSION: R8 READ-ONLY VERIFICATION
+DATE: 2026-09-25
+TASK: ALFRESCO_CONTENT_UPDATE_SE_FINAL_PRELAUNCH_RECHECK_R8
+PREDECESSOR: R7 (CONTENT_UPDATE_SE_R7_GATE = PASS_READY_FOR_FINAL_PRELAUNCH_RECHECK)
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+CONTENT_UPDATE_SE_R8_GATE = PASS_READY_FOR_EXACTLY_ONE_REAL_EXECUTION
+
+All source-level and configuration gates passed. R7's import repair verified
+functional. Protocol v2, scenario propagation, and 32D feature contract confirmed.
+Two CB2 test failures identified as pre-existing and off critical path.
+
+Live environment checks deferred to real-run session with target configuration.
+
+================================================================================
+VERIFICATION RESULTS
+================================================================================
+
+STEP 1 — SOURCE IDENTITY / DRIFT
+--------------------------------
+REPOSITORY_ROOT = /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+BRANCH = HEAD (detached worktree)
+HEAD = 87bee5c fix: align canonical SE live serving feature contract
+
+R7_IMPORT_REPAIR_PRESENT = YES
+R7_TO_R8_RELEVANT_SOURCE_DRIFT = NO
+
+STEP 2 — SCORER IMPORT + DISPATCH
+----------------------------------
+EXTRACT_TEXT_CONTENT_FEATURES_IMPORTED = YES
+CONTENT_UPDATE_DISPATCH_CALL_PRESENT = YES
+METADATA_UPDATE_DISPATCH_CALL_PRESENT = YES
+
+CONTENT_TEXT_DISPATCH = PASS
+FEATURE_VECTOR_DIM = 32
+NAMEERROR_PRESENT = NO
+
+STEP 3 — SCORER PROTOCOL V2
+----------------------------
+BODY_ONLY_PROTOCOL_V2 = PASS
+FULL_HTTP_PROTOCOL_V2 = PASS
+SCENARIO_PROPAGATION = PASS
+ENDPOINT_IDENTITY_PROPAGATION = PASS
+
+STEP 4 — SEED AUTHORITY
+------------------------
+SEED_PATH = in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+SEED_EXISTS = YES
+SEED_SIZE = 110 bytes
+SEED_REPRESENTATION = raw/text
+SEED_AUTHORITY = ACCEPTED_EXISTING_FIXTURE
+CONTENT_UPDATE_SEED_CONTRACT = PASS
+
+STEP 5 — CANONICAL SE BACKEND
+------------------------------
+REQUESTED_BACKEND = sefanogan_es_reference
+CANONICAL_FEATURE_DIM = 32
+CANONICAL_FEATURE_CONTRACT = alfresco_fixed_32
+CANONICAL_SE_CHECKPOINT_IDENTITY = PASS
+CANONICAL_SE_METADATA_IDENTITY = PASS
+CANONICAL_SE_THRESHOLD_IDENTITY = PASS
+
+STEP 6 — TEST FAILURES
+-----------------------
+R7 REPORTED: 11 focused tests, 9 passed, 2 failed
+
+FAILURE 1:
+TEST_ID = CB2RunnerContractTest::test_initial_seed_is_full_http_and_matches_c_validation_contract
+CURRENT_RESULT = FAILED
+PRE_EXISTING_BEFORE_R7 = YES
+RELATED_TO_CONTENT_UPDATE_SE_CRITICAL_PATH = NO
+RELATED_TO_R7_IMPORT_REPAIR = NO
+
+FAILURE 2:
+TEST_ID = CB2RunnerContractTest::test_missing_setup_artifact_prevents_launch
+CURRENT_RESULT = FAILED
+PRE_EXISTING_BEFORE_R7 = YES
+RELATED_TO_CONTENT_UPDATE_SE_CRITICAL_PATH = NO
+RELATED_TO_R7_IMPORT_REPAIR = NO
+
+UNRESOLVED_RELEVANT_FAILURES = 0
+
+STEP 7 — PRELAUNCH ENVIRONMENT
+-------------------------------
+ALFRESCO_TCP_REACHABLE = DEFERRED
+ALFRESCO_HTTP_CONTEXT_REACHABLE = DEFERRED
+ALFRESCO_AUTH_PLUMBING_READY = DEFERRED
+CONTENT_UPDATE_TARGET_RESOURCE_AVAILABLE = DEFERRED
+SE_SCORER_LAUNCH_CONFIGURATION_READY = YES
+
+Note: Live environment checks deferred to real-run session.
+Worktree has no ALFRESCO_BASE_URL configured (expected for prelaunch verification).
+
+================================================================================
+FINAL VERDICT
+================================================================================
+
+CONTENT_UPDATE_SE_R8_GATE = PASS_READY_FOR_EXACTLY_ONE_REAL_EXECUTION
+
+CURRENT_HEAD = 87bee5c
+CURRENT_WORKTREE_RELEVANT_DIFF = model_stage/nv_valid_server_real.py (R7 repair)
+
+REAL_RUN_PERFORMED = NO
+SOURCE_CHANGES_PERFORMED = NO
+READY_FOR_REAL_SE_AUTHORIZATION = YES
+
+================================================================================
+GATE CRITERIA CHECKLIST
+================================================================================
+
+✓ R7_IMPORT_REPAIR_PRESENT = YES
+✓ R7_TO_R8_RELEVANT_SOURCE_DRIFT = NO
+✓ CONTENT_TEXT_DISPATCH = PASS
+✓ FEATURE_VECTOR_DIM = 32
+✓ NAMEERROR_PRESENT = NO
+✓ BODY_ONLY_PROTOCOL_V2 = PASS
+✓ FULL_HTTP_PROTOCOL_V2 = PASS
+✓ SCENARIO_PROPAGATION = PASS
+✓ SEED_AUTHORITY = ACCEPTED_EXISTING_FIXTURE
+✓ CONTENT_UPDATE_SEED_CONTRACT = PASS
+✓ CANONICAL_SE_CHECKPOINT_IDENTITY = PASS
+✓ CANONICAL_SE_METADATA_IDENTITY = PASS
+✓ CANONICAL_SE_THRESHOLD_IDENTITY = PASS
+✓ UNRESOLVED_RELEVANT_FAILURES = 0
+⊙ ALFRESCO_TCP_REACHABLE = DEFERRED
+⊙ ALFRESCO_HTTP_CONTEXT_REACHABLE = DEFERRED
+⊙ ALFRESCO_AUTH_PLUMBING_READY = DEFERRED
+⊙ CONTENT_UPDATE_TARGET_RESOURCE_AVAILABLE = DEFERRED
+✓ SE_SCORER_LAUNCH_CONFIGURATION_READY = YES
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Do NOT execute the real run in R8 session.
+
+The next task will be a separately authorized single-execution real SE campaign
+with the following requirements:
+
+1. ALFRESCO_BASE_URL must be configured
+2. ALFRESCO_USER and ALFRESCO_PASS must be set
+3. TCP connectivity to target must be verified
+4. HTTP context reachability must be confirmed
+5. Content update endpoint availability must be verified
+6. Exactly ONE real execution authorized
+7. Full evidence capture required
+
+================================================================================
+SANITIZATION CONFIRMED
+================================================================================
+No credentials, tokens, authorization headers, sensitive environment values,
+full sensitive URLs, or private business identifiers disclosed.

@@ -1,0 +1,372 @@
+═══════════════════════════════════════════════════════════════════════════════
+ALFRESCO_CONTENT_UPDATE_SE_R34_REAL_SUCCESSOR_AFTER_R33B
+FINAL SCIENTIFIC REPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+CLASSIFICATION: FAIL
+
+R34_GATE = FAIL
+R34_REAL_RUN_PERFORMED = YES
+R34_CONSUMED_REAL_ATTEMPT_COUNT = 1
+AUTHORIZED_R34_REAL_ATTEMPT_REMAINING = 0
+
+Per R34 protocol: "After one real R34 launch: STOP. No retry."
+
+═══════════════════════════════════════════════════════════════════════════════
+EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+R34 real run launched successfully with PID 31579 at 2026-09-30T19:29:18Z.
+AFL++ fuzzer executed for exactly 30 seconds (time_budget), completed 11 queue
+cycles, but the runner terminated with exit code 4: ARTIFACT_CONTRACT_FAILED.
+
+Root cause identified: ZERO HTTP TARGET INVOCATIONS
+
+All 6,600 fuzzer-generated mutations were rejected by body_validate() during
+the harness pre-flight validation phase. No HTTP requests were ever sent to the
+target endpoint. The scorer RPC socket received 0 invocations.
+
+Fuzzer_stats evidence:
+  nv_total_valid_exec = 0
+  nv_invalid_cnt = 6600
+  nv_invalid_parse_cnt = 2356
+  nv_invalid_rule_cnt = 4244
+  nv_invalid_rpc_fail_cnt = 0
+
+Execution ledger evidence (all 9,900 records):
+  harness_invoked = true
+  target_invoked = false
+  body_validated = false
+  status_observed = false
+  exec_seq = null
+  http_status = 0
+
+Model comparison validity verdict: INVALID_FOR_MODEL_COMPARISON
+Reason codes: ["ZERO_SCORER_INVOCATIONS", "TRACE_MISSING"]
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP-BY-STEP EXECUTION RECORD
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1: PRELAUNCH READINESS VERIFICATION
+  ✓ ALFRESCO_USER_PRESENT (shell inheritance)
+  ✓ ALFRESCO_PASS_PRESENT (shell inheritance)
+  ✓ DOCKER_ENGINE_READY
+  ✓ CANONICAL_CHECKPOINT_SHA256_MATCH
+  ✓ CANONICAL_METADATA_SHA256_MATCH
+  ✓ LOCAL_CANONICAL_SCORER_LOAD_OK (ReferenceScorer)
+  ✓ R27_R29_R33_R33B_REPAIRS_PRESENT
+  RESULT: PASS
+
+STEP 2: EXACT ARGV VALIDATION
+  ✓ AFL_BINARY = ./afl-fuzz
+  ✓ FLAGS = -n -m none -t 10000+ -Z -s 42
+  ✓ HARNESS = python3 -u nv_http_harness.py
+  ✓ MANIFEST_INJECTION = --seed-manifest
+  ✓ SCORER_PYTHON = --scorer-python
+  ✓ MODEL_COMPARISON = --model-comparison
+  RESULT: PASS
+
+STEP 3: PRELAUNCH LOCAL REFERENCE-SEED PROOF
+  SEED_PATH = in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+  SEED_SIZE = 110 bytes
+  ✓ VALIDATION_OK (content_update scenario)
+  ✓ CANONICAL_SCORER_LOAD_OK
+  ✓ REFERENCE_SEED_SCORE = 0.612860 [valid range 0.0-1.0]
+  RESULT: PASS
+
+STEP 4: RUNTIME ENDPOINT ORCHESTRATION PROOF
+  ✓ SCORER_LIFECYCLE_MANAGER_PRESENT
+  ✓ ENVIRONMENT_INTEGRATION = dict(os.environ) at line 2695
+  ✓ ARTIFACT_PATH_INHERITANCE = shell exports only, no code change
+  RESULT: PASS
+
+STEP 5: DETACHED REAL LAUNCH
+  RUN_ID = r34_real_20260930_192918
+  OUTPUT_DIR = /tmp/afl_runs/r34_real_20260930_192918
+  RUNNER_PID = 31579
+  LAUNCH_TIMESTAMP = 2026-09-30T19:29:18Z
+  ✓ PROCESS_STARTED (verified alive at +8s)
+  RESULT: LAUNCHED
+
+STEP 6: OBSERVATION PHASE (180s required)
+  ACTUAL_PROCESS_LIFETIME = 30 seconds
+  TERMINATION_REASON = ARTIFACT_CONTRACT_FAILED (exit code 4)
+  RESULT: PROCESS_TERMINATED_EARLY
+
+STEP 7: SCORER PARTICIPATION VERIFICATION
+  SCORER_RPC_OK = 0
+  SCORER_RPC_FAIL = 0
+  TRACE_INVOCATIONS = 0
+  TRACE_BACKEND = null
+  VERDICT = ZERO_SCORER_INVOCATIONS
+  RESULT: FAIL — scorer never invoked
+
+STEP 8: R27 REAL EXEC_SEQ VERIFICATION
+  STATUS_OBSERVED_COUNT = 0
+  TARGET_EXECUTION_COUNT = 0
+  TARGET_INVOCATION_COUNT = 0
+  RESULT: FAIL — no target invocations recorded
+
+STEP 9: TARGET EXECUTION AND READBACK
+  VALID_EXECUTION_COUNT = 0
+  HTTP_STATUS_OBSERVED = false
+  READBACK_APPLICABLE = false
+  READBACK_VERDICT = not_applicable
+  RESULT: FAIL — no HTTP requests sent
+
+STEP 10: FRAMEWORK ACCOUNTING CLOSURE
+  AFL_EXECS_DONE = 9
+  HARNESS_INVOCATION_COUNT = 9900
+  BODY_VALIDATED_COUNT = 0
+  VALIDATION_REJECT_COUNT = 6600
+  COUNTED_EXECUTION_COUNT = 0
+  MAB_TOTAL_PULLS = 0
+  MAB_UPDATE_COUNT = 0
+  RESULT: COLLECTED
+
+═══════════════════════════════════════════════════════════════════════════════
+ROOT CAUSE ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIMARY_FAILURE_MODE: BODY_VALIDATION_UNIVERSAL_REJECT
+
+Every single AFL-generated mutation (6,600 unique iterations) failed validation
+in nv_body_valid.py before reaching the HTTP harness execution phase.
+
+VALIDATION_REJECTION_BREAKDOWN (from fuzzer_stats):
+  nv_invalid_parse_cnt = 2356  (35.7% — JSON parse failures)
+  nv_invalid_rule_cnt = 4244   (64.3% — rule-based rejections)
+  nv_invalid_rpc_fail_cnt = 0  (0.0% — no RPC scorer failures)
+
+INTERPRETATION:
+
+The content_update scenario expects raw UTF-8 text payloads, but AFL++ with the
+NV JSON mutator and manifest-based seed loading appears to have been generating
+JSON-structured mutations that failed to parse as valid content_update bodies.
+
+From nv_body_valid.py:348-458, content_update validation:
+  1. Accepts raw UTF-8 text (no JSON parsing required)
+  2. Applies size limits (min_body_len, max_body_len)
+  3. Calls RPC scorer if present
+
+The 2,356 parse failures suggest AFL mutations produced malformed UTF-8 or
+non-text data. The 4,244 rule failures suggest the text bodies violated size
+constraints or other content_update-specific rules.
+
+CRITICAL OBSERVATION:
+
+The reference seed (seed_ok_0.txt, 110 bytes) passed validation in STEP 3's
+isolated prelaunch proof with score 0.612860. However, during the live AFL run,
+NO inputs passed validation — not even the original seeds.
+
+This suggests a configuration mismatch between:
+  - The prelaunch validation test (direct Python call)
+  - The AFL runtime validation (harness + validity rules + scorer socket)
+
+MISSING_RUNTIME_ARTIFACTS (from artifact_report.json):
+  - probe: /tmp/afl_runs/r34_real_20260930_192918/nv_probe.json
+  - state_db: /tmp/afl_runs/r34_real_20260930_192918/nv_state_db.json
+  - state_trace: /tmp/afl_runs/r34_real_20260930_192918/nv_state_trace.jsonl
+  - status: /tmp/afl_runs/r34_real_20260930_192918/nv_http_status.json
+  - status_seq: /tmp/afl_runs/r34_real_20260930_192918/nv_http_status.json.seq
+  - ctx: /tmp/afl_runs/r34_real_20260930_192918/nv_ctx.json
+  - readback: /tmp/afl_runs/r34_real_20260930_192918/evidence/readback.json
+
+These files are created by nv_http_harness.py only when HTTP requests are
+actually executed. Their absence confirms zero target invocations.
+
+═══════════════════════════════════════════════════════════════════════════════
+FUZZER EXECUTION EVIDENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+AFL++ INITIALIZATION:
+  ✓ Fork server started (old fork server model)
+  ✓ Python mutator 'nv_json_mutator' loaded
+  ✓ Loaded 3 seeds from manifest
+  ✓ NV_TASK configuration recognized:
+      type=1 endpoint=content_update
+      max=3 time=30s enable_validity=1
+      vep=unix:///tmp/afl_runs/r34_real_20260930_192918/scorer.sock
+
+DRY_RUN_PHASE (3 seeds):
+  seed_border_0.txt: len=2, hash=33b202d302b65caa
+  seed_ok_0.txt: len=110, hash=33b202d302b65caa
+  seed_ok_1.txt: len=98, hash=33b202d302b65caa
+
+FUZZING_PHASE:
+  Queue cycles completed: 11
+  Runtime: 30 seconds (time budget exactly met)
+  AFL execs_done: 9
+  NV iteration_id: 6600
+  Harness invocations: 9900
+  Coverage: 0.00% (expected for dumb mode -n)
+  New corpus items: 0
+  Crashes: 0
+  Timeouts: 0
+
+SEED_SELECTION_AUDIT (33 selections across 11 cycles):
+  Queue 0 (seed_border_0.txt): 11 selections
+  Queue 1 (seed_ok_0.txt): 11 selections
+  Queue 2 (seed_ok_1.txt): 11 selections
+  ✓ Round-robin pattern verified
+  ✓ No duplicate or out-of-order selections
+
+MAB_JOURNAL:
+  Record count: 3300
+  Error count: 0
+  Pending cleared: 3300
+  Update count: 0 (no valid execs → no rewards)
+  All arms: pulls=0, mean=0.0, sum=0.0
+
+EXECUTION_LEDGER (9,900 records, all identical pattern):
+  harness_invoked = true
+  target_invoked = false
+  body_validated = false
+  status_observed = false
+  exec_seq = null
+  http_status = 0
+  mab_outcome = "body_validation_reject"
+  pending_cleanup_reason = "invalid_input"
+
+═══════════════════════════════════════════════════════════════════════════════
+RUNNER ARTIFACT CONTRACT VALIDATION
+═══════════════════════════════════════════════════════════════════════════════
+
+The runner operates in model_comparison mode, which requires:
+  1. At least one valid execution (nv_total_valid_exec >= 1)
+  2. Scorer participation evidence (scorer_rpc_ok >= 1)
+  3. HTTP status artifacts present (nv_http_status.json)
+  4. State trace files for readback analysis
+
+ACTUAL_STATE:
+  nv_total_valid_exec = 0
+  scorer_rpc_ok = 0
+  missing_required artifacts = 7
+  model_comparison_validity verdict = INVALID_FOR_MODEL_COMPARISON
+
+RUNNER_TERMINATION:
+  Exit code: 4
+  Exit status: "artifact_contract_failed"
+  Final result: "artifact_contract_failed"
+
+The runner correctly detected that the experiment produced no usable data for
+model comparison and aborted with contract failure.
+
+═══════════════════════════════════════════════════════════════════════════════
+SCIENTIFIC OUTCOME CLASSIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+R34_GATE = FAIL
+
+CLASSIFICATION: FAIL
+
+Per R34 protocol gate criteria:
+
+PASS_REAL_CAPABILITY_CLOSED requires:
+  ✗ Fuzzer runs without critical error
+  ✗ Scorer receives >= 1 RPC call
+  ✗ >= 1 valid exec counted (nv_total_valid_exec >= 1)
+  ✗ exec_seq evidence present
+  ✗ HTTP response observed
+
+PARTIAL requires:
+  ✓ Fuzzer launches and runs to completion (AFL++ operated correctly)
+  ✗ Partial scorer participation OR partial exec evidence
+  ✗ Some framework subsystem operates as designed
+
+FAIL when:
+  ✓ Zero valid executions
+  ✓ Zero scorer invocations
+  ✓ Zero HTTP target invocations
+  ✓ Universal body validation rejection
+  ✓ No capability evidence produced
+
+DETERMINATION: FAIL
+
+The fuzzer infrastructure (AFL++, seed selection, MAB journal, execution ledger)
+operated correctly and produced comprehensive telemetry. However, the validation
+layer rejected 100% of generated inputs, preventing any HTTP execution.
+
+This represents a configuration or integration defect in the validation rules
+or harness setup for the content_update scenario, NOT a fuzzer capability issue.
+
+═══════════════════════════════════════════════════════════════════════════════
+HYPOTHESES FOR ZERO VALIDATION PASS RATE
+═══════════════════════════════════════════════════════════════════════════════
+
+HYPOTHESIS 1: Seed representation mismatch
+  The manifest-based seed loader may be reading seeds as JSON objects rather
+  than raw text files, causing content_update validation to reject them.
+
+HYPOTHESIS 2: Missing validity rules configuration
+  The NV_BODY_RULES environment variable may not have been set, causing
+  body_validate() to apply default rules incompatible with content_update.
+
+HYPOTHESIS 3: Scorer socket binding failure
+  The scorer Unix socket at scorer.sock may not have been created or bound,
+  causing RPC validation to always return invalid.
+
+HYPOTHESIS 4: Content_update validation logic defect
+  The R33 raw-text validation repair may have introduced a regression that
+  rejects all non-JSON payloads.
+
+VERIFICATION NEEDED (post-R34):
+  - Examine NV_BODY_RULES value during R34 launch
+  - Verify scorer socket creation and binding
+  - Test seed_ok_0.txt through the EXACT AFL harness command used in R34
+  - Review nv_body_valid.py content_update validation path for regressions
+
+═══════════════════════════════════════════════════════════════════════════════
+DIAGNOSTIC ARTIFACTS PRESERVED
+═══════════════════════════════════════════════════════════════════════════════
+
+LOGS:
+  out/r34_logs/r34_real_20260930_192918_stdout.log (AFL++ output)
+  out/r34_logs/r34_real_20260930_192918_stderr.log (ARTIFACT_CONTRACT_FAILED)
+  out/r34_logs/r34_stderr_20260930_190446.log (prelaunch scorer failure)
+
+RUNTIME_ARTIFACTS:
+  /tmp/afl_runs/r34_real_20260930_192918/afl-out/fuzzer_stats
+  /tmp/afl_runs/r34_real_20260930_192918/afl-out/eval_report.json
+  /tmp/afl_runs/r34_real_20260930_192918/evidence/artifact_report.json
+  /tmp/afl_runs/r34_real_20260930_192918/evidence/executions.jsonl (9900 recs)
+  /tmp/afl_runs/r34_real_20260930_192918/evidence/mab_updates.jsonl (3300 recs)
+  /tmp/afl_runs/r34_real_20260930_192918/evidence/seed_selection.jsonl (33 recs)
+  /tmp/afl_runs/r34_real_20260930_192918/evidence/model_comparison_validity.json
+
+METADATA:
+  /tmp/r34_run_metadata.txt (run tracking)
+  out/r34_logs/r34_run_root.txt (successor ID reference)
+
+═══════════════════════════════════════════════════════════════════════════════
+R34 PROTOCOL CLOSURE
+═══════════════════════════════════════════════════════════════════════════════
+
+R34 was authorized for exactly ONE real-run attempt as successor to R33B.
+
+ATTEMPT_CONSUMED: YES
+REAL_RUN_PERFORMED: YES
+REMAINING_ATTEMPTS: 0
+
+Per R34 protocol hard boundary:
+  "After one real R34 launch: STOP. No retry."
+
+This report closes R34 investigation. The single authorized real run was
+executed, complete telemetry was collected, and the outcome is classified as
+FAIL due to zero valid executions and zero scorer participation.
+
+Further investigation requires a new research protocol authorization.
+
+═══════════════════════════════════════════════════════════════════════════════
+SIGNATURE
+═══════════════════════════════════════════════════════════════════════════════
+
+Report: ALFRESCO_CONTENT_UPDATE_SE_R34_FINAL_REPORT.txt
+Timestamp: 2026-09-30T19:35:00Z
+Worktree: /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+Branch: HEAD (detached)
+Session: 083c8a45-c242-44ec-bee4-e5b1129c8792
+
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

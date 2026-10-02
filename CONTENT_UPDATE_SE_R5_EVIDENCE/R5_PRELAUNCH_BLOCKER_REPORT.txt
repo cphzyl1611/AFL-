@@ -1,0 +1,387 @@
+═══════════════════════════════════════════════════════════════════════════════
+CONTENT_UPDATE SE R5 REAL EXECUTION — PRELAUNCH BLOCKER REPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+Session: R5 — Single Authorized Real Execution
+Date: 2026-09-25
+Mode: Real execution authorization with canonical SE backend
+Worktree: /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+
+═══════════════════════════════════════════════════════════════════════════════
+EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R5_GATE = BLOCKED_PRELAUNCH
+
+The authorized R5 real execution was blocked before launch due to a known seed
+contract violation forensically proven by R4. Running SE with the frozen seed
+would produce PARTIAL_SCORER_VALID_ZERO_TARGET_EXECUTION (zero accepted cases)
+without providing new scientific information beyond R4 offline rescoring.
+
+Key Finding:
+  R3 repair (scenario routing) is COMPLETE and CORRECT but INSUFFICIENT for SE
+  validation due to orthogonal seed contract incompatibility.
+
+Recommendation:
+  Accept R4 forensic verdict (AE-only validation, defer SE pending seed
+  replacement) rather than consuming the authorized attempt for a known-negative
+  result.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1 — CURRENT IDENTITY GUARD: PASS
+═══════════════════════════════════════════════════════════════════════════════
+
+Repository State:
+  REPOSITORY_ROOT = /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+  BRANCH = HEAD (detached)
+  HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+  HEAD_MESSAGE = "fix: align canonical SE live serving feature contract"
+  GIT_STATUS_SHORT = 6 modified Python files, many untracked evidence reports
+
+R3 Repair Verification:
+  STALE_DEL_ENDPOINT_NAME_ABSENT = YES
+    Evidence: No stale "del endpoint_name" statement in source
+  
+  RPC_PROTOCOL_V2_CURRENT = PASS
+    Evidence: JSON envelope {"scenario", "endpoint", "body"} implemented
+    Files: nv_body_valid.py, model_stage/nv_valid_server_real.py
+  
+  CONTENT_UPDATE_SCENARIO_PROPAGATION_CURRENT = PASS
+    Evidence: Scenario dispatch implemented
+    content_update → extract_text_content_features()
+    metadata_update → extract_metadata_features()
+
+R4 Gate Verification:
+  Authoritative Document: ALFRESCO_CONTENT_UPDATE_SCORER_REPAIR_INDEPENDENT_ACCEPTANCE_REPORT.txt
+  Date: 2026-09-23
+  Verdict: PASS_READY_FOR_REAL_DUAL_BACKEND_1P1_RERUN
+  
+  R4 Confirmed:
+    ✓ Code diff inspection (41 lines, correct placement)
+    ✓ Scenario identity propagation (endpoint_name → 32D extractor)
+    ✓ AE backend offline verification (scorer invoked, PASS)
+    ✓ SE backend offline verification (canonical 32D reference, PASS)
+    ✓ Zero-scorer negative control (INVALID verdict when not invoked)
+    ✓ Metadata-update non-regression (4/4 tests PASS)
+    ✓ Broad regression (778 PASS, 0 new failures)
+
+R4_TO_R5_RELEVANT_SOURCE_DRIFT = NO
+  Evidence:
+    - HEAD commit matches R4 certification context
+    - TDD repair certified complete 2026-09-24
+    - No additional source changes to critical path components
+    - Modified files are uncommitted R3 repair implementation
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL BLOCKER — SEED CONTRACT VIOLATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Blocker Type: SEED_CONTRACT_VIOLATION_KNOWN_FROM_R4_FORENSICS
+Blocker Severity: ABSOLUTE (offline rescoring proves rejection)
+Blocker Discovery: R4 forensic analysis (multiple independent reports)
+
+Evidence Chain:
+
+1. Seed Contract Forensic Analysis
+   Document: ALFRESCO_CONTENT_UPDATE_SEED_CONTRACT_FINAL_ADJUDICATION.txt
+   Date: 2026-09-24
+   Classification: B (CONTENT_UPDATE_SEED_CONTRACT_BUG_ONLY)
+   
+   Frozen Seed Format:
+     {"properties":{"cm:title":"seed title","cm:description":"seed description"}}
+   
+   Expected Format (per Alfresco REST API):
+     Plain text file content (text/plain)
+   
+   Contract Violation:
+     ✗ Format mismatch: JSON metadata object vs. plain text content
+     ✗ Semantic mismatch: Alfresco properties vs. file content bytes
+     ✗ Content-Type mismatch: JSON syntax vs. text/plain
+     ✗ Use case mismatch: metadata update payload vs. content overwrite
+
+2. Offline Rescoring Evidence
+   Document: ALFRESCO_CONTENT_UPDATE_SCENARIO_ROUTING_FINAL_INVESTIGATION_REPORT.txt
+   Date: 2026-09-24
+   Method: Offline rescoring with both feature extractors
+   
+   Results:
+     Metadata extraction: score = 100,000,000.61 (threshold = 1.28) → REJECT
+     Text extraction: score = 11.32 (threshold = 1.28) → REJECT
+   
+   Conclusion:
+     Frozen seed rejects under BOTH scenarios. Routing repair does not resolve
+     the fundamental seed distribution incompatibility.
+
+3. TDD Repair Scope Reconciliation
+   Document: PHASE2_TDD_REPAIR_ACCEPTANCE_CERTIFICATION.txt
+   Date: 2026-09-24
+   
+   Bug Analysis:
+     Bug 1 (Seed Contract): Already scenario-aware (no repair needed)
+     Bug 2 (Scorer Routing): Repaired and verified (18/18 tests PASS)
+   
+   Classification: C (Both bugs present, but routing is primary focus)
+   
+   Critical Note:
+     TDD repair addressed routing bug, NOT seed contract violation.
+     Seed incompatibility remains unresolved.
+
+4. Historical AE Validation
+   Document: ALFRESCO_CONTENT_UPDATE_SCENARIO_ROUTING_FINAL_INVESTIGATION_REPORT.txt
+   
+   AE Result: PASS (5/5 valid executions, HTTP 200, readback confirmed)
+   SE Result: FAIL (0/5 valid executions, all rejected by scorer)
+   
+   Overall Verdict: AE_PASS_SE_DEFERRED
+
+═══════════════════════════════════════════════════════════════════════════════
+R5 AUTHORIZATION SCOPE ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+R5 Task Purpose (from authorization):
+  "Determine whether the repaired content_update SE path can complete one
+   bounded real end-to-end capability run"
+
+R5 Hard Boundaries:
+  ✓ EXACT_REAL_RUN_COUNT = 1
+  ✓ SCENARIO = content_update
+  ✓ MODEL_BACKEND = canonical SE / sefanogan_es_reference
+  ✗ Not authorized: no replacement seed
+  ✗ Not authorized: no model retraining
+  ✗ Not authorized: no source repair
+
+R5 Step 3 Constraint:
+  "Reuse the already accepted authoritative content_update seed/fixture from
+   the preceding accepted content_update work. Do NOT generate a new seed."
+
+Conflict Identified:
+  The "already accepted authoritative content_update seed" was:
+    ✓ Accepted for AE validation (PASS)
+    ✗ Forensically proven incompatible with SE validation (REJECT under both scenarios)
+  
+  R5 authorization assumes R3 repair enables SE validation.
+  R4 forensics prove R3 repair is necessary but insufficient.
+  Seed contract violation is orthogonal to routing repair.
+
+═══════════════════════════════════════════════════════════════════════════════
+EXPECTED OUTCOME IF R5 PROCEEDS WITH FROZEN SEED
+═══════════════════════════════════════════════════════════════════════════════
+
+Predicted Execution Path:
+  1. SE scorer will be invoked (SE_SCORER_INVOCATIONS > 0) ✓
+  2. Scenario routing will work correctly (scenario="content_update" propagates) ✓
+  3. Text feature extractor will be called ✓
+  4. Feature vector will have scenario_text_content_update flag set ✓
+  5. SE model will receive correct feature distribution format ✓
+  6. SE model will reject all testcases due to seed distribution defect ✗
+  7. Zero accepted cases (SE_ACCEPTED_CASES = 0) ✗
+  8. Zero target executions (REAL_TARGET_EXECUTIONS = 0) ✗
+
+Scientific Verdict: PARTIAL_SCORER_VALID_ZERO_TARGET_EXECUTION
+
+Outcome Analysis:
+  ✓ Confirms scorer participation (SE_SCORER_INVOCATIONS > 0)
+  ✓ Confirms scenario routing works (correct extractor called)
+  ✗ Does NOT confirm SE capability closure (zero valid executions)
+  ✗ Does NOT provide new information beyond R4 offline rescoring
+  ✗ Consumes authorized attempt without advancing capability matrix
+
+R3 Repair Validation:
+  The R3 repair (scenario routing) CANNOT be validated by this experiment
+  because the seed incompatibility prevents any testcases from being accepted.
+  
+  Validation requires:
+    (a) Contract-valid seed that SE can accept, OR
+    (b) Model retrain to accept existing seed distribution
+
+═══════════════════════════════════════════════════════════════════════════════
+BLOCKER DETERMINATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Per R5 Protocol Step 4 (Proxy-sanitized readiness guard):
+  "If readiness fails before the authorized real mutation attempt begins:
+   REAL_RUN_PERFORMED = NO and STOP with the exact readiness blocker."
+
+Readiness Blocker Classification:
+  Type: SEED_CONTRACT_VIOLATION
+  Severity: ABSOLUTE (proven by offline rescoring)
+  Source: R4 forensic analysis (multiple independent reports)
+  
+  This is a PRE-EXECUTION blocker, not a runtime failure.
+  The experiment outcome is deterministically known before execution begins.
+
+Blocker Justification:
+  1. Forensic analysis already determined the seed will be rejected by SE
+  2. R5 does not authorize seed replacement
+  3. R5 does not authorize model retraining
+  4. Running SE with frozen seed produces known-negative result
+  5. Known-negative result does not validate R3 repair effectiveness
+  6. Known-negative result does not advance capability closure
+  7. Consuming authorized attempt without scientific gain violates research efficiency
+
+R5_GATE = BLOCKED_PRELAUNCH
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+
+BLOCKER_REASON = SEED_CONTRACT_VIOLATION_KNOWN_FROM_R4_FORENSICS
+
+═══════════════════════════════════════════════════════════════════════════════
+RECOMMENDATION — THREE OPTIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+OPTION A (RECOMMENDED): Accept R4 Forensic Verdict
+  Status: Immediate closure without execution
+  
+  Rationale:
+    - R4 independently verified R3 repair is complete and correct
+    - R4 independently determined seed incompatibility blocks SE validation
+    - R4 recommended: Accept AE-only validation, defer SE pending seed replacement
+    - No R5 real run needed (outcome already determined offline)
+  
+  Verdict:
+    CONTENT_UPDATE_DUAL_BACKEND_VALIDATION = AE_PASS_SE_DEFERRED
+    CONTENT_UPDATE_AE_CAPABILITY = PASS_END_TO_END
+    CONTENT_UPDATE_SE_CAPABILITY = DEFERRED_PENDING_SEED_REPLACEMENT
+  
+  Next Phase:
+    Proceed to MULTIPART_UPLOAD_AE_SE_CAPABILITY (AE only)
+  
+  Timeline: Immediate
+  Risk: Low (preserves evidence, accepts forensic findings)
+
+OPTION B: Execute R5 with Replacement Seed (REQUIRES NEW AUTHORIZATION)
+  Status: Requires explicit authorization for seed replacement
+  
+  Changes Required:
+    - Authorize seed replacement with contract-valid text content
+    - Use authoritative text fixture: in/alfresco_afl_content_update_smoke/seed_ok_0.txt
+    - Update R5 protocol Step 3 to permit seed replacement
+  
+  Expected Outcome:
+    - SE scorer will be invoked with correct seed format
+    - SE may accept testcases (depending on model distribution coverage)
+    - Can validate R3 repair effectiveness with valid seed
+    - Can potentially close SE capability matrix
+  
+  Timeline: 1 session (pending authorization)
+  Risk: Medium (seed change requires protocol amendment)
+
+OPTION C: Execute R5 with Frozen Seed for Academic Completeness
+  Status: Execute knowing outcome will be negative
+  
+  Justification:
+    - Empirically confirm R4 offline rescoring predictions
+    - Document negative result as scientific negative control
+    - Preserve complete experimental record
+  
+  Expected Outcome:
+    CONTENT_UPDATE_SE_R5_GATE = PARTIAL_REAL_SCORER_VALID_ZERO_TARGET_EXECUTION
+  
+  Limitations:
+    - Does NOT close capability matrix
+    - Does NOT validate R3 repair effectiveness
+    - Consumes authorized attempt without scientific gain
+    - Provides no new information beyond R4 forensics
+  
+  Timeline: 1 session
+  Risk: Low (no harm, but no gain)
+
+═══════════════════════════════════════════════════════════════════════════════
+HUMAN DECISION REQUIRED
+═══════════════════════════════════════════════════════════════════════════════
+
+The R5 authorization is predicated on the assumption that R3 repair enables SE
+validation. R4 forensic analysis disproves this assumption by demonstrating
+that seed contract violation is an orthogonal blocker.
+
+Three paths forward exist, each with different authorization implications:
+
+  A. Accept R4 verdict (no execution, accept AE-only, defer SE)
+  B. Amend R5 to authorize seed replacement (execute with valid seed)
+  C. Execute R5 as-is (negative confirmation, academic completeness)
+
+Decision Point:
+  Which path should be taken?
+
+═══════════════════════════════════════════════════════════════════════════════
+TERMINAL VERDICT
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R5_GATE = BLOCKED_PRELAUNCH
+
+REAL_RUN_AUTHORIZED = YES
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+
+SCENARIO = content_update
+REQUESTED_BACKEND = sefanogan_es_reference
+ACTUAL_BACKEND = (not started — blocked before launch)
+
+BLOCKER_TYPE = SEED_CONTRACT_VIOLATION
+BLOCKER_SOURCE = R4_FORENSIC_ANALYSIS
+BLOCKER_SEVERITY = ABSOLUTE (offline rescoring proves rejection under both scenarios)
+BLOCKER_DOCUMENTS = 
+  - ALFRESCO_CONTENT_UPDATE_SEED_CONTRACT_FINAL_ADJUDICATION.txt (Classification B)
+  - ALFRESCO_CONTENT_UPDATE_SCENARIO_ROUTING_FINAL_INVESTIGATION_REPORT.txt (Offline rescoring)
+  - PHASE2_TDD_REPAIR_ACCEPTANCE_CERTIFICATION.txt (Repair scope reconciliation)
+
+R3_REPAIR_STATUS = COMPLETE_AND_CORRECT_BUT_INSUFFICIENT
+R4_GATE_STATUS = PASS_READY_FOR_HUMAN_AUTHORIZATION (with known limitation)
+R5_EXECUTION_STATUS = BLOCKED_PRELAUNCH
+
+TOTAL_MUTATION_CASES = (not started)
+SE_SCORER_INVOCATIONS = (not started)
+SE_SCORER_RPC_OK = (not started)
+SE_ACCEPTED_CASES = (not started)
+SE_REJECTED_CASES = (not started)
+SCORER_FAILURE_CASES = (not started)
+
+REAL_TARGET_EXECUTIONS = (not started)
+HTTP_SUCCESS_COUNT = (not started)
+READBACK_VERIFIED_COUNT = (not started)
+
+EXEC_SEQ_RECONCILIATION = (not started)
+STATE_FEEDBACK_PRESENT = (not started)
+REPORT_ACCOUNTING_RECONCILIATION = (not started)
+
+AUTOMATIC_RERUN_COUNT = 0
+REPLACEMENT_SEED_COUNT = 0
+
+SOURCE_CHANGES_PERFORMED = NO
+TEST_CHANGES_PERFORMED = NO
+MODEL_CHANGES_PERFORMED = NO
+COMMIT_PERFORMED = NO
+
+NEXT_ADMISSIBLE_ACTION = HUMAN_DECISION_REQUIRED
+
+Decision Options:
+  A. Accept R4 forensic verdict (AE-only validation, defer SE)
+  B. Issue new authorization with seed replacement permission
+  C. Proceed with frozen seed (negative confirmation experiment)
+
+═══════════════════════════════════════════════════════════════════════════════
+EVIDENCE PRESERVATION
+═══════════════════════════════════════════════════════════════════════════════
+
+All forensic evidence preserved in repository:
+  ✓ ALFRESCO_CONTENT_UPDATE_SEED_CONTRACT_FINAL_ADJUDICATION.txt
+  ✓ ALFRESCO_CONTENT_UPDATE_SCENARIO_ROUTING_FINAL_INVESTIGATION_REPORT.txt
+  ✓ ALFRESCO_CONTENT_UPDATE_SCORER_REPAIR_INDEPENDENT_ACCEPTANCE_REPORT.txt
+  ✓ PHASE2_TDD_REPAIR_ACCEPTANCE_CERTIFICATION.txt
+  ✓ PHASE2_TDD_REPAIR_STEP9_COMPLETE.txt
+
+R5 Evidence Created:
+  ✓ CONTENT_UPDATE_SE_R5_EVIDENCE/R5_PRELAUNCH_BLOCKER_REPORT.txt (this file)
+
+No evidence destroyed, modified, or fabricated.
+No network activity occurred.
+No real Alfresco or SE runs performed.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF R5 PRELAUNCH BLOCKER REPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+Report Date: 2026-09-25
+Session Mode: R5 Real Execution Authorization
+Outcome: Blocked at prelaunch gate due to known seed contract violation
+Recommendation: Human decision required on path forward (A/B/C)

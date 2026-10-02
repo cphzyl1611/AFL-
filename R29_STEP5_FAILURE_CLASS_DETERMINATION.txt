@@ -1,0 +1,202 @@
+R29 STEP 5: FAILURE CLASS DETERMINATION
+========================================
+
+FAILURE CLASS: ORCHESTRATION_GAP_TASK_JSON_VALIDITY_ENDPOINT_MISSING
+---------------------------------------------------------------------
+
+CLASSIFICATION TAXONOMY
+-----------------------
+
+NOT a scorer bug:
+  - Scorer process lifecycle: Unknown (likely started correctly)
+  - Scorer socket creation: Assumed successful
+  - Scorer listening logic: Not tested (never contacted)
+
+NOT an environment variable inheritance bug:
+  - NV_BODY_SCORE_ENDPOINT was set correctly in child_env
+  - AFL inherits environment via execv (verified in afl-forkserver.c:257)
+  - But AFL doesn't read NV_BODY_SCORE_ENDPOINT from environment
+
+NOT an AFL bug:
+  - AFL correctly reads task.json and parses validity_endpoint
+  - AFL correctly skips scorer when validity_endpoint is NULL
+  - AFL correctly reports the state: "vep=(null)" in banner
+
+NOT a harness bug:
+  - Harness execution confirmed (status file exists at /tmp/nv_http_status.json)
+  - Harness doesn't invoke scorer (that's AFL's responsibility)
+
+IS a runner orchestration bug:
+  - Runner has all the information needed
+  - Runner creates scorer socket path
+  - Runner starts scorer process
+  - Runner writes task.json
+  - **Runner never connects these: task.json lacks validity_endpoint**
+
+FAILURE CATEGORY: ORCHESTRATION GAP
+------------------------------------
+
+Definition: A required coordination step between two subsystems is missing
+from the orchestration code, causing both subsystems to work correctly in
+isolation but fail to interoperate.
+
+Subsystem A: Scorer process
+  - Started by ScorerLifecycleManager
+  - Socket path: layout["run_root"] / "scorer.sock"
+  - Listening on Unix socket
+  - Ready to serve score requests
+
+Subsystem B: AFL fuzzer
+  - Reads task.json to get configuration
+  - Expects validity_endpoint field for model comparison mode
+  - Uses validity_endpoint to connect to scorer
+  - Early-returns if validity_endpoint is NULL
+
+Missing coordination: After starting scorer, the runner must add
+validity_endpoint to task.json before AFL reads it.
+
+DEFECT LOCATION: scripts/run_alfresco_bounded_feedback.py
+----------------------------------------------------------
+
+Line 3126-3141: Write task.json (without validity_endpoint)
+  task = build_task_payload(..., validity_backend=args.validity_backend)
+  layout["task"].write_text(json.dumps(task, ...))
+
+Line 3165-3179: Start scorer (socket path now available)
+  scorer_socket = layout["run_root"] / "scorer.sock"
+  scorer_manager = ScorerLifecycleManager(socket_path=scorer_socket, ...)
+  scorer_manager.start()
+
+Line 3179-3205: (GAP - no task.json update)
+
+Line 2488: Launch AFL (reads stale task.json)
+  launch_bounded_afl(...)
+
+CONTRIBUTING FACTOR: build_task_payload() MISLEADING SIGNATURE
+---------------------------------------------------------------
+
+Function: build_task_payload() (lines 655-736)
+
+Parameter: validity_backend: str = DEFAULT_VALIDITY_BACKEND
+
+This parameter:
+1. Is received ✓
+2. Is validated ✓
+3. Is NOT used to populate any field in the returned payload ✗
+
+This creates the false impression that validity configuration is handled
+by build_task_payload(), when in reality validity_endpoint must be added
+separately after the scorer socket exists.
+
+The parameter should either:
+A. Be removed (if scorer config is always post-processed)
+B. Be accompanied by validity_endpoint: str | None parameter
+C. Be documented as "for validation only, does not affect payload"
+
+ROOT CAUSE CHAIN
+----------------
+
+1. Model comparison mode requires AFL to contact scorer via Unix socket
+2. Socket path is dynamic (contains run timestamp)
+3. Socket only exists after scorer process starts
+4. Task.json is written BEFORE scorer starts
+5. No code updates task.json after scorer starts
+6. AFL reads incomplete task.json and skips scorer
+
+IMMEDIATE CAUSE: Missing code after line 3179
+-----------------------------------------------
+
+Required code (pseudocode):
+  scorer_manager.start()  # Line 3179
+
+  # Re-read task.json
+  task = json.loads(layout["task"].read_text(encoding="utf-8"))
+
+  # Add scorer endpoint
+  task["validity_endpoint"] = f"unix://{scorer_socket}"
+
+  # Write updated task.json
+  layout["task"].write_text(
+    json.dumps(task, ensure_ascii=False, sort_keys=True),
+    encoding="utf-8"
+  )
+
+DESIGN FLAW: SPLIT CONFIGURATION AUTHORITY
+-------------------------------------------
+
+Current architecture has configuration scattered across:
+
+1. Command-line arguments (--validity_backend)
+2. Environment variables (NV_BODY_SCORE_ENDPOINT, NV_BODY_SCORE_THRESHOLD)
+3. JSON files (task.json fields)
+4. Python objects (ScorerLifecycleManager state)
+
+Different consumers read from different sources:
+- AFL reads task.json
+- Harness reads environment variables
+- Runner internal logic uses Python objects
+
+This creates synchronization requirements with no type-safe enforcement.
+
+SEVERITY ASSESSMENT
+-------------------
+
+Impact: HIGH
+  - Model comparison runs are completely non-functional
+  - Zero scorer invocations = invalid data for model evaluation
+  - Silent failure (AFL runs without error, produces invalid results)
+
+Scope: ALL model comparison runs
+  - Every run using --model_comparison affected
+  - No conditional behavior that could mask the bug
+  - 100% reproduction rate
+
+Detection: DELAYED
+  - AFL doesn't error or warn about missing validity_endpoint
+  - Only detectable in post-run artifact analysis
+  - model_comparison_validity.json shows ZERO_SCORER_INVOCATIONS
+  - But this file is only checked if you inspect artifacts
+
+Data Loss: HIGH
+  - R28C consumed one real-run authorization
+  - Produced invalid results (not usable for model comparison)
+  - Scorer traces not collected (diagnostic value lost)
+  - Cannot retrofit scoring (inputs not preserved with scores)
+
+BLAST RADIUS ANALYSIS
+---------------------
+
+Affected code paths:
+1. Any run with --model_comparison flag
+2. All validity_backend values (sefanogan_es_reference, etc.)
+3. All scenarios when combined with model comparison
+
+Unaffected code paths:
+1. Baseline runs (no --model_comparison)
+2. Rule-only runs (no scorer needed)
+3. Local testing without model comparison mode
+
+Git history check needed:
+- When was --model_comparison introduced?
+- When was task.json write order established?
+- When was ScorerLifecycleManager added?
+- Was there ever a commit that added validity_endpoint to task.json?
+
+FAILURE CLASS SUMMARY
+---------------------
+
+Class: ORCHESTRATION_GAP_TASK_JSON_VALIDITY_ENDPOINT_MISSING
+
+Type: Missing coordination step in runner orchestration logic
+
+Subsystems: Scorer process (working) + AFL fuzzer (working) + Runner (gap)
+
+Location: scripts/run_alfresco_bounded_feedback.py after line 3179
+
+Severity: HIGH (silent failure, 100% reproduction, invalid data produced)
+
+Fix Complexity: LOW (single orchestration step, ~5 lines of code)
+
+Test Requirement: HIGH (needs integration test validating AFL can reach scorer)
+
+NEXT STEP: Local reproduction to prove the fix works.

@@ -1,0 +1,29 @@
+{
+  "se_backend": "sefanogan_es_reference",
+  "se_canonical_checkpoint_sha256": "4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d",
+  "se_canonical_metadata_sha256": "2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226",
+  "se_canonical_metadata_input_dim": 32,
+  "se_threshold": 1.2847454080581664,
+  "ae_backend": "alfresco_ae_v1",
+  "ae_threshold": 1.623614,
+  "runtime_environment_variables": {
+    "SEFANOGAN_REFERENCE_CHECKPOINT": "/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt",
+    "SEFANOGAN_REFERENCE_META_PATH": "/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json"
+  },
+  "runtime_model_identity_verification": {
+    "checkpoint_matches_canonical": true,
+    "metadata_matches_canonical": true,
+    "all_5_se_runs_used_canonical_model": true
+  },
+  "model_path_resolution": "Environment variables inherited by runner from parent shell",
+  "threshold_artifact": {
+    "path": "model_stage/models/sefanogan_es_realrun_threshold.json",
+    "sha256": "aeae50b9cbecad9e7faa46db467adced798e3f502ed7ddb42a867a5ab9f5e599",
+    "frozen_timestamp": "2026-09-17T20:14:33Z"
+  },
+  "repo_local_files_not_authoritative": {
+    "note": "Repo-local model files in model_stage/models/ are leftovers with wrong hashes and were never loaded at runtime",
+    "repo_local_checkpoint_wrong_hash": "8d4223f05a0ac0191519594f169f23bd66af40b7d179d3b3ea47308e125d67e7",
+    "repo_local_metadata_wrong_hash": "44ce99d557e9443b26fbc54117bee78c8592c5b63276a69b69149032bfca5352"
+  }
+}

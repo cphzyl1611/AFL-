@@ -1,0 +1,184 @@
+================================================================================
+STEP 5: SCORER SUBPROCESS OBSERVABILITY - COMPLETE
+================================================================================
+
+SCORER_STDOUT_PERSISTED = YES
+SCORER_STDERR_PERSISTED = YES
+SCORER_EXIT_CODE_CAPTURED = YES
+EVIDENCE_ADDED_TO_ARTIFACT_REPORT = YES
+
+================================================================================
+CHANGES MADE
+================================================================================
+
+File: scripts/run_alfresco_bounded_feedback.py
+
+1. Modified ScorerLifecycleManager.__init__() (line ~2715)
+   - Added evidence_dir parameter
+   - Added stdout_path, stderr_path, exit_code attributes
+
+2. Modified ScorerLifecycleManager.start() (line ~2738)
+   - Changed stdout/stderr from subprocess.PIPE to file handles
+   - Creates evidence_dir/scorer_stdout.txt and scorer_stderr.txt
+   - Opens file handles before subprocess.Popen()
+   - Files persist after subprocess exits
+
+3. Modified ScorerLifecycleManager.stop() (line ~2812)
+   - Captures proc.returncode to self.exit_code
+   - Closes file handles gracefully
+   - Files remain on disk after cleanup
+
+4. Modified start_scorer_process() helper (line ~2846)
+   - Added evidence_dir parameter
+   - Returns ScorerLifecycleManager (not subprocess.Popen)
+   - Allows caller to access stdout_path, stderr_path, exit_code
+
+5. Modified main campaign launcher (line ~3261)
+   - Passes evidence_dir=evidence_dir to ScorerLifecycleManager
+   - Scorer output written to evidence/ directory
+
+6. Added scorer evidence to artifact report (line ~3424)
+   - Includes scorer_subprocess.exit_code
+   - Includes scorer_subprocess.stdout_path
+   - Includes scorer_subprocess.stderr_path
+   - Written to artifact_report.json
+
+================================================================================
+BEFORE vs AFTER
+================================================================================
+
+BEFORE (R39 production):
+  subprocess.Popen(
+      [scorer_python, scorer_script],
+      env=env,
+      stdout=subprocess.PIPE,  # Output lost
+      stderr=subprocess.PIPE,  # Output lost
+      text=True,
+  )
+
+  Result:
+  - All scorer output directed to PIPE
+  - Parent never reads from PIPE
+  - PIPE buffer fills (64KB typical)
+  - Scorer blocks on write()
+  - Output lost when process terminates
+  - Exit code not captured
+  - No diagnostic trail
+
+AFTER (Step 5 repair):
+  stdout_path = evidence_dir / "scorer_stdout.txt"
+  stderr_path = evidence_dir / "scorer_stderr.txt"
+
+  with open(stdout_path, "w") as out, open(stderr_path, "w") as err:
+      subprocess.Popen(
+          [scorer_python, scorer_script],
+          env=env,
+          stdout=out,  # Persisted to file
+          stderr=err,  # Persisted to file
+          text=True,
+      )
+
+  # Later, in stop():
+  self.exit_code = self.proc.returncode
+
+  # In artifact report:
+  report["scorer_subprocess"] = {
+      "exit_code": scorer_manager.exit_code,
+      "stdout_path": str(scorer_manager.stdout_path),
+      "stderr_path": str(scorer_manager.stderr_path),
+  }
+
+  Result:
+  - All scorer output written to files
+  - No PIPE blocking
+  - Output persists after campaign
+  - Exit code captured and recorded
+  - Full diagnostic trail in evidence/
+
+================================================================================
+R39 POSTMORTEM RECONCILIATION
+================================================================================
+
+R39 root cause analysis stated:
+  "Scorer error output was directed to subprocess.PIPE (never read by parent)"
+  "Line 2765-2771 of run_alfresco_bounded_feedback.py"
+  "stdout=subprocess.PIPE, stderr=subprocess.PIPE"
+  "Parent never reads from PIPE"
+  "All error messages lost (scorer's traceback.print_exc())"
+
+Step 5 repair addresses this exactly:
+  - PIPE removed
+  - File handles used instead
+  - Output persists in evidence/ directory
+  - Paths recorded in artifact_report.json
+
+POSTMORTEM_DEFECT_ADDRESSED = YES
+
+================================================================================
+OBSERVABILITY VERIFICATION
+================================================================================
+
+Scorer subprocess evidence now includes:
+
+1. stdout (evidence/scorer_stdout.txt):
+   - Startup messages
+   - Request logging
+   - Model loading confirmation
+   - Feature extraction output
+   - Score computation logs
+
+2. stderr (evidence/scorer_stderr.txt):
+   - Python exceptions with full traceback
+   - Warning messages
+   - Error diagnostics
+   - Import failures
+   - Model inference errors
+
+3. exit_code:
+   - 0 = clean shutdown
+   - Non-zero = abnormal termination
+   - Signal number if killed
+
+4. Persistence:
+   - Files written to evidence/ directory
+   - Survive campaign completion
+   - Available for postmortem analysis
+   - Paths in artifact_report.json
+
+================================================================================
+INTEGRATION WITH EXISTING EVIDENCE COLLECTION
+================================================================================
+
+Evidence directory structure (after Step 5):
+  evidence/
+    artifact_report.json          # Top-level report
+    executions.jsonl              # Execution ledger
+    fuzzer_stats                  # AFL++ stats
+    plot_data                     # AFL++ plots
+    scorer_stdout.txt             # NEW: Scorer stdout
+    scorer_stderr.txt             # NEW: Scorer stderr
+    body_valid_stats.json         # Validity counters
+    journal.jsonl                 # MAB journal
+    mab_summary.json              # MAB summary
+
+Artifact report includes:
+  {
+    ...
+    "scorer_subprocess": {         # NEW section
+      "exit_code": 0,
+      "stdout_path": ".../evidence/scorer_stdout.txt",
+      "stderr_path": ".../evidence/scorer_stderr.txt"
+    },
+    ...
+  }
+
+================================================================================
+STEP 5 COMPLETE
+================================================================================
+
+Scorer stdout persisted: YES (evidence/scorer_stdout.txt)
+Scorer stderr persisted: YES (evidence/scorer_stderr.txt)
+Scorer exit code captured: YES (scorer_manager.exit_code)
+Evidence added to report: YES (artifact_report.json["scorer_subprocess"])
+
+R39 "subprocess output loss" defect repaired.

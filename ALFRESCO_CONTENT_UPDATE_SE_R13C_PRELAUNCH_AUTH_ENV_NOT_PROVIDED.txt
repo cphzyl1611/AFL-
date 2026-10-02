@@ -1,0 +1,276 @@
+═══════════════════════════════════════════════════════════════
+ ALFRESCO_CONTENT_UPDATE_SE_R13C
+ AUTH CONTRACT RECONCILIATION AND SINGLE REAL EXECUTION
+ FINAL REPORT
+═══════════════════════════════════════════════════════════════
+
+SESSION MODE: CONTINUED FROM R13B (preserved authorization state)
+
+PRESERVED AUTHORIZATION STATE:
+  R13B resolved canonical artifacts with zero consumed attempts
+  AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+  AUTHORIZED_REAL_ATTEMPT_REMAINING = 1 (unchanged)
+
+PRESERVED CANONICAL ARTIFACTS (from R13B):
+  CHECKPOINT_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+  
+  METADATA_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+  METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+  
+  THRESHOLD = 1.2847454080581664 ✓
+  FEATURE_DIM = 32 ✓
+  FEATURE_CONTRACT = alfresco_fixed_32 ✓
+  BACKEND = sefanogan_es_reference ✓
+  SCENARIO = content_update ✓
+
+═══════════════════════════════════════════════════════════════
+ PHASE 1 — AUTH CONTRACT RECONCILIATION
+═══════════════════════════════════════════════════════════════
+
+Investigation scope: Exact real-run call chain only
+  - scripts/run_alfresco_bounded_feedback.py
+  - nv_http_harness.py
+  - targets/alfresco_content_update.json
+  - Codebase search for token references
+
+Finding 1: Runner credential loading (run_alfresco_bounded_feedback.py:482-493)
+  Function: runtime_credentials()
+  Returns: tuple[str, str] from environment
+  Required env: ALFRESCO_USER, ALFRESCO_PASS
+  Behavior: Raises RuntimeError if either is None/blank
+  Token path: NONE
+
+Finding 2: Harness auth implementation (nv_http_harness.py:107, 140-152)
+  Function: _basic_auth_header(auth: dict)
+  Schema: {"type": "basic", "username_env": str, "password_env": str}
+  Implementation: Base64-encodes username:password from environment
+  Header: "Basic <base64_blob>"
+  Token path: NONE
+
+Finding 3: Target configuration (targets/alfresco_content_update.json)
+  "auth": {
+    "type": "basic",
+    "username_env": "ALFRESCO_USER",
+    "password_env": "ALFRESCO_PASS"
+  }
+  Explicit Basic auth contract with named environment variables
+  Token path: NONE
+
+Finding 4: Codebase search
+  Search pattern: "ALFRESCO_TOKEN"
+  Files searched: *.py, *.sh, *.json
+  Matches found: 0
+  Conclusion: No token-based auth mechanism exists in codebase
+
+═══════════════════════════════════════════════════════════════
+ PHASE 1 RESULT — AUTH CONTRACT IDENTIFIED
+═══════════════════════════════════════════════════════════════
+
+REAL_RUN_AUTH_MODE = BASIC_USER_PASS ✓
+
+REAL_RUN_REQUIRED_AUTH_ENV_NAMES = ALFRESCO_USER, ALFRESCO_PASS
+
+ALFRESCO_USER_REQUIRED = YES ✓
+ALFRESCO_PASS_REQUIRED = YES ✓
+ALFRESCO_TOKEN_REQUIRED = NO ✓
+
+R13B_TOKEN_REQUIREMENT_SOURCE = R13B task instruction text
+  Original statement: "NV_TOKEN=<token>" and "ALFRESCO_TOKEN environment variable"
+
+R13B_TOKEN_REQUIREMENT_CLASSIFICATION = WRONG_AUTH_PATH_OR_FALSE_PRECONDITION ✓
+
+Reconciliation:
+  The R13B instruction referenced a generic "NV_TOKEN" convention and checked
+  for "ALFRESCO_TOKEN", but this does not match the actual implemented
+  authentication mechanism.
+  
+  The real-run code path implements HTTP Basic authentication exclusively:
+  - Runner loads username+password from ALFRESCO_USER/ALFRESCO_PASS
+  - Harness encodes them as "Basic <base64>" header
+  - Target config explicitly declares Basic auth type
+  - No token-based code path exists anywhere in the codebase
+  
+  Prior accepted live-readiness rounds (referenced in R13C task instruction)
+  successfully authenticated through ALFRESCO_USER/ALFRESCO_PASS, confirming
+  this is the established working auth contract.
+
+Conclusion:
+  The correct and only supported auth contract for this bounded real-run
+  is BASIC_USER_PASS via ALFRESCO_USER + ALFRESCO_PASS environment variables.
+
+═══════════════════════════════════════════════════════════════
+ PHASE 2 — AUTH READINESS
+═══════════════════════════════════════════════════════════════
+
+Case A applies: BASIC_USER_PASS is the proven real-run contract
+
+Environment check (presence only, no value exposure):
+
+ALFRESCO_USER_PRESENT = NO ✗
+ALFRESCO_PASS_PRESENT = NO ✗
+
+Both required Basic auth credentials are absent from the current session
+environment.
+
+AUTHENTICATED_READ_SUCCEEDED = NOT_ATTEMPTED
+  Reason: Cannot attempt authentication without credentials
+
+REAL_RUN_AUTH_READY = NO ✗
+
+═══════════════════════════════════════════════════════════════
+ FINAL GATE STATUS
+═══════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R13C_GATE = BLOCKED_PRELAUNCH_AUTH_ENV_NOT_PROVIDED
+
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+CONSUMED_REAL_ATTEMPT_COUNT = 0
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_REAL_ATTEMPT_REMAINING = 1 (preserved)
+
+═══════════════════════════════════════════════════════════════
+ PHASES NOT REACHED (due to prelaunch blocker)
+═══════════════════════════════════════════════════════════════
+
+Phase 3: Exact bounded budget recovery - NOT EXECUTED
+Phase 4: Single authorized real run - NOT EXECUTED
+Required real-run evidence collection - NOT APPLICABLE
+
+═══════════════════════════════════════════════════════════════
+ BLOCKER ANALYSIS
+═══════════════════════════════════════════════════════════════
+
+Root cause: Basic auth credentials not provided in session environment
+
+R13C successfully reconciled the authentication contract discrepancy:
+  - R13B incorrectly required ALFRESCO_TOKEN (does not exist in codebase)
+  - R13C proved the actual requirement: ALFRESCO_USER + ALFRESCO_PASS
+  - Inspection of real-run call chain confirms Basic auth is the only path
+
+However, the current session environment does not contain either:
+  - ALFRESCO_USER
+  - ALFRESCO_PASS
+
+Both are mandatory for:
+  - Runner credential loading (runtime_credentials() raises error if missing)
+  - Harness HTTP Basic auth header construction
+  - Target authentication against live Alfresco API
+
+Without these credentials:
+  - Real-run cannot be launched
+  - Authentication would fail immediately
+  - Zero authorized attempts have been consumed
+
+The prelaunch gate blocked execution before any real fuzzing attempt was
+initiated, preserving the single authorized real-run attempt.
+
+═══════════════════════════════════════════════════════════════
+ RESOLUTION PATH FOR NEXT ATTEMPT
+═══════════════════════════════════════════════════════════════
+
+To complete R13C in a subsequent session, the user must:
+
+1. Export ALFRESCO_USER in the session environment
+2. Export ALFRESCO_PASS in the session environment
+3. Resume from Phase 3 (bounded budget recovery)
+4. Proceed through Phase 4 (launch + evidence collection)
+
+The canonical SE artifacts remain verified and ready (from R13B):
+
+  SEFANOGAN_REFERENCE_CHECKPOINT=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  
+  SEFANOGAN_REFERENCE_META_PATH=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+The SE contract parameters are verified:
+
+  NV_BODY_SCORE_THRESHOLD=1.2847454080581664
+  Feature contract: alfresco_fixed_32 (dim=32)
+  Backend: sefanogan_es_reference
+  Scenario: content_update
+
+The authentication contract is now resolved:
+
+  Auth mode: Basic (username + password)
+  Required env: ALFRESCO_USER, ALFRESCO_PASS
+  NOT required: ALFRESCO_TOKEN (does not exist)
+
+Expected launch pattern (once credentials are present):
+
+  ALFRESCO_USER=<username> \
+  ALFRESCO_PASS=<password> \
+  SEFANOGAN_REFERENCE_CHECKPOINT=<checkpoint_path> \
+  SEFANOGAN_REFERENCE_META_PATH=<metadata_path> \
+  NV_BODY_SCORE_THRESHOLD=1.2847454080581664 \
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --backend sefanogan_es_reference \
+    --max-cases <recovered_bound>
+
+═══════════════════════════════════════════════════════════════
+ SCIENTIFIC OUTCOME
+═══════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = NOT_APPLICABLE_PRELAUNCH_BLOCK
+
+No real execution occurred; therefore:
+  - Scorer participation: NOT_MEASURED
+  - Target execution: NOT_ATTEMPTED
+  - Content update effect: NOT_TESTED
+  - Readback verification: NOT_PERFORMED
+  - Framework accounting: NOT_APPLICABLE
+
+═══════════════════════════════════════════════════════════════
+ ACCOUNTING SUMMARY
+═══════════════════════════════════════════════════════════════
+
+ACTUAL_AUTH_MODE = (not launched; contract = BASIC_USER_PASS)
+
+ACTUAL_BACKEND = (not launched)
+ACTUAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d (verified, not loaded)
+ACTUAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 (verified, not loaded)
+ACTUAL_THRESHOLD = 1.2847454080581664 (verified, not applied)
+ACTUAL_FEATURE_DIM = 32 (verified, not applied)
+ACTUAL_FEATURE_CONTRACT = alfresco_fixed_32 (verified, not applied)
+ACTUAL_SCENARIO = content_update (target, not executed)
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+TARGET_EXECUTIONS = 0
+HTTP_SUCCESS_COUNT = 0
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = NO
+READBACK_VERIFIED = NO
+CONTENT_UPDATE_EFFECT_CONFIRMED = NOT_APPLICABLE
+
+═══════════════════════════════════════════════════════════════
+ R13C DELIVERABLE: AUTH CONTRACT RECONCILIATION
+═══════════════════════════════════════════════════════════════
+
+R13C successfully resolved the R13B authentication contract discrepancy:
+
+PROVEN: Real-run auth contract is BASIC_USER_PASS (not token-based)
+PROVEN: Required environment variables are ALFRESCO_USER + ALFRESCO_PASS
+PROVEN: ALFRESCO_TOKEN does not exist in the codebase
+PROVEN: No token-based auth mechanism is implemented
+
+This reconciliation corrects the R13B false precondition and establishes
+the accurate auth contract for any subsequent real-run attempt.
+
+═══════════════════════════════════════════════════════════════
+ STATUS: BLOCKED AT PRELAUNCH (AUTH ENV NOT PROVIDED)
+ AUTHORIZATION PRESERVED: 1 real attempt remaining
+ AUTH CONTRACT: RECONCILED (BASIC_USER_PASS)
+═══════════════════════════════════════════════════════════════
+
+Session timestamp: 2026-09-26
+Report generated: R13C session (continued from R13B)
+Next step: Provide ALFRESCO_USER + ALFRESCO_PASS and resume from Phase 3
+

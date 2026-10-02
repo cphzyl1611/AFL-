@@ -1,0 +1,100 @@
+R29 STEP 2: R28C ACTIVATION STATE PROOF
+========================================
+
+EVIDENCE SOURCE: /tmp/r28c_real_run_20260929_191711_7312_5f43355c/
+
+MODEL COMPARISON MODE: INTENDED (based on args + evidence)
+-----------------------------------------------------------
+1. artifact_report.json line 29: "feedback_source": "real_alfresco_feedback"
+2. model_comparison_validity.json exists (only generated for model comparison runs)
+3. model_comparison_validity.json line 3: "backend": "sefanogan_es_reference"
+4. Threshold file present: "threshold_source": "sefanogan_es_realrun_threshold.json"
+
+SCORER PROCESS: NEVER STARTED
+------------------------------
+Evidence:
+1. r28c_launch2.log line 47: "vep=(null)"
+   - validity_endpoint was NULL when AFL loaded task config
+   
+2. model_comparison_validity.json lines 7-9:
+   "scorer_rpc_fail": 0,
+   "scorer_rpc_ok": 0,
+   - Zero RPC attempts (AFL never tried to contact scorer)
+
+3. model_comparison_validity.json lines 8-9:
+   "reason_codes": ["ZERO_SCORER_INVOCATIONS", "TRACE_MISSING"]
+   
+4. artifact_report.json line 86: 
+   "verdict": "INVALID_FOR_MODEL_COMPARISON"
+
+ROOT CAUSE: validity_endpoint MISSING FROM task.json
+-----------------------------------------------------
+DEFECT LOCATION: scripts/run_alfresco_bounded_feedback.py:655-736
+
+Function build_task_payload():
+- Line 667: Receives validity_backend parameter
+- Line 676-677: Validates validity_backend is in VALIDITY_BACKENDS
+- Line 703-736: Builds payload dict and returns
+- **BUG**: Never writes validity_endpoint field to payload
+- Result: task.json lacks validity_endpoint entry
+
+AFL BEHAVIOR WHEN validity_endpoint MISSING:
+--------------------------------------------
+File: src/afl-fuzz.c
+
+Line 378: const char *vep = json_get_string(j, "validity_endpoint");
+Line 449-450:
+  if (vep && *vep) {
+    afl->nv_task.validity_endpoint = ck_strdup(vep);
+
+When validity_endpoint missing from JSON:
+- vep = NULL
+- afl->nv_task.validity_endpoint remains NULL
+- Prints: "vep=(null)" in startup banner
+
+AFL SCORER INVOCATION (when validity_endpoint NULL):
+----------------------------------------------------
+File: src/afl-fuzz-run.c
+
+Line 783-784:
+  const char *ep = afl->nv_task.validity_endpoint;
+  if (!ep || !*ep) return 0.0;
+
+Line 952:
+  if (afl->nv_task.validity_endpoint && afl->nv_task.validity_endpoint[0]) {
+    /* ... RPC scoring logic ... */
+  }
+
+When validity_endpoint is NULL:
+- Line 784 returns 0.0 immediately
+- Line 952 condition false, entire RPC block skipped
+- No scorer socket connection attempted
+- No inputs sent to scorer
+- No scores recorded
+
+SECONDARY ISSUE: NV_STATUS_PATH PATH MISMATCH
+----------------------------------------------
+Additional evidence discovered during investigation:
+
+File exists: /tmp/nv_http_status.json
+  {"validation_reject": 1, "validation_pass": 0, ...}
+  
+File missing: /tmp/r28c_real_run_20260929_191711_7312_5f43355c/nv_http_status.json
+File missing: /tmp/r28c_real_run_20260929_191711_7312_5f43355c/afl-out/nv_status.json
+
+AFL plot_data: nv_http_fail=1503, nv_status_cnt=0
+executions.jsonl: All records show status_observed=false
+
+This indicates harness wrote to default /tmp/nv_http_status.json while AFL tried to read from run-specific path. However, this is a SEPARATE issue from the scorer bug and does not affect model comparison validity (the scorer never runs regardless of status file location).
+
+CONCLUSION
+----------
+R28C was configured for model comparison mode but the scorer never started because:
+
+1. Runner sets validity_backend in arguments
+2. build_task_payload() validates validity_backend but never writes validity_endpoint to task.json
+3. AFL reads task.json, finds no validity_endpoint, sets internal pointer to NULL
+4. All scorer invocation code paths check for NULL and skip scorer communication
+5. Result: ZERO_SCORER_INVOCATIONS, run marked INVALID_FOR_MODEL_COMPARISON
+
+This is a CODE DEFECT in the runner's task payload generation.

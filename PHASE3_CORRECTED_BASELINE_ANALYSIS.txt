@@ -1,0 +1,161 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3 — CORRECTED BASELINE SEMANTICS ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+DIRTY_BASELINE_SEMANTICS_CORRECTION_VERDICT = FAIL_ACTUAL_HASH_MISMATCH
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1 — Baseline Identity Verification
+═══════════════════════════════════════════════════════════════════════════════
+
+HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+  Expected: 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+  Status: MATCH ✓
+
+RUNNER_SHA256 = 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+  Expected: 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+  Status: MATCH ✓
+
+TRACKED_DIFF_SHA256 = 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+  Expected: 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+  Status: MATCH ✓
+
+FULL_12FILE_UNTRACKED_TEST_MANIFEST_SHA256 = 298779b24acfe3fbee1c0e1de073c5fe4a89c0f2e0883ff360a48672eca82618
+  Expected: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+  Status: MISMATCH ✗
+
+SEFANOGAN_REFERENCE_INPUT_DIM (Python source) = 32
+  Expected: 32
+  Status: MATCH ✓
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2 — 12-File Manifest Entry Verification
+═══════════════════════════════════════════════════════════════════════════════
+
+FULL_MANIFEST_ENTRY_COUNT = 12
+ALL_12_FILES_EXIST = YES
+ALL_12_FILE_HASHES_MATCH = N/A (baseline mismatch detected, individual comparison not performed)
+
+Manifest computed from untracked files only:
+  tests/test_offline_orchestration_dry_run.py
+  tests/test_phase1b_cli_wiring.py
+  tests/test_phase1b_cli_wiring_simple.py
+  tests/test_phase1b_main_integration.py
+  tests/test_real_alfresco_metadata_ae_se_runner.py
+  tests/test_rpc_stats_path_integration_red_green.py
+  tests/test_rpc_stats_path_regression.py
+  tests/test_rpc_stats_validation_red.py
+  tests/test_scorer_trace_env_propagation_red.py
+  tests/test_scorer_trace_env_propagation_red_v2.py
+  tests/test_scorer_trace_writing_integration.py
+  tests/test_se_realrun_threshold_calibration.py
+
+Note: tests/test_alfresco_bounded_feedback.py was excluded (tracked file with modifications).
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 3 — Model/Runtime Drift Check
+═══════════════════════════════════════════════════════════════════════════════
+
+SEFANOGAN_REFERENCE_INPUT_DIM (Python source) = 32
+MODEL_STAGE_SE_REFERENCE_MATCHES_ACCEPTED = PARTIAL
+
+Python source constant:
+  model_stage/sefanogan_es_reference.py:31
+  INPUT_DIM = 32 ✓
+
+JSON metadata files (UNTRACKED, NOT IN FROZEN BASELINE):
+  model_stage/models/sefanogan_es_reference.json
+  model_stage/models/sefanogan_es_reference_meta.json
+  input_dim: 38 ✗
+
+MODEL_STAGE_NV_VALID_SERVER_REAL_MATCHES_ACCEPTED = NOT_CHECKED (mismatch already detected)
+RUNNER_HARDCODES_REPO_LOCAL_SE_PATHS = NOT_CHECKED (mismatch already detected)
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 4 — Corrected Step 0 Verdict
+═══════════════════════════════════════════════════════════════════════════════
+
+CORRECTED_STEP0_VERDICT = B) FAIL_ACTUAL_HASH_MISMATCH
+
+Two critical failures detected:
+
+1. FULL_12FILE_UNTRACKED_TEST_MANIFEST_SHA256 mismatch
+   Current:  298779b24acfe3fbee1c0e1de073c5fe4a89c0f2e0883ff360a48672eca82618
+   Expected: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+   
+   Root cause: The 12 untracked test files have different content than the frozen baseline.
+   At least one file has been modified since Phase 2 acceptance.
+
+2. New untracked JSON metadata files with conflicting INPUT_DIM
+   Files: model_stage/models/sefanogan_es_reference.json (input_dim: 38)
+          model_stage/models/sefanogan_es_reference_meta.json (input_dim: 38)
+   
+   These files were not part of the frozen baseline and contradict the Python source
+   constant INPUT_DIM = 32 in model_stage/sefanogan_es_reference.py.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEPS 5-6 — NOT EXECUTED
+═══════════════════════════════════════════════════════════════════════════════
+
+RUNTIME_SE_CHECKPOINT_SHA256 = NOT_CHECKED
+RUNTIME_SE_METADATA_SHA256 = NOT_CHECKED
+SE_STANDALONE_SCORER_READY = NOT_CHECKED
+
+REAL_PHASE3_RUNS_STARTED = NO
+PHASE3_CAMPAIGN_RESUME_STATUS = BLOCKED_BASELINE_MISMATCH
+
+═══════════════════════════════════════════════════════════════════════════════
+ROOT CAUSE ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+The corrected dirty-baseline semantics interpretation was correct:
+  ✓ Recognized that HEAD + tracked diff is the accepted state
+  ✓ Recognized that 840+ modified lines are expected
+  ✓ Correctly excluded tracked files from untracked manifest
+
+However, the current working tree still differs from the frozen baseline:
+
+1. Content drift in untracked test files
+   At least one of the 12 untracked test files has different content than when
+   the baseline was frozen. The aggregate hash proves this definitively.
+
+2. New conflicting model metadata files
+   Two JSON files were added that specify input_dim=38, conflicting with the
+   Python source constant INPUT_DIM=32. These files were not part of Phase 2.
+
+═══════════════════════════════════════════════════════════════════════════════
+REQUIRED RESTORATION ACTIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+Option 1 — Restore exact Phase 2 untracked test file content:
+  Identify which of the 12 test files changed and restore their Phase 2 versions.
+  Current aggregate: 298779b24acfe3fbee1c0e1de073c5fe4a89c0f2e0883ff360a48672eca82618
+  Required aggregate: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+
+Option 2 — Remove conflicting JSON metadata:
+  rm model_stage/models/sefanogan_es_reference.json
+  rm model_stage/models/sefanogan_es_reference_meta.json
+  
+  These files conflict with the Python source INPUT_DIM=32 and were not part of
+  the frozen baseline.
+
+Option 3 — Accept new baseline:
+  Update the Phase 3 protocol to accept:
+    - New manifest hash: 298779b24acfe3fbee1c0e1de073c5fe4a89c0f2e0883ff360a48672eca82618
+    - New INPUT_DIM: 38 (requires changing Python source to match JSON)
+  
+  This requires full baseline recalculation and protocol update.
+
+═══════════════════════════════════════════════════════════════════════════════
+CAMPAIGN STATUS: STOPPED AT STEP 4
+═══════════════════════════════════════════════════════════════════════════════
+
+The Phase 3 5+5 campaign cannot proceed until baseline integrity is restored.
+
+The corrected interpretation confirmed that the working tree IS supposed to be
+dirty (tracked changes are expected), but the current state still has drift from
+the frozen baseline in untracked test files and conflicting model metadata.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

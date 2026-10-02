@@ -1,0 +1,204 @@
+R29 STEP 3: SCORER STARTUP PATH TRACE
+======================================
+
+INTENDED FLOW (Model Comparison Mode)
+--------------------------------------
+
+1. COMMAND-LINE ARGUMENTS
+   scripts/run_alfresco_bounded_feedback.py receives:
+   - --model_comparison (flag)
+   - --validity_backend sefanogan_es_reference (or other backend name)
+
+2. SCORER PROCESS LAUNCH
+   File: scripts/run_alfresco_bounded_feedback.py
+   Lines: 3156-3199 (model_comparison branch)
+   
+   Line 3159: if model_comparison:
+   Line 3161-3163: threshold_info = resolve_model_comparison_threshold(...)
+   Line 3165-3177: Launch scorer subprocess:
+     scorer_manager = ScorerLifecycleManager(...)
+     scorer_manager.start()
+   
+   ScorerLifecycleManager:
+   - Creates Unix socket at run_root / "nv_scorer.sock"
+   - Starts scorer subprocess (nv_valid_server_real.py or mock)
+   - Monitors scorer health
+   - Returns socket path for AFL to use
+
+3. ENVIRONMENT VARIABLE SETUP
+   File: scripts/run_alfresco_bounded_feedback.py
+   Lines: 2605-2615
+   
+   Function build_model_comparison_env():
+     env = dict(base_env)
+     env["NV_BODY_SCORE_ENDPOINT"] = f"unix://{scorer_socket}"
+     env["NV_BODY_SCORE_THRESHOLD"] = str(threshold)
+     env["NV_VALIDITY_BACKEND"] = backend
+     env["NV_SCORER_TRACE_PATH"] = str(scorer_trace)
+     return env
+   
+   These environment variables are passed to AFL subprocess.
+
+4. TASK.JSON GENERATION
+   File: scripts/run_alfresco_bounded_feedback.py
+   Lines: 3126-3141
+   
+   Line 3126: task = build_task_payload(
+     ...
+     validity_backend=args.validity_backend,
+   )
+   Line 3139-3141: Write task dict to task.json
+   
+   **CURRENT BUG**: build_task_payload() receives validity_backend but never
+   writes validity_endpoint to the returned dict.
+
+5. AFL STARTUP
+   File: scripts/run_alfresco_bounded_feedback.py
+   Lines: 2488-2513
+   
+   Function launch_bounded_afl():
+   - Copies child_env (which contains NV_BODY_SCORE_ENDPOINT)
+   - Launches AFL via subprocess.run()
+   - AFL inherits environment variables
+
+6. AFL TASK CONFIG LOADING
+   File: src/afl-fuzz-init.c
+   Lines: 3540-3640 (approximate, nv_load_task_config function)
+   
+   Pseudocode:
+     json = parse_json(task_file_path)
+     task.validity_endpoint = json_get_string(json, "validity_endpoint")
+   
+   File: src/afl-fuzz.c
+   Line 378: const char *vep = json_get_string(j, "validity_endpoint");
+   Line 449-450:
+     if (vep && *vep) {
+       afl->nv_task.validity_endpoint = ck_strdup(vep);
+     }
+   
+   **OBSERVED IN R28C**: vep was NULL, so validity_endpoint stayed NULL
+
+7. AFL VALIDITY CHECK DURING EXECUTION
+   File: src/afl-fuzz-run.c
+   Function: nv_check_body_valid()
+   
+   Line 783-784:
+     const char *ep = afl->nv_task.validity_endpoint;
+     if (!ep || !*ep) return 0.0;
+   
+   Line 952:
+     if (afl->nv_task.validity_endpoint && afl->nv_task.validity_endpoint[0]) {
+       int ok = 0;
+       double score = nv_validity_rpc_score_unix(afl, buf, len, &ok);
+       if (!ok) return NV_V_REJ_RPC_FAIL;
+       if (score >= threshold) return NV_V_REJ_SCORE;
+     }
+
+ACTUAL FLOW IN R28C
+-------------------
+
+Steps 1-3: EXECUTED CORRECTLY
+  - model_comparison=True
+  - validity_backend="sefanogan_es_reference"
+  - Scorer process started (assumed, based on standard flow)
+  - Environment variables set including NV_BODY_SCORE_ENDPOINT
+
+Step 4: BUG ACTIVATED
+  - build_task_payload() received validity_backend
+  - Validated it (line 676-677)
+  - Built payload dict (line 703-736)
+  - **NEVER ADDED validity_endpoint FIELD**
+  - task.json written without validity_endpoint
+
+Step 5: AFL LAUNCHED NORMALLY
+  - Environment inherited (including NV_BODY_SCORE_ENDPOINT)
+  - But AFL doesn't read environment variables for scorer path
+
+Step 6: AFL LOADED INCOMPLETE CONFIG
+  - AFL parsed task.json
+  - Found no "validity_endpoint" field
+  - Set afl->nv_task.validity_endpoint = NULL
+  - Printed "vep=(null)" in startup banner (r28c_launch2.log:47)
+
+Step 7: SCORER NEVER INVOKED
+  - Every validity check hit line 784: if (!ep || !*ep) return 0.0;
+  - Scorer socket never contacted
+  - No RPC attempts recorded
+  - Result: ZERO_SCORER_INVOCATIONS
+
+THE GAP
+-------
+
+INTENDED: task.json should contain:
+  {
+    "target_type": "http_api",
+    "target_endpoint": "content_update",
+    ...
+    "validity_endpoint": "unix:///tmp/r28c_.../nv_scorer.sock"
+  }
+
+ACTUAL: task.json in R28C contained:
+  {
+    "target_type": "http_api",
+    "target_endpoint": "content_update",
+    ...
+    (validity_endpoint field missing entirely)
+  }
+
+DEFECT LOCATION
+---------------
+File: scripts/run_alfresco_bounded_feedback.py
+Function: build_task_payload (lines 655-736)
+
+The function accepts validity_backend as a parameter but never translates
+it into a validity_endpoint path in the returned payload dict.
+
+EXPECTED BEHAVIOR: The function should:
+1. Receive validity_backend (already done)
+2. Validate validity_backend (already done, line 676-677)
+3. When validity_backend is not the default/baseline, construct or receive
+   the scorer socket path
+4. Add validity_endpoint field to payload dict
+5. Return payload with validity_endpoint included
+
+ACTUAL BEHAVIOR:
+1. Receives validity_backend ✓
+2. Validates validity_backend ✓
+3. (step missing entirely)
+4. (step missing entirely)
+5. Returns payload without validity_endpoint ✗
+
+ARCHITECTURAL NOTE
+------------------
+The scorer socket path is dynamic (contains run_root timestamp). It cannot
+be known when build_task_payload() is called because the scorer hasn't been
+started yet. The path is created later by ScorerLifecycleManager.
+
+This means build_task_payload() cannot populate validity_endpoint. Instead,
+the runner must:
+1. Call build_task_payload() to get initial task dict
+2. Start scorer and get socket path
+3. Add validity_endpoint to task dict
+4. Write final task dict to task.json
+
+OR: Change build_task_payload() signature to accept optional validity_endpoint
+parameter that the caller provides after starting the scorer.
+
+CURRENT CODE FLOW:
+  Line 3126: task = build_task_payload(...)  # No endpoint yet
+  Line 3139: Write task to disk                # Written without endpoint
+  Line 3165: scorer_manager.start()           # Socket created AFTER write
+
+REQUIRED CODE FLOW:
+  Line 3126: task = build_task_payload(...)
+  Line 3165: scorer_manager.start()
+  Line NEW:  task["validity_endpoint"] = scorer_manager.socket_path
+  Line 3139: Write task to disk
+
+CONCLUSION
+----------
+The scorer startup path is correctly implemented EXCEPT for one missing step:
+after starting the scorer process and obtaining its Unix socket path, the
+runner must add validity_endpoint to the task dict before writing task.json.
+
+This is a single-line omission in the orchestration logic.

@@ -1,0 +1,76 @@
+STEP 2 — SE Canonical Provenance Reconciliation
+===============================================
+
+EXECUTED: 2026-09-23
+PROTOCOL: Alfresco content_update Final Authorized SE Launch - STEP 2
+VERDICT: PROVENANCE_CONTRACT_METADATA_UNTRACKED
+
+CANONICAL CONTRACT (from user authorization)
+--------------------------------------------
+Expected checkpoint_sha256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+Expected metadata_sha256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+Source: User STEP 2 authorization protocol
+Policy: MATCHED_OPERATING_CRITERION (frozen before real pilot)
+
+ACTUAL REPOSITORY STATE
+-----------------------
+Checkpoint file: model_stage/models/sefanogan_gan_model.pt
+  Git tracked: YES (committed in 6fc82d8)
+  Current SHA256: 205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+  Committed SHA256: 205a6a20... (verified identical)
+  
+Metadata files:
+  - sefanogan_es_realrun_threshold.json: UNTRACKED (contains expected hashes)
+  - sefanogan_es_reference.json: UNTRACKED
+  - sefanogan_es_reference_meta.json: UNTRACKED
+
+ROOT CAUSE
+----------
+The threshold artifact sefanogan_es_realrun_threshold.json declaring:
+  se_checkpoint_hash: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  se_metadata_hash: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+is NOT tracked in git. This file was created AFTER the checkpoint was committed.
+
+The committed checkpoint (6fc82d8) has SHA256 = 205a6a20..., which does NOT
+match the expected hash 4eace87a... in the untracked threshold artifact.
+
+ANALYSIS
+--------
+1. Checkpoint sefanogan_gan_model.pt was committed with hash 205a6a20...
+2. Threshold calibration artifact was created later (untracked) claiming different
+   checkpoint hash 4eace87a...
+3. The expected hash 4eace87a... does NOT exist in:
+   - Current filesystem
+   - Git commit history for sefanogan_gan_model.pt
+   - Any other .pt file in model_stage/models/
+
+CONCLUSION: The expected checkpoint hash 4eace87a... appears to be an ERROR in
+the threshold artifact or user specification. The authoritative checkpoint has
+always been 205a6a20... since it was committed.
+
+CORRECTIVE ACTION
+-----------------
+The SE run can proceed with the ACTUAL checkpoint (205a6a20...) IF:
+
+A) User confirms 205a6a20... is the correct checkpoint for SE backend
+   sefanogan_es_reference, OR
+   
+B) User provides the checkpoint file with SHA256=4eace87a... that should be
+   used instead
+
+The current checkpoint (205a6a20...) is the only SE checkpoint in the repository.
+Using it would mean:
+- SE backend loads sefanogan_gan_model.pt (205a6a20...)
+- Threshold from calibration artifact may not apply (calibrated for 4eace87a...)
+- But threshold artifact itself is untracked/uncommitted metadata
+
+GATE STATUS UPDATE
+------------------
+SE_CANONICAL_PROVENANCE_GATE = CHECKPOINT_HASH_MISMATCH_REQUIRES_USER_RESOLUTION
+
+CANNOT proceed to STEP 3 (SE launch) without user clarification on which
+checkpoint hash is authoritative.
+
+BLOCKING: YES
+REASON: Expected checkpoint hash 4eace87a... does not exist in repository

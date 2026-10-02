@@ -1,0 +1,25 @@
+{
+  "predecessor_defect_binding": {
+    "predecessor_package": "PHASE4_R2_PREREGISTERED_ANALYSIS",
+    "predecessor_analysis_commitment_sha256": "9b5d90b7033d5a3d76c78599def8b9c31debdf88760f29ae3fb1d28d6c0e794b",
+    "predecessor_analysis_commitment_verified": "YES",
+    "defect_classification": "PRIMARY_ENDPOINT_EXTRACTION_DEFECT",
+    "defect_summary": "Predecessor extracted and analyzed body_rule_pass instead of frozen primary endpoint security_state_new_total",
+    "predecessor_primary_field_used": "body_rule_pass",
+    "predecessor_primary_field_source": "nv_body_valid_stats.json",
+    "predecessor_primary_field_definition": "Count of valid executions passing body validation rules",
+    "predecessor_primary_values": {
+      "all_28_AE_values": 5,
+      "all_28_SE_values": 5,
+      "all_28_deltas": 0
+    },
+    "correct_primary_field": "security_state_new_total",
+    "correct_primary_field_source_AE": "nv_state_db.json (array length)",
+    "correct_primary_field_source_SE": "nv_state_trace.jsonl (count of 'new':1 entries)",
+    "correct_primary_field_definition": "Number of testcases that triggered new security_state coverage transitions",
+    "predecessor_analysis_status": "PRESERVED_DEFECTIVE_HISTORICAL_PACKAGE",
+    "predecessor_package_modified": false,
+    "reconciliation_report": "/tmp/phase4_r2_reconciliation_report.txt",
+    "reconciliation_verdict": "B) PRIMARY_ENDPOINT_EXTRACTION_DEFECT"
+  }
+}

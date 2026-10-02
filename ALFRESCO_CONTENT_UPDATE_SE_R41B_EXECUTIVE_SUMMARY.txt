@@ -1,0 +1,138 @@
+================================================================================
+R41B EXECUTIVE SUMMARY
+================================================================================
+
+INVESTIGATION: Harness Target Invocation Forensic and Local Replay
+DATE: 2026-10-01
+STATUS: COMPLETE
+GATE: PASS_HARNESS_TARGET_INVOCATION_REPAIR_VERIFIED
+
+--------------------------------------------------------------------------------
+PROBLEM STATEMENT
+--------------------------------------------------------------------------------
+
+R41 real AFL++ campaign (2026-10-01 17:56:44) completed with 5 executions,
+all showing:
+  - harness_invoked = true
+  - target_invoked = false
+  - body_validated = false
+
+Task: Prove exact pre-target branch that prevented target invocation.
+
+--------------------------------------------------------------------------------
+ROOT CAUSE (PROVEN)
+--------------------------------------------------------------------------------
+
+COMMITTED CODE (what R41 ran) required JSON for ALL body validation scenarios.
+
+The content_update scenario accepts plain-text document content, but the
+validation code at the time had NO special case for this. Every body was
+forced through normalize_json_body_or_none(), which rejected R41's plain-text
+seed at line 35:
+
+  if not (text.startswith("{") or text.startswith("[")):
+      return None  # ← R41 seed rejected here
+
+File: nv_body_valid.py (commit 6fc82d8, 2026-04-30)
+Function: normalize_json_body_or_none()
+Line: 35
+Branch: Non-JSON rejection
+Result: validation_reject=1, target_invoked=false
+
+--------------------------------------------------------------------------------
+THE FIX (EXISTS IN WORKING TREE, NOT COMMITTED)
+--------------------------------------------------------------------------------
+
+Working tree contains complete fix across TWO files:
+
+1. nv_body_valid.py:
+   - Added scenario parameter to body_validate()
+   - Added content_update special case
+   - Plain text validated for UTF-8 + size limit
+   - Skips JSON normalization
+
+2. nv_http_harness.py:
+   - Passes scenario parameter to body_validate()
+   - Enables scenario-aware validation routing
+
+FIX STATUS:
+- Exists: YES
+- Tested: YES (6/6 local tests pass)
+- Regression tested: YES (243/243 tests pass)
+- Committed: NO ← CRITICAL
+
+--------------------------------------------------------------------------------
+VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+
+Local Tests (R41 seed):
+  ✓ Old code correctly rejects plain text (simulated R41 failure)
+  ✓ New code accepts plain text for content_update
+  ✓ JSON validation still works for metadata_update
+  ✓ Plain text correctly rejected for JSON-requiring scenarios
+  ✓ Empty body rejected
+  ✓ Invalid UTF-8 rejected
+
+Regression Tests:
+  ✓ 173 tests: test_alfresco_bounded_feedback.py
+  ✓ 7 tests: test_nv_http_harness_representation_bridge.py
+  ✓ 7 tests: test_nv_feedback_execution_identity.py
+  ✓ 56 tests: test_alfresco_levelc_metadata.py
+  
+Total: 243 tests, 109 subtests, 0 failures
+
+Coverage: R27, R29, R30, R33, R36, R38C, R39, R40B, R41
+
+--------------------------------------------------------------------------------
+R42 READINESS
+--------------------------------------------------------------------------------
+
+CURRENT STATE:
+- Fix exists in working tree (uncommitted)
+- If R42 runs NOW, it will use committed code (BROKEN)
+- R42 will FAIL identically to R41
+
+REQUIRED ACTION BEFORE R42:
+1. Commit nv_body_valid.py
+2. Commit nv_http_harness.py
+3. Verify atomic commit
+4. Launch R42 with fixed code
+
+ALTERNATIVE (not recommended):
+- Set enable_validity=0 to bypass validation
+- Loses filtering benefits
+- Production use not recommended
+
+--------------------------------------------------------------------------------
+CLASSIFICATION
+--------------------------------------------------------------------------------
+
+Failure Class: REAL_PRE_TARGET_EARLY_EXIT
+Root Cause: PRE_TARGET_VALIDATION_FAILURE
+Exact Cause: COMMITTED_CODE_REQUIRES_JSON_FOR_ALL_SCENARIOS
+Severity: HIGH (100% execution failure rate)
+Fix Quality: COMPLETE
+
+--------------------------------------------------------------------------------
+GATE STATUS
+--------------------------------------------------------------------------------
+
+R41B_GATE = PASS_HARNESS_TARGET_INVOCATION_REPAIR_VERIFIED
+
+Gate Requirements Met:
+✓ Root cause identified with certainty
+✓ Exact failure branch proven (nv_body_valid.py:35)
+✓ Fix exists and is complete
+✓ Fix verified with R41 seed (6/6 tests)
+✓ No regressions (243/243 tests)
+✓ Fix ready for commit
+
+--------------------------------------------------------------------------------
+RECOMMENDATION
+--------------------------------------------------------------------------------
+
+COMMIT WORKING TREE CHANGES BEFORE R42
+
+The fix is proven, tested, complete, and ready for production.
+
+================================================================================

@@ -1,0 +1,20 @@
+{
+  "results_for_paper": {
+    "primary_endpoint": "security_state_new_total",
+    "pairing_method": "same_formal_seed",
+    "n_paired": 28,
+    "primary_estimand": {
+      "name": "mean_paired_delta_SE_minus_AE",
+      "value": 0.0,
+      "se": 0.0
+    },
+    "zero_variance_case": true,
+    "reporting_constraints": [
+      "Do NOT claim statistical significance",
+      "Report point estimate literally",
+      "Note zero variance finding explicitly",
+      "Confidence interval not computable (zero variance)"
+    ]
+  },
+  "formatted_statement": "PRIMARY ENDPOINT RESULTS (Results-for-Paper Format)\n\nEndpoint: security_state_new_total (body_rule_pass valid executions)\nPairing: Same formal seed\nN: 28 paired blocks\n\nPrimary Estimand:\n  Mean paired delta (SE - AE) = 0.000\n  SE of mean = 0.000\n\nZERO VARIANCE CASE:\n  All 28 paired blocks showed identical values:\n    AE: 5 valid executions per block\n    SE: 5 valid executions per block\n    Paired delta: 0 for all blocks\n  \n  Standard error is zero because there is no variance in the paired differences.\n  Confidence interval cannot be computed (point estimate only).\n\nREPORTING CONSTRAINTS:\n  - Do NOT claim statistical significance\n  - Do NOT compute p-values (zero variance precludes inference)\n  - Report point estimate literally: mean delta = 0.000\n  - Note zero variance finding explicitly\n  - Confidence interval: Not computable (zero variance)\n\nINTERPRETATION:\n  Both AE and SE backends produced exactly 5 valid executions per block across\n  all 28 complete paired blocks. This represents perfect consistency in the\n  primary endpoint, with no observable difference between backends.\n"
+}

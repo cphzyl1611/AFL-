@@ -1,0 +1,544 @@
+================================================================================
+PHASE 4 — FINAL APPROVAL-BLOCKER RECONCILIATION VERDICT
+================================================================================
+
+Reconciliation Date: 2026-09-21
+Reconciliation Type: CRITICAL_BLOCKER_CORRECTION
+Prior Package: PHASE4_HUMAN_DECISION_RECONCILIATION
+Package Directory: PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/
+
+================================================================================
+AUTHORITATIVE COMMITMENTS
+================================================================================
+
+Phase-4 Design Package:
+  cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19
+
+Phase-3 Evidence Freeze:
+  517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8
+
+Prior Reconciliation (PHASE4_HUMAN_DECISION_RECONCILIATION):
+  f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44
+
+================================================================================
+BLOCKER RECONCILIATION SUMMARY
+================================================================================
+
+Total Blockers Identified: 6
+Blockers Resolved: 6
+Critical Errors Corrected: 2
+Nomenclature Corrections: 1
+Completeness Restorations: 1
+Specification Clarifications: 2
+
+Status: ALL CRITICAL BLOCKERS RESOLVED
+
+================================================================================
+BLOCKER 1: SAMPLE-SIZE METHOD LABEL VERIFICATION
+================================================================================
+
+Issue:
+  Prior reconciliation may have incorrectly labeled fallback sample-size method
+
+Finding:
+  NO MISMATCH DETECTED
+
+Verification:
+  Read authoritative frozen design (05_SAMPLE_SIZE_PLAN.md)
+  - Option A (line 32): MPID + Power ✓
+  - Option B (line 83): Precision-Based Design ✓
+  - Option C (line 130): Blinded Variance Re-estimation ✓
+  - Option D (line 185): Fixed Pragmatic N ✓
+
+Resolution:
+  Prior reconciliation labels were CORRECT
+  - Recommended method: D (Fixed pragmatic N)
+  - Fallback method: C (Blinded variance re-estimation)
+
+Status: VERIFIED_CORRECT
+
+Document: 01_METHOD_LABEL_CORRECTION.md
+
+================================================================================
+BLOCKER 2: MASTER SEED ARITHMETIC ERROR
+================================================================================
+
+Issue:
+  Prior reconciliation reported incorrect derived master seed value
+
+Prior Reported Value (INCORRECT):
+  3469967646
+
+Correct Computation:
+  design_commitment = "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19"
+  prefix_8_hex = design_commitment[:8]  # "cfc10e18"
+  master_seed = int(prefix_8_hex, 16)
+  CORRECT: 3485535768
+
+Python Verification:
+  >>> int("cfc10e18", 16)
+  3485535768
+
+Error Magnitude:
+  Difference: 15,568,122 (~15.6 million)
+  Type: Arithmetic error
+
+Domain Analysis:
+  32-bit unsigned range: [0, 4294967295]
+  31-bit signed positive range: [1, 2147483647]
+  
+  Corrected seed (3485535768):
+    - Fits in 32-bit unsigned: YES ✓
+    - Fits in 31-bit signed positive: NO
+    - Python random.Random() compatible: YES ✓
+
+Resolution:
+  Use full 32-bit unsigned value (3485535768)
+  No reduction or truncation applied
+  Python accepts any integer for random.Random(seed)
+
+Status: CORRECTED
+
+Document: 02_MASTER_SEED_CORRECTION.md
+
+Corrected Master Seed: 3485535768
+
+================================================================================
+BLOCKER 3: SOURCE BASELINE NOMENCLATURE
+================================================================================
+
+Issue:
+  Prior reconciliation used inaccurate terminology "4-SHA256 identity"
+
+Prior Nomenclature (INACCURATE):
+  - "4-SHA256 identity"
+  - "Composite 4-SHA256 baseline"
+  - "4-SHA256 source identity"
+
+Problem:
+  git_head_commit is a Git object identifier (40-character hex)
+  - Git uses SHA-1 for object IDs (legacy)
+  - Modern Git uses SHA-256 for object IDs
+  - It is NOT one of the three SHA256 provenance fields
+
+Composite 4-Field Breakdown:
+  1. git_head_commit — Git object ID (SHA-1 or SHA-256) ← NOT a SHA256 provenance field
+  2. runner_sha256 — SHA256 hash of runner script ✓
+  3. tracked_diff_sha256 — SHA256 hash of git diff ✓
+  4. canonical_12file_manifest_sha256 — SHA256 hash of untracked manifest ✓
+
+Field Type Count:
+  - Git object IDs: 1
+  - SHA256 hashes: 3
+  - Total fields: 4
+
+Corrected Nomenclature:
+  COMPOSITE_4_FIELD_SOURCE_IDENTITY
+
+Resolution:
+  All documents updated to use accurate terminology
+  Recognize git_head as distinct from SHA256 provenance fields
+
+Status: CORRECTED
+
+Document: 03_COMPOSITE_SOURCE_IDENTITY.json
+
+Corrected Identity Type: COMPOSITE_4_FIELD_SOURCE_IDENTITY
+
+================================================================================
+BLOCKER 4: VALIDITY GATE COMPLETENESS
+================================================================================
+
+Issue:
+  Prior reconciliation abbreviated validity gates to 3-item summary
+
+Abbreviated Summary (INCOMPLETE):
+  - body_score_rpc_ok > 0
+  - body_score_rpc_fail = 0
+  - trace_invocations > 0
+
+Full Validity Gate Set (from 07_FAILURE_EXCLUSION_AND_STOPPING_RULES.md):
+
+Universal Gates (8 total — all runs):
+  1. body_score_rpc_ok > 0
+  2. body_score_rpc_fail = 0
+  3. trace_invocations > 0
+  4. exact_backend_recorded = TRUE
+  5. trace_stats_reconciliation = PASS
+  6. artifact_contract = PASS
+  7. model_comparison_validity = PASS
+  8. readback = PASS
+
+SE-Specific Gates (5 total):
+  1. se_checkpoint_sha256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  2. se_metadata_sha256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  3. se_metadata_input_dim = 32
+  4. se_threshold = 1.2847454080581664
+  5. se_backend = sefanogan_es_reference
+
+AE-Specific Gates (2 total):
+  1. ae_backend = alfresco_ae_v1
+  2. ae_threshold = 1.623614
+
+Total Gates:
+  - AE runs: 10 gates (8 universal + 2 AE-specific)
+  - SE runs: 13 gates (8 universal + 5 SE-specific)
+
+Problem:
+  Abbreviated summary became execution contract (unacceptable)
+  Missing critical gates: trace_stats_reconciliation, artifact_contract, 
+                          model_comparison_validity, readback, SE provenance
+
+Resolution:
+  Full gate set preserved in 04_FULL_VALIDITY_GATE_CONTRACT.json
+  Abbreviated summaries acceptable for human communication only
+  Execution contract must reference complete gate set
+
+Phase-3 Validation:
+  All 10 runs (5 AE + 5 SE) passed full gate set
+  Phase-3 freeze commitment verified
+
+Status: RESTORED
+
+Document: 04_FULL_VALIDITY_GATE_CONTRACT.json
+
+Gate Count:
+  Universal: 8
+  SE-specific: 5
+  AE-specific: 2
+
+================================================================================
+BLOCKER 5: N=30 INTERPRETATION
+================================================================================
+
+Issue:
+  Prior reconciliation correctly stated N30_STATISTICALLY_DERIVED=NO
+  but did not strictly classify N=30 role or inferential limitations
+
+Prior Status (CORRECT but INCOMPLETE):
+  N30_STATISTICALLY_DERIVED = NO
+
+Problem:
+  - Mentioned "conventional CLT heuristic" without clarifying it does NOT justify power
+  - Did not require explicit human acceptance of inferential limitations
+
+Corrected Classification:
+
+N=30 Role:
+  OPERATIONAL_FEASIBILITY_DRIVEN
+
+Justification Basis:
+  1. Feasibility multiplier: 6× Phase-3 pilot size (5 → 30)
+  2. Resource constraints: 60 runs total (30 AE + 30 SE)
+  3. Conventional heuristic reference: N≥30 for CLT applicability (descriptive only)
+
+What N=30 is NOT:
+  - NOT derived from power calculation
+  - NOT derived from precision-based calculation
+  - NOT statistically guaranteed to provide adequate power
+  - NOT statistically guaranteed to provide adequate precision
+
+Inferential Status:
+  N30_POWER_JUSTIFIED = NO
+  N30_PRECISION_JUSTIFIED = NO
+  N30_CLT_HEURISTIC_REFERENCE = DESCRIPTIVE_ONLY (not prescriptive)
+
+CLT Clarification:
+  ✓ "N≥30 conventionally cited for CLT approximation"
+  ✗ "N=30 guarantees adequate power because of CLT"
+  
+  CLT addresses sampling distribution shape only
+  CLT does NOT imply adequate power or precision
+
+Human Acceptance Required:
+  HUMAN_ACCEPTANCE_OF_PRAGMATIC_N_REQUIRED = YES
+
+Human reviewer must acknowledge:
+  1. N=30 chosen for feasibility, not statistical power
+  2. Study may be underpowered for small effects
+  3. Confidence intervals may be wide
+  4. Primary emphasis: ESTIMATION (point estimate + CI), not hypothesis testing
+  5. Results may be inconclusive if true effect small relative to variance
+  6. Follow-up studies may be needed
+
+Study Emphasis:
+  STUDY_EMPHASIS = ESTIMATION_AND_CONFIDENCE_INTERVALS
+  HYPOTHESIS_TESTING_SECONDARY = YES (permutation test optional, CI primary)
+  INCONCLUSIVE_RESULTS_POSSIBLE = YES
+
+Resolution:
+  Strict classification as operational choice
+  Explicit human acceptance of inferential limitations required
+  Updated approval template includes limitation acknowledgment
+
+Status: CLARIFIED
+
+Document: 05_PRAGMATIC_N_INTERPRETATION.md
+
+N=30 Role: OPERATIONAL_FEASIBILITY_DRIVEN
+
+================================================================================
+BLOCKER 6: COUNTERBALANCED ORDER RULE
+================================================================================
+
+Issue:
+  Prior reconciliation recommended "counterbalanced alternating" 
+  but did not freeze exact deterministic rule
+
+Prior Recommendation (INSUFFICIENTLY PRECISE):
+  "Counterbalanced alternating order"
+
+Problem:
+  - No exact algorithm specified
+  - No deterministic block-to-order mapping frozen
+  - Leaves room for post-hoc order selection
+
+Corrected Specification:
+
+Exact Deterministic Rule:
+  For each paired block i (i = 1, 2, ..., N):
+    if (i mod 2) = 1:
+      ORDER(i) = AE-first
+    else:
+      ORDER(i) = SE-first
+
+Concrete Example (N=30):
+  Block 1: AE-first
+  Block 2: SE-first
+  Block 3: AE-first
+  Block 4: SE-first
+  ...
+  Block 29: AE-first
+  Block 30: SE-first
+
+Order Balance:
+  AE-first blocks: {1, 3, 5, 7, ..., 29} → 15 blocks
+  SE-first blocks: {2, 4, 6, 8, ..., 30} → 15 blocks
+
+Exact 50/50 balance for any even N
+
+Execution Contract:
+  EXECUTION_ORDER_RULE = DETERMINISTIC_ALTERNATING
+  ORDER_DECISION_TIMING = PRE_SPECIFIED_BY_BLOCK_INDEX
+  ADAPTIVE_ORDER_SELECTION = FORBIDDEN
+  POST_HOC_ORDER_CHOICE = FORBIDDEN
+
+Order must be determined by block index alone, never by observed outcomes
+
+Scientific Rationale:
+  - Phase-3 used fixed AE-first (all 5 blocks)
+  - Phase-3 did NOT test order sensitivity
+  - Counterbalancing separates order effects from backend effects
+  - Conservative deconfounding (not empirical evidence)
+
+Run Manifest Provenance:
+  Each run must record:
+    - block_id
+    - execution_order (AE-first or SE-first)
+    - order_position (first or second)
+
+Resolution:
+  Exact deterministic rule frozen
+  Adaptive order forbidden
+  Post-hoc analysis of order effects remains possible
+
+Status: SPECIFIED
+
+Document: 06_COUNTERBALANCED_ORDER_RULE.md
+
+Order Rule: DETERMINISTIC_ALTERNATING
+Balance (N=30): 15 AE-first, 15 SE-first
+
+================================================================================
+CORRECTED VALUES SUMMARY
+================================================================================
+
+Fallback Sample-Size Method:
+  C (Blinded variance re-estimation) — VERIFIED CORRECT
+
+Derived Master Seed:
+  3485535768 — CORRECTED (was 3469967646)
+
+Master Seed Domain:
+  32-bit unsigned integer — SPECIFIED
+
+Source Baseline Identity Type:
+  COMPOSITE_4_FIELD_SOURCE_IDENTITY — CORRECTED (was "4-SHA256 identity")
+
+Universal Validity Gates:
+  8 gates — RESTORED (was abbreviated to 3)
+
+SE-Specific Gates:
+  5 gates — RESTORED
+
+AE-Specific Gates:
+  2 gates — RESTORED
+
+N=30 Role:
+  OPERATIONAL_FEASIBILITY_DRIVEN — CLARIFIED
+
+N=30 Power Justified:
+  NO — CLARIFIED
+
+N=30 Precision Justified:
+  NO — CLARIFIED
+
+Execution Order Rule:
+  DETERMINISTIC_ALTERNATING — SPECIFIED
+
+Order Balance (N=30):
+  15 AE-first, 15 SE-first — SPECIFIED
+
+================================================================================
+EXECUTION CONSTRAINTS (MAINTAINED)
+================================================================================
+
+Real Experiment Runs: 0
+Source Files Modified: NO
+Tests Modified: NO
+Models Modified: NO
+Git References Modified: NO
+Formal Seed List Generated: NO
+Git Commits: 0
+Git Pushes: 0
+
+Formal Experiment Execution Gate: BLOCKED_PENDING_HUMAN_DESIGN_APPROVAL
+
+All reconciliation work performed at design level only.
+No experiments run. No source code changed.
+
+================================================================================
+PACKAGE INTEGRITY
+================================================================================
+
+Package Directory:
+  PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/
+
+Package Files:
+  00_STATUS.json
+  01_METHOD_LABEL_CORRECTION.md
+  02_MASTER_SEED_CORRECTION.md
+  03_COMPOSITE_SOURCE_IDENTITY.json
+  04_FULL_VALIDITY_GATE_CONTRACT.json
+  05_PRAGMATIC_N_INTERPRETATION.md
+  06_COUNTERBALANCED_ORDER_RULE.md
+  07_FINAL_HUMAN_APPROVAL_TEMPLATE.md
+  FILE_LIST.txt
+  README.md
+  SHA256SUMS.txt
+
+Package Commitment (SHA256 of SHA256SUMS.txt):
+  EOF
+sha256sum PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/SHA256SUMS.txt | awk '{print "  " $1}' >> PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION_VERDICT.txt
+
+cat >> PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION_VERDICT.txt << 'EOF'
+
+Verification Command:
+  cd PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION
+  sha256sum -c SHA256SUMS.txt
+
+================================================================================
+HUMAN APPROVAL STATUS
+================================================================================
+
+Prior Reconciliation Approval: BLOCKED (due to 6 critical blockers)
+
+Blocker Reconciliation Complete: YES
+
+All Critical Blockers Resolved: YES
+
+Ready for Human Review: YES
+
+Approval Template Updated: YES (07_FINAL_HUMAN_APPROVAL_TEMPLATE.md)
+
+Next Step: HUMAN REVIEW AND APPROVAL OF 15 DESIGN DECISIONS
+
+================================================================================
+RECOMMENDATIONS FOR HUMAN REVIEWER
+================================================================================
+
+1. Review all 6 blocker corrections in detail:
+   - Master seed arithmetic (3485535768) is critical
+   - Full validity gate set (8+5+2) must be enforced
+   - N=30 inferential limitations must be acknowledged
+
+2. Review updated approval template (07_FINAL_HUMAN_APPROVAL_TEMPLATE.md):
+   - All 15 decisions require explicit approval
+   - N=30 limitation acknowledgment required
+   - Signature section must be completed
+
+3. Verify corrected values align with scientific objectives:
+   - Composite 4-field source identity matches Phase-3
+   - Counterbalanced order separates order effects from backend effects
+   - Full validity gate set preserves execution contract integrity
+
+4. Sign approval template if all decisions approved:
+   - Archive signed template with SHA256 commitment
+   - Approval authorizes formal experiment execution
+   - No post-hoc changes to frozen design decisions
+
+5. Post-approval actions:
+   - Generate formal seed list from master seed 3485535768
+   - Execute N paired blocks under approved protocol
+   - Enforce all validity gates (full 8+5+2 gate set)
+   - Create multi-stage evidence freeze packages
+
+================================================================================
+BLOCKER RECONCILIATION VERDICT
+================================================================================
+
+Status: ALL CRITICAL BLOCKERS RESOLVED
+
+Blockers Corrected: 6/6
+
+Critical Errors Fixed: 2/2
+  - Master seed arithmetic error
+  - Source baseline nomenclature
+
+Completeness Restored: 1/1
+  - Full validity gate set
+
+Specifications Clarified: 3/3
+  - N=30 inferential status
+  - Counterbalanced order rule
+  - Method label verification
+
+Human Approval Status: READY FOR REVIEW
+
+Formal Experiment Execution: BLOCKED PENDING HUMAN APPROVAL
+
+Recommendation: APPROVE CORRECTED DESIGN FOR FORMAL EXPERIMENT EXECUTION
+
+================================================================================
+FINAL AUTHORIZATION GATE
+================================================================================
+
+Before formal experiment execution can proceed:
+
+1. Human reviewer must review all blocker corrections
+2. Human reviewer must approve all 15 design decisions
+3. Human reviewer must sign approval template
+4. Signed approval template must be archived with SHA256 commitment
+5. Formal seed list must be generated from approved master seed
+6. All validity gates must be enforced (full 8+5+2 gate set)
+
+Until these conditions met:
+  FORMAL_EXPERIMENT_EXECUTION_GATE = BLOCKED
+
+After human approval:
+  FORMAL_EXPERIMENT_EXECUTION_GATE = AUTHORIZED
+
+================================================================================
+VERDICT METADATA
+================================================================================
+
+Verdict Date: 2026-09-21
+Verdict Type: BLOCKER_RECONCILIATION_COMPLETE
+Prior Verdict: PHASE4_HUMAN_DECISION_RECONCILIATION_VERDICT.txt
+Generated By: Claude Code (claude-opus-5)
+
+All blocker corrections verified. Package complete. Ready for human approval.
+
+================================================================================
+END OF BLOCKER RECONCILIATION VERDICT
+================================================================================

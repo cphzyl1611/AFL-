@@ -1,0 +1,17 @@
+{
+  "analysis_status": {
+    "package_name": "PHASE4_R2_PREREGISTERED_ANALYSIS_R1",
+    "package_type": "SUCCESSOR_PACKAGING_AND_REPORTING_REPAIR",
+    "creation_timestamp": "2026-09-22T00:00:00Z",
+    "predecessor_package": "PHASE4_R2_PREREGISTERED_ANALYSIS_R1",
+    "predecessor_status": "DEFECTIVE_PRIMARY_ENDPOINT_EXTRACTION",
+    "correction_reason": "Predecessor extracted body_rule_pass instead of frozen primary endpoint security_state_new_total",
+    "new_experiment_runs_executed": 0,
+    "raw_evidence_modified": false,
+    "final_evidence_freeze_modified": false,
+    "predecessor_analysis_modified": false,
+    "analysis_population_changed": false,
+    "predecessor_commitment_sha256": "550e3e7d9feefa4091026d66cf3f31a038b8b20cefde3e2dde652c21d8b9fa32",
+    "repair_scope": "Bounded packaging repair: file inventory completeness, checksum coverage, package commitment accuracy, and reporting language compliance. No scientific data or analysis semantics changed."
+  }
+}

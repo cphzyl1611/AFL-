@@ -1,0 +1,161 @@
+================================================================================
+STEP 3: PROTOCOL V2 ALIGNMENT - REPAIR COMPLETE
+================================================================================
+
+Date: 2026-10-01
+Task: ALFRESCO_CONTENT_UPDATE_SE_R39_PROTOCOL_V2_ALIGNMENT_AND_INTEGRATION_REPAIR
+
+================================================================================
+REPAIR IMPLEMENTATION
+================================================================================
+
+PROTOCOL_REPAIR_FILE = src/afl-fuzz-run.c
+PROTOCOL_REPAIR_FUNCTION = nv_validity_rpc_score_unix
+C_PROTOCOL_VERSION_AFTER_REPAIR = V2
+LOGICAL_CONTENT_UPDATE_BODY_REMAINS_RAW_TEXT = YES
+
+================================================================================
+CHANGES MADE
+================================================================================
+
+1. Added nv_base64_encode() function (lines 777-817)
+   - Standard base64 encoding with padding
+   - Returns malloc'd string, caller must free
+   - Handles empty input correctly
+
+2. Rewrote nv_validity_rpc_score_unix() to implement Protocol V2:
+
+   a) Added SO_RCVTIMEO socket timeout (2 seconds)
+      Lines 835-838:
+      ```c
+      struct timeval tv;
+      tv.tv_sec = 2;
+      tv.tv_usec = 0;
+      setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+      ```
+
+   b) HTTP body extraction (lines 850-885)
+      - Finds body separator (\n\n or \r\n\r\n)
+      - Extracts body-only portion from HTTP request
+      - Defaults to entire buffer if no separator found
+
+   c) Scenario determination (lines 863-879)
+      - Parses first line to get HTTP method and path
+      - If path ends with "/content" → scenario = "content_update"
+      - Otherwise → scenario = "metadata_update" (default)
+
+   d) Base64 encoding (lines 887-892)
+      - Encodes body bytes to base64 string
+      - Binary-safe transport for raw UTF-8 text
+
+   e) JSON envelope construction (lines 894-912)
+      - Uses cJSON library (already present in codebase)
+      - Creates {"scenario": "...", "endpoint": "", "body": "base64..."}
+      - Unformatted JSON for compact wire format
+
+   f) Protocol V2 wire format (lines 914-926)
+      - Sends [4-byte little-endian length][JSON envelope]
+      - Matches Python nv_body_valid.py implementation exactly
+
+3. Build verification:
+   - make clean && make completed successfully
+   - afl-fuzz binary: 2,314,664 bytes (2026-10-01 14:14)
+   - No compilation errors
+
+================================================================================
+PROTOCOL ALIGNMENT VERIFICATION
+================================================================================
+
+Before Repair (Protocol V1):
+  Wire Format: [4-byte length][raw HTTP request bytes]
+  Example: [0x30 0x01 0x00 0x00][PUT /alfresco/api/... HTTP/1.1\nHost: ...]
+
+  Scorer Behavior:
+    - recv_one() tries to parse as JSON → JSONDecodeError
+    - Fallback: scenario="metadata_update", body=<entire HTTP request>
+    - predict_score_from_body() tries json.loads() → FAILURE
+
+After Repair (Protocol V2):
+  Wire Format: [4-byte length][JSON envelope]
+  Example: [0x7F 0x00 0x00 0x00][{"scenario":"content_update","endpoint":"","body":"...base64..."}]
+
+  Scorer Behavior:
+    - recv_one() parses JSON successfully
+    - Extracts scenario, endpoint, base64-decodes body
+    - predict_score_from_body(scenario, body_bytes) → SUCCESS
+
+================================================================================
+CONTENT_UPDATE RAW TEXT SEMANTICS PRESERVED
+================================================================================
+
+LOGICAL_CONTENT_UPDATE_BODY_REMAINS_RAW_TEXT = YES
+
+Reasoning:
+- The content_update scenario body is raw UTF-8 text (not JSON)
+- Protocol V2 encoding: base64(raw_text_bytes)
+- Scorer decoding: base64_decode() → raw_text_bytes
+- Model receives: identical bytes to what AFL++ extracted from HTTP body
+- NO semantic transformation of the text content itself
+
+Example flow:
+  1. AFL++ receives HTTP request with body: "这是一段测试文本..." (raw UTF-8)
+  2. AFL++ extracts body bytes: b'\xe8\xbf\x99\xe6\x98\xaf...'
+  3. AFL++ base64-encodes: "6L+Z5piv5LiA5q6177yM55So5LqO6aqM..."
+  4. Scorer base64-decodes: b'\xe8\xbf\x99\xe6\x98\xaf...'
+  5. Model receives: identical bytes from step 2
+
+The base64 encoding is ONLY for binary-safe transport in the JSON envelope.
+The logical content remains raw text at both endpoints.
+
+================================================================================
+DIFF FROM PYTHON V2 REFERENCE (nv_body_valid.py)
+================================================================================
+
+Python Implementation (lines 240-279):
+  1. Determine scenario from endpoint path
+  2. Extract body from HTTP request
+  3. Base64-encode body
+  4. Construct JSON: {"scenario": ..., "endpoint": ..., "body": ...}
+  5. Send [4-byte length][JSON string]
+  6. Receive response with 1-second timeout
+
+C Implementation (src/afl-fuzz-run.c):
+  1. Determine scenario from endpoint path ✓ (same logic)
+  2. Extract body from HTTP request ✓ (same separator detection)
+  3. Base64-encode body ✓ (standard encoding with padding)
+  4. Construct JSON: {"scenario": ..., "endpoint": ..., "body": ...} ✓ (identical fields)
+  5. Send [4-byte length][JSON string] ✓ (same wire format)
+  6. Receive response with 2-second timeout ✓ (longer timeout, more defensive)
+
+PROTOCOL_MATCH = YES
+WIRE_FORMAT_IDENTICAL = YES
+SEMANTIC_PRESERVATION = YES
+
+================================================================================
+BUILD ARTIFACTS
+================================================================================
+
+Binary: ./afl-fuzz
+Size: 2,314,664 bytes
+Timestamp: 2026-10-01 14:14
+Modified Files: src/afl-fuzz-run.c
+
+No changes to:
+- Checkpoint/metadata paths (canonical SE artifacts unchanged)
+- Backend selection (sefanogan_es_reference unchanged)
+- Threshold (validity_threshold unchanged)
+- Feature contract (text_features_t unchanged)
+- Model architecture (no retraining)
+- nv_text_mutator.py (mutation strategy unchanged)
+- MAB/reward/scheduler (seed selection unchanged)
+
+================================================================================
+NEXT STEP
+================================================================================
+
+Step 4: Verify bounded socket receive timeout classification
+  - Confirm SO_RCVTIMEO is set before recv()
+  - Document timeout value
+  - Classify timeout events as RPC_FAILURE (not target failure)
+
+================================================================================

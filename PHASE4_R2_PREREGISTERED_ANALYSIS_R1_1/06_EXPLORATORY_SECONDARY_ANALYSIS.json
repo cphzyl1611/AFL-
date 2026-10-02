@@ -1,0 +1,28 @@
+{
+  "exploratory_secondary_analysis": {
+    "status": "CARRIED_FORWARD_FROM_PREDECESSOR",
+    "note": "Exploratory secondary analyses remain valid because they were not dependent on the primary endpoint extraction defect",
+    "exploratory_endpoints_frozen": [
+      "security_state_total",
+      "body_rule_pass",
+      "body_rule_reject",
+      "http_status_distribution",
+      "trace_invocation_count"
+    ],
+    "predecessor_exploratory_file": "PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL/09_EXPLORATORY_SECONDARY_RAW_VALUES.json",
+    "exploratory_data_source": "PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_FINAL/09_EXPLORATORY_SECONDARY_RAW_VALUES.json",
+    "exploratory_role": "descriptive_only",
+    "promotion_to_confirmatory": false,
+    "note_on_body_rule_pass": "body_rule_pass is correctly classified as an EXPLORATORY secondary endpoint in the frozen design. The predecessor analysis defect was using it as the PRIMARY endpoint when security_state_new_total was frozen as primary. body_rule_pass remains valid for exploratory/descriptive purposes.",
+    "exploratory_summary": {
+      "total_runs": 58,
+      "blocks_covered": "2-30",
+      "metrics_available": [
+        "http_status_distribution",
+        "trace_invocation_count"
+      ],
+      "note": "Full exploratory data preserved in frozen evidence package. No recomputation needed."
+    },
+    "new_exploratory_endpoints_added": false
+  }
+}

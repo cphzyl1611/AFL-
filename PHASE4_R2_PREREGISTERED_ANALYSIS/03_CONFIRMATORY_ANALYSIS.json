@@ -1,0 +1,7 @@
+{
+  "confirmatory_analysis_status": "SKIPPED",
+  "reason": "No frozen confirmatory analysis contract in R2 freeze package",
+  "specification_authority": "Task STEP 5: 'If there is NO explicitly frozen confirmatory-analysis contract in the R2 freeze package, skip confirmatory and proceed to exploratory.'",
+  "data_observation": "Primary endpoint shows zero variance across all 28 paired blocks (all deltas = 0)",
+  "note": "This is acceptable per preregistered protocol"
+}

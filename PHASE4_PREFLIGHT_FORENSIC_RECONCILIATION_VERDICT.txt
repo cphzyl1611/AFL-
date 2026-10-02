@@ -1,0 +1,325 @@
+=============================================================================
+PHASE 4 — PREFLIGHT FORENSIC RECONCILIATION VERDICT
+=============================================================================
+
+INVESTIGATION_DATE: 2026-09-21
+SESSION_TYPE: READ_ONLY_FORENSIC_INVESTIGATION
+FORMAL_EXPERIMENT_RUNS_EXECUTED: 0
+
+=============================================================================
+PART A — EXECUTION-FREEZE INTEGRITY FORENSICS
+=============================================================================
+
+A1: ACTUAL PACKAGE FILE INVENTORY
+----------------------------------
+
+PHASE4_FORMAL_EXECUTION_FREEZE/ contains 15 files:
+
+Core execution freeze files (12 expected per FILE_LIST.txt):
+  00_EXECUTION_FREEZE_STATUS.json                2.0K    30eef91fb2b7fbb96ce97be59bcda596cd28aabff53530440a5acc37a30fa4dc
+  02_COMPOSITE_SOURCE_IDENTITY.json              3.5K    894d9af9f3f2f9d7f9835b3068ba254c8fd137ed832e9814511a55a81f83812a
+  03_RUNTIME_MODEL_PROVENANCE.json               1.3K    b77f5b2a1093f1521f0f694a2da56a9ae8ac4377ca3f85132d33cdd4c1d20f70
+  04_FORMAL_SEED_LIST.json                       3.4K    1ee9bf81eb5374a4583b4d8bad101474dcd765a0512980dce249b252d5f1e962
+  05_FORMAL_PAIRED_ORDER_SCHEDULE.json           6.1K    4b0fc48c37f3827a160e3bc0af7556d827c04f2b4926df423d23d6cbd4f06204
+  06_FORMAL_RUN_BUDGET.json                      646B    810327f239ed655e8d694adc227b99ee8eef828598080d9f0385fe0e856ad49c
+  07_ENDPOINT_AND_ANALYSIS_ROLES.json            1.7K    33110c8a900574ca67d78ef34a9d8bcbc83730937e45a0f359df3d4e84285cdc
+  08_FULL_VALIDITY_GATE_CONTRACT.json            5.2K    72b90cd8cd136cc7f7ae9487bb183bba7746a56242dc142d08e4e04594018aae
+  09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md     3.4K    611fd201cb36cbe313f649b30cf1748c3a50de96dbf6145322690aaa441c9a68
+  10_EXECUTION_PLAN.md                           4.8K    07c90310f21f63a707e2ad461fbbc7d51d30df5b41e080a714728aab6f6e5e0e
+  11_PROVENANCE_CHAIN.json                       3.4K    d380338150666da9471a1a9bb77d7ddcfb2d59f6cf6f051485e56a6b9da52f97
+  README.md                                      3.3K    56ec94f0910f989a39a5fed53824d8276a7f6d38df4bd4df7c54d8d6cddf3a79
+
+Infrastructure files:
+  FILE_LIST.txt                                  272B    (infrastructure, lists 12 core files)
+  SHA256SUMS.txt                                 1.1K    527be51338df9d7189fd07bef4e78d7a64d309fae097c0e5b79343502dc497d0
+  SHA256SUMS_COMPLETE.txt                        1.2K    4c034b4c5a79ca7f764fe190ed015336b08e4e704e3b49a35489ab6ef26231d0
+
+A2: FILE_LIST.txt COVERAGE ANALYSIS
+------------------------------------
+
+FILE_LIST.txt declares 12 entries:
+  ✓ 00_EXECUTION_FREEZE_STATUS.json
+  ✓ 02_COMPOSITE_SOURCE_IDENTITY.json
+  ✓ 03_RUNTIME_MODEL_PROVENANCE.json
+  ✓ 04_FORMAL_SEED_LIST.json
+  ✓ 05_FORMAL_PAIRED_ORDER_SCHEDULE.json
+  ✓ 06_FORMAL_RUN_BUDGET.json
+  ✓ 07_ENDPOINT_AND_ANALYSIS_ROLES.json
+  ✓ 08_FULL_VALIDITY_GATE_CONTRACT.json
+  ✓ 09_FAILURE_EXCLUSION_INTERRUPTION_RULES.md
+  ✓ 10_EXECUTION_PLAN.md
+  ✓ 11_PROVENANCE_CHAIN.json
+  ✓ README.md
+
+All 12 declared files are present on disk.
+
+Files in directory NOT in FILE_LIST.txt:
+  - FILE_LIST.txt (infrastructure, expected)
+  - SHA256SUMS.txt (infrastructure, expected)
+  - SHA256SUMS_COMPLETE.txt (corrected version, created later)
+
+A3: SHA256SUMS.txt COVERAGE ANALYSIS
+-------------------------------------
+
+SHA256SUMS.txt contains 11 checksum entries (12 lines including trailing blank).
+
+Missing from SHA256SUMS.txt:
+  ✗ README.md — PRESENT in FILE_LIST.txt and directory, but NO CHECKSUM
+
+01_HUMAN_APPROVAL_BINDING.json investigation:
+  ✗ Referenced in README.md line 24 as part of package contents
+  ✗ NOT present in PHASE4_FORMAL_EXECUTION_FREEZE/ directory
+  ✗ NOT listed in FILE_LIST.txt
+  ✗ Similar file found: PHASE4_HUMAN_APPROVAL_MATERIALIZED/01_APPROVED_D1_D15.json
+  
+VERDICT: 01_HUMAN_APPROVAL_BINDING.json was documented but never created.
+
+Hash verification for 11 entries in SHA256SUMS.txt:
+  ✓ All 11 entries (00-11 excluding README.md) verify correctly against actual files
+
+CHECKSUM_COVERAGE_CONTRACT_COMPLETENESS = INCOMPLETE
+  - Missing: README.md (exists, not checksummed)
+  - Missing: 01_HUMAN_APPROVAL_BINDING.json (documented, never created)
+
+A4: ORIGINAL COMMITMENT MECHANISM RECONSTRUCTION
+-------------------------------------------------
+
+Approved commitment (from PHASE4_HUMAN_APPROVAL_MATERIALIZATION_VERDICT.txt):
+  fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+Original commitment mechanism (identified from transcript evidence):
+  (sha256sum SHA256SUMS.txt; cat SHA256SUMS.txt) | sha256sum
+
+Test 1: Current SHA256SUMS.txt (11 entries, no README.md)
+  SHA256 of file content: 527be51338df9d7189fd07bef4e78d7a64d309fae097c0e5b79343502dc497d0
+  Original mechanism: 4c071c1d257c8f464b8fa09355ffbac399d198f44e14244b5f6d097df2e71223
+  RESULT: MISMATCH (does not produce fb888b1...)
+
+Test 2: SHA256SUMS_COMPLETE.txt (12 entries, includes README.md)
+  SHA256 of file content: 4c034b4c5a79ca7f764fe190ed015336b08e4e704e3b49a35489ab6ef26231d0
+  Original mechanism: 28769b384ca619c652cc5415916a12c9150e972d1ca39c491af0a920e49a7fc5
+  RESULT: MISMATCH (does not produce fb888b1...)
+
+Test 3: Other Phase packages using same mechanism
+  PHASE4_HUMAN_APPROVAL_MATERIALIZED: 8fcc7bc3c4f953899e0b8f288d468bf371d7b1420eefc360adeda239d25fe6b0
+  PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION: 0bc9f9eb80217313333321726f08e7b529ac615ba62f7a5ae66c9b5b87303ea7
+  PHASE3_FINAL_EVIDENCE_FREEZE: abbaea2c7be3d9fe1c7c99b525de554c5357b79f3b0a13d843194ad30f2bbc1b
+  All produce different values, none match fb888b1...
+
+ORIGINAL_COMMITMENT_MECHANISM = (sha256sum SHA256SUMS.txt; cat SHA256SUMS.txt) | sha256sum
+RECOMPUTED_ORIGINAL_COMMITMENT = 4c071c1d257c8f464b8fa09355ffbac399d198f44e14244b5f6d097df2e71223
+RECOMPUTED_ORIGINAL_COMMITMENT_MATCH = NO
+
+Timeline evidence:
+  - SHA256SUMS.txt birth: 2026-09-21 14:28:14 (epoch 1789972094)
+  - SHA256SUMS.txt modified: 2026-09-21 14:31:21 (epoch 1789972281) — 3 minutes later
+  - PHASE4_HUMAN_APPROVAL_MATERIALIZATION_VERDICT.txt created: 2026-09-21 14:34:00
+  - SHA256SUMS_COMPLETE.txt created: 2026-09-21 15:51:08 (epoch 1789977068) — 80 minutes later
+
+ROOT CAUSE: SHA256SUMS.txt was modified AFTER its initial creation but BEFORE 
+human approval was issued. The SHA256SUMS.txt that produced the approved 
+commitment fb888b1... no longer exists in the package.
+
+ALTERNATIVE HYPOTHESIS: The approved commitment was computed from a different 
+SHA256SUMS.txt version (possibly including 01_HUMAN_APPROVAL_BINDING.json) 
+that was overwritten during package finalization.
+
+A5: FREEZE_INTEGRITY_VERDICT
+-----------------------------
+
+FREEZE_INTEGRITY_VERDICT = PACKAGE_CONTENT_CHANGED_AFTER_ORIGINAL_COMMITMENT_BUT_BEFORE_HUMAN_APPROVAL
+
+Evidence:
+  1. Current SHA256SUMS.txt cannot reproduce approved commitment fb888b1...
+  2. SHA256SUMS.txt was modified 3 minutes after creation
+  3. Human approval issued 3 minutes after SHA256SUMS.txt modification
+  4. README.md missing from SHA256SUMS.txt coverage (checksum contract incomplete)
+  5. 01_HUMAN_APPROVAL_BINDING.json documented but never created
+  6. No backup/archive of original SHA256SUMS.txt found
+
+INTEGRITY_STATUS = CANNOT_VERIFY_AGAINST_APPROVED_COMMITMENT
+
+SUCCESSOR_EXECUTION_FREEZE_REQUIRED = YES
+
+Rationale: The package cannot be verified against the human's authorization 
+because the commitment computation input (SHA256SUMS.txt) has changed. A 
+successor execution freeze package must be created with:
+  - Complete SHA256SUMS.txt coverage (including README.md)
+  - Resolution of 01_HUMAN_APPROVAL_BINDING.json (remove from documentation or create file)
+  - New commitment computation
+  - New human authorization against the corrected commitment
+
+All D1-D15 decisions remain valid and can be preserved in successor package.
+
+=============================================================================
+PART B — ALFRESCO PORT FORENSICS
+=============================================================================
+
+B1: DOCKER CONTAINER INTERNAL VS HOST-PUBLISHED PORTS
+------------------------------------------------------
+
+Container: docker-compose-alfresco-1
+Status: Up 3 days (healthy)
+Container internal ports: 8000/tcp, 8080/tcp, 10001/tcp
+Host-published port bindings: NONE (no ports mapped to host)
+
+Container network:
+  Network: docker-compose default bridge
+  Container IP: 172.19.0.6
+  Host can reach container via: host's localhost interface (Docker bridge)
+
+Port 8080 accessibility test from host:
+  $ curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/
+  Result: HTTP 200 OK
+
+FINDING: Container internal port 8080 IS accessible from host via 127.0.0.1:8080
+despite no explicit port binding in docker-compose configuration. This is due 
+to Docker's default bridge network allowing host access to container ports.
+
+B2: RUNNER ENDPOINT CONSTRUCTION
+---------------------------------
+
+File: scripts/run_alfresco_bounded_feedback.py
+Line 355: ALFRESCO_BASE_URL = "http://127.0.0.1:8080"
+
+RUNNER_CONFIGURED_PORT = 8080
+RUNNER_CONFIGURED_ENDPOINT = http://127.0.0.1:8080
+
+The runner script is correctly configured to use port 8080.
+
+B3: PHASE-3 SUCCESSFUL CONFIGURATION
+-------------------------------------
+
+Phase-3 evidence review:
+  - PHASE3_FINAL_EVIDENCE_FREEZE/02_RUN_INVENTORY.json documents 5 successful AE runs
+  - Backend: alfresco_ae_v1
+  - All runs show valid_exec counts and security_state metrics
+  - No port configuration explicitly recorded in frozen provenance
+
+Phase-3 used the same runner script (scripts/run_alfresco_bounded_feedback.py)
+with ALFRESCO_BASE_URL = "http://127.0.0.1:8080" — no changes detected.
+
+B4: ENDPOINT CONNECTIVITY TESTS (NO FORMAL EXECUTION)
+------------------------------------------------------
+
+Test 1: Runner-configured endpoint (http://127.0.0.1:8080)
+  $ curl -s "http://127.0.0.1:8080/alfresco/api/-default-/public/alfresco/versions/1/nodes/-root-" \
+    -u "${ALFRESCO_USER}:${ALFRESCO_PASS}"
+  Result: HTTP 200 OK with valid JSON response
+  Content: {"entry":{"aspectNames":["cm:titled","cm:auditable","app:uifacets"]...
+  VERDICT: OPERATIONAL
+
+Test 2: Reported mismatch endpoint (http://127.0.0.1:18080)
+  $ timeout 3 curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:18080/"
+  Result: Connection timeout (port not listening)
+  VERDICT: NOT_ACCESSIBLE
+
+B5: ALFRESCO_PORT_VERDICT
+--------------------------
+
+ALFRESCO_PORT_VERDICT = FALSE_ALARM_NO_PORT_MISMATCH_EXISTS
+
+Evidence:
+  1. Runner script configured for port 8080 (line 355)
+  2. Docker container exposes port 8080 (accessible from host)
+  3. Port 8080 endpoint operational (HTTP 200, valid JSON)
+  4. Port 18080 not listening (timeout)
+  5. Phase-3 used identical configuration successfully
+  6. No code changes to ALFRESCO_BASE_URL detected
+
+ROOT_CAUSE_OF_REPORTED_ISSUE = MISREAD_OR_MISREPORTED_PORT_NUMBER
+
+The "port mismatch" reported in PHASE4_BLOCKER_RESOLUTION_REPORT.txt appears 
+to be based on incorrect information. Investigation of that report shows:
+  - Report line: "Expected endpoint: http://localhost:18080/alfresco/api/..."
+  - Report line: "The runner script is configured to connect to port 18080."
+
+However, actual runner script inspection shows port 8080 (not 18080) at line 355.
+
+Search for port 18080 references found:
+  - PHASE4_BLOCKER_RESOLUTION_REPORT.txt (6 references, all incorrect)
+  - tests/test_alfresco_bounded_feedback.py:1 reference (in http_proxy test fixture)
+
+CONCLUSION: No port misconfiguration exists. The Alfresco API is operational 
+on the correct port (8080) and the runner is correctly configured to use it.
+
+REMEDIATION_REQUIRED = NO
+
+GOVERNANCE_IMPACT = NONE (no execution freeze changes needed)
+
+=============================================================================
+PART C — GOVERNANCE-SAFE REMEDIATION DECISION
+=============================================================================
+
+BLOCKER A (Execution Freeze Integrity): REQUIRES_SUCCESSOR_FREEZE_PACKAGE
+BLOCKER B (Alfresco Port): FALSE_ALARM_RESOLVED_BY_INVESTIGATION
+
+Remediation path:
+
+1. EXECUTION FREEZE INTEGRITY (BLOCKER A)
+   Decision: CREATE_SUCCESSOR_EXECUTION_FREEZE_PACKAGE
+   
+   Actions required:
+   a) Resolve 01_HUMAN_APPROVAL_BINDING.json documentation inconsistency:
+      - Option 1: Remove reference from README.md (file was never needed)
+      - Option 2: Create file from PHASE4_HUMAN_APPROVAL_MATERIALIZED/01_APPROVED_D1_D15.json
+      
+   b) Generate complete SHA256SUMS.txt with all 12 files including README.md
+   
+   c) Compute new package commitment using established mechanism
+   
+   d) Create successor package: PHASE4_FORMAL_EXECUTION_FREEZE_R1/ with:
+      - All D1-D15 decisions preserved (no scientific semantics changes)
+      - Complete checksum coverage
+      - Provenance linking to original freeze attempt and this forensic investigation
+      
+   e) Obtain new human authorization for corrected commitment
+   
+   Scientific impact: ZERO (all experimental parameters unchanged)
+   Governance impact: Requires new human approval round
+
+2. ALFRESCO PORT (BLOCKER B)
+   Decision: NO_ACTION_REQUIRED
+   
+   Finding: Port configuration is correct and operational.
+   Previous report contained incorrect port number (18080 vs actual 8080).
+   
+   Scientific impact: ZERO
+   Governance impact: NONE
+
+FORMAL_EXECUTION_GATE_STATUS = BLOCKED_PENDING_SUCCESSOR_FREEZE_PACKAGE_AND_HUMAN_REAPPROVAL
+
+=============================================================================
+FINAL SUMMARY
+=============================================================================
+
+INVESTIGATION_OUTCOME = TWO_BLOCKERS_INVESTIGATED_ONE_REAL_ONE_FALSE
+
+BLOCKER_A_INTEGRITY_MISMATCH:
+  Status: CONFIRMED
+  Severity: CRITICAL (blocks execution)
+  Root cause: SHA256SUMS.txt modified after initial commitment computation
+  Resolution: Successor execution freeze package required
+  
+BLOCKER_B_PORT_MISMATCH:
+  Status: FALSE_ALARM
+  Severity: NONE (no actual issue exists)
+  Root cause: Incorrect port number in prior blocker report
+  Resolution: None required, Alfresco operational on correct port
+
+FORMAL_EXPERIMENT_EXECUTION = REMAINS_BLOCKED
+BLOCKING_FACTOR = EXECUTION_FREEZE_INTEGRITY_ONLY
+
+RECOMMENDED_NEXT_ACTION = CREATE_SUCCESSOR_FREEZE_PACKAGE_WITH_CORRECTED_CHECKSUMS
+
+REAL_EXPERIMENT_RUNS_EXECUTED_DURING_INVESTIGATION = 0
+FROZEN_ARTIFACTS_MODIFIED_DURING_INVESTIGATION = 0
+GIT_STATE_MODIFIED_DURING_INVESTIGATION = NO
+SOURCE_CODE_MODIFIED_DURING_INVESTIGATION = NO
+
+INVESTIGATION_MODE = READ_ONLY_FORENSIC_AUDIT
+INVESTIGATION_STATUS = COMPLETE
+
+=============================================================================
+END OF REPORT
+=============================================================================

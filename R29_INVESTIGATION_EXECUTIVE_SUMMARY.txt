@@ -1,0 +1,107 @@
+R29 INVESTIGATION: EXECUTIVE SUMMARY
+=====================================
+
+FINDINGS
+--------
+
+R28C real run failed because AFL never contacted the scorer process.
+Root cause: task.json lacked the validity_endpoint field that AFL requires.
+
+The runner code:
+1. Started scorer process ✓
+2. Created Unix socket ✓
+3. Set environment variables ✓
+4. Wrote task.json WITHOUT validity_endpoint ✗
+5. Launched AFL (read incomplete task.json) ✗
+
+AFL behavior:
+- Read task.json, found validity_endpoint = NULL
+- Printed "vep=(null)" in startup banner (r28c_launch2.log:47)
+- Skipped all scorer invocations (line 784 early-return)
+- Result: scorer_rpc_ok=0, ZERO_SCORER_INVOCATIONS
+
+DEFECT CLASSIFICATION
+---------------------
+
+Class: ORCHESTRATION_GAP_TASK_JSON_VALIDITY_ENDPOINT_MISSING
+Location: scripts/run_alfresco_bounded_feedback.py after line 3179
+Severity: HIGH (100% reproduction, silent failure, invalid data)
+Scope: All model comparison runs
+
+FIX APPLIED
+-----------
+
+File: scripts/run_alfresco_bounded_feedback.py
+Lines: 3184-3191 (7 lines added)
+
+After scorer_manager.start(), the fix:
+1. Re-reads task.json
+2. Adds validity_endpoint field with scorer socket path
+3. Writes updated task.json
+
+AFL now reads valid validity_endpoint and can contact scorer.
+
+VALIDATION
+----------
+
+✓ Bug reproduced: r29_step6_reproduce_bug.py (exit 1 = bug confirmed)
+✓ TDD tests: 3/3 passing in test_model_comparison_task_orchestration.py
+✓ Fix verified: r29_step8_verify_fix.py (exit 0 = fix validated)
+✓ Unit tests: All existing tests still pass
+
+READINESS
+---------
+
+Status: CONDITIONAL READY for R30
+
+Required before R30 real-run authorization:
+□ Dry run with model comparison mode
+□ Verify task.json contains validity_endpoint
+□ Verify AFL banner shows vep=unix://... (not vep=(null))
+□ Verify scorer_rpc_ok > 0 in artifacts
+
+COMMIT READY: YES (awaiting approval)
+
+ARTIFACTS GENERATED
+-------------------
+
+Documentation:
+- R29_STEP2_R28C_ACTIVATION_STATE.txt
+- R29_STEP3_SCORER_STARTUP_PATH_TRACE.txt
+- R29_STEP4_R28C_RUNTIME_RECONCILIATION.txt
+- R29_STEP5_FAILURE_CLASS_DETERMINATION.txt
+- R29_STEP9_READINESS_DECISION.txt
+- R29_INVESTIGATION_EXECUTIVE_SUMMARY.txt (this file)
+
+Code:
+- r29_step6_reproduce_bug.py (bug reproduction script)
+- r29_step8_verify_fix.py (fix verification script)
+- tests/test_model_comparison_task_orchestration.py (TDD tests)
+
+Fix:
+- scripts/run_alfresco_bounded_feedback.py:3184-3191 (7 lines)
+
+IMPACT
+------
+
+R28C: Consumed one real-run authorization, produced invalid results
+Future: All model comparison runs will work correctly after this fix
+Risk: Minimal (isolated change, only affects model comparison mode)
+
+NEXT STEPS
+----------
+
+1. User reviews findings and approves fix
+2. Commit R29 changes with detailed commit message
+3. Execute dry run validation (model comparison mode)
+4. If dry run passes: authorize R30 real run
+5. Post-R30: verify scorer invocations in artifacts
+
+SECURITY BOUNDARIES HONORED
+---------------------------
+
+✓ No real campaign executed in R29
+✓ No live target contacted
+✓ No authorization consumed
+✓ Only local diagnostics and minimal focused repair
+✓ All R29 constraints respected

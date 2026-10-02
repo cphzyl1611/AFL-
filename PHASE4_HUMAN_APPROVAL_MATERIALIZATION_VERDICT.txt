@@ -1,0 +1,158 @@
+PHASE4_HUMAN_APPROVAL_MATERIALIZATION_VERDICT
+
+Date: 2026-09-21
+Session: GOVERNANCE_MATERIALIZATION_AND_EXECUTION_FREEZE_ONLY
+
+================================================================================
+HUMAN APPROVAL MATERIALIZATION
+================================================================================
+
+APPROVED_D1_D15_COUNT = 15
+APPROVAL_MATERIALIZATION_DIRECTORY = PHASE4_HUMAN_APPROVAL_MATERIALIZED
+APPROVAL_MATERIALIZATION_COMMITMENT_SHA256 = ed7fff25b1df98de46e6b70de7d967239cda2b5145d3ec7938c213cbf5c769ad
+
+SAMPLE_SIZE_METHOD = Method D: Fixed Pragmatic N
+FORMAL_PAIRED_BLOCK_COUNT = 30
+N30_ROLE = OPERATIONAL_FEASIBILITY_DRIVEN
+N30_POWER_JUSTIFIED = NO
+N30_PRECISION_JUSTIFIED = NO
+
+MASTER_SEED_DERIVATION_RULE = int(design_commitment[:8], 16)
+MASTER_SEED = 3485535768
+
+FROZEN_SEED_GENERATOR_SPEC_FOUND = YES
+FORMAL_SEED_COUNT = 30
+FORMAL_SEED_LIST_SHA256 = 1ee9bf81eb5374a4583b4d8bad101474dcd765a0512980dce249b252d5f1e962
+
+ORDER_RULE = Block i: AE-first if (i mod 2) = 1, SE-first if (i mod 2) = 0
+AE_FIRST_BLOCKS = 15
+SE_FIRST_BLOCKS = 15
+FORMAL_PAIRED_ORDER_SCHEDULE_SHA256 = 4b0fc48c37f3827a160e3bc0af7556d827c04f2b4926df423d23d6cbd4f06204
+
+SOURCE_IDENTITY_TYPE = COMPOSITE_4_FIELD_SOURCE_IDENTITY
+COMPOSITE_SOURCE_IDENTITY_BOUND = YES
+
+PRIMARY_CONFIRMATORY_ENDPOINT = security_state_new_total
+CONFIRMATORY_SECONDARY_ENDPOINTS = NONE
+SECONDARY_EXPLORATORY_ENDPOINTS = security_state_total, body_score_pass, body_score_reject
+
+FULL_VALIDITY_GATE_SET_PRESERVED = YES
+CANONICAL_SE_PROVENANCE_BOUND = YES
+
+================================================================================
+FORMAL EXECUTION FREEZE
+================================================================================
+
+EXECUTION_FREEZE_DIRECTORY = PHASE4_FORMAL_EXECUTION_FREEZE
+PHASE4_FORMAL_EXECUTION_FREEZE_COMMITMENT_SHA256 = fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+ALL_JSON_PARSE = PASS
+ALL_SHA256SUMS_VERIFY = PASS
+
+REAL_EXPERIMENT_RUNS = 0
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+GIT_REFS_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+PHASE4_HUMAN_DESIGN_APPROVAL_STATUS = APPROVED_AND_MATERIALIZED
+PHASE4_EXECUTION_FREEZE_STATUS = PASS_PENDING_FINAL_HUMAN_EXECUTION_AUTHORIZATION
+FORMAL_EXPERIMENT_EXECUTION_GATE = BLOCKED_PENDING_HUMAN_EXECUTION_FREEZE_APPROVAL
+
+================================================================================
+FROZEN EXECUTION BINDINGS
+================================================================================
+
+Composite Source Identity (4 fields):
+  git_head_commit: 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+  runner_sha256: 7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650
+  tracked_diff_sha256: 686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140
+  canonical_12file_manifest_sha256: 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b
+
+SE Runtime Provenance:
+  backend: sefanogan_es_reference
+  checkpoint_sha256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  metadata_sha256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  metadata_input_dim: 32
+  threshold: 1.2847454080581664
+
+AE Runtime Provenance:
+  backend: alfresco_ae_v1
+  threshold: 1.623614
+
+Run Budget:
+  MAX_TEST_CASES: 5
+  TIME_BUDGET_SECONDS: 60
+
+Formal Seed List (first 5 of 30):
+  Block 1: 1120356083
+  Block 2: 1662671266
+  Block 3: 679638914
+  Block 4: 1291771079
+  Block 5: 1925997588
+
+Counterbalanced Order Schedule (first 5 of 30):
+  Block 1 (seed 1120356083): AE-first
+  Block 2 (seed 1662671266): SE-first
+  Block 3 (seed 679638914): AE-first
+  Block 4 (seed 1291771079): SE-first
+  Block 5 (seed 1925997588): AE-first
+
+================================================================================
+PROVENANCE COMMITMENTS
+================================================================================
+
+Phase-3 Evidence Freeze:
+  517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8
+
+Phase-4 Design Package:
+  cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19
+
+Approval Blocker Reconciliation:
+  7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3
+
+Final Approval Template:
+  e825bfc9385b7ce7498824574c7012809afa3fb9e17d1776170d2c8f1644568e
+
+Human Approval Materialization:
+  ed7fff25b1df98de46e6b70de7d967239cda2b5145d3ec7938c213cbf5c769ad
+
+Formal Execution Freeze:
+  fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+================================================================================
+EXECUTION CONSTRAINTS VERIFIED
+================================================================================
+
+✓ Human approval of D1-D15 materialized
+✓ Master seed arithmetic verified (3485535768)
+✓ 30 unique formal seeds generated
+✓ Counterbalanced order schedule frozen (15+15 balance)
+✓ Composite source identity bound (4 fields)
+✓ Canonical SE provenance bound (checkpoint + metadata checksums)
+✓ Full validity gate set preserved (8+5+2 gates)
+✓ Run budget frozen (5 test cases, 60s)
+✓ Primary estimand frozen (mean paired difference)
+✓ All JSON parseable
+✓ All SHA256SUMS verified
+✓ No real experiment runs executed (0)
+✓ No source/tests/models/Git refs modified
+✓ No commits or pushes
+
+================================================================================
+EXECUTION GATE STATUS
+================================================================================
+
+HUMAN_DESIGN_APPROVAL: APPROVED_AND_MATERIALIZED
+EXECUTION_FREEZE: PASS_PENDING_FINAL_HUMAN_EXECUTION_AUTHORIZATION
+FORMAL_EXPERIMENT_EXECUTION_GATE: BLOCKED_PENDING_HUMAN_EXECUTION_FREEZE_APPROVAL
+
+Human approval of execution freeze commitment required before first real run.
+
+Execution freeze commitment: fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed
+
+================================================================================
+END VERDICT
+================================================================================

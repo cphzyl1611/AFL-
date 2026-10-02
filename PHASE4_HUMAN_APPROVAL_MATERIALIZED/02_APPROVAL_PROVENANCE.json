@@ -1,0 +1,46 @@
+{
+  "provenance_chain": {
+    "stage_1_protocol_design": {
+      "package_name": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN",
+      "commitment_sha256": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+      "status": "FROZEN",
+      "date": "2026-09-21"
+    },
+    "stage_2_human_decision_reconciliation": {
+      "package_name": "PHASE4_HUMAN_DECISION_RECONCILIATION",
+      "commitment_sha256": "f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44",
+      "status": "FROZEN",
+      "date": "2026-09-21"
+    },
+    "stage_3_approval_blocker_reconciliation": {
+      "package_name": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION",
+      "commitment_sha256": "7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3",
+      "status": "FROZEN",
+      "blockers_resolved": 6,
+      "date": "2026-09-21"
+    },
+    "stage_4_human_approval_materialization": {
+      "package_name": "PHASE4_HUMAN_APPROVAL_MATERIALIZED",
+      "status": "CURRENT",
+      "approval_statement": "批准按最终 approval template 的推荐值执行 D1–D15",
+      "date": "2026-09-21"
+    }
+  },
+  "authoritative_approval_template": {
+    "path": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md",
+    "sha256": "e825bfc9385b7ce7498824574c7012809afa3fb9e17d1776170d2c8f1644568e",
+    "verification_status": "VERIFIED"
+  },
+  "phase3_evidence_baseline": {
+    "package_name": "PHASE3_FINAL_EVIDENCE_FREEZE",
+    "commitment_sha256": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "status": "FROZEN",
+    "date": "2026-08-27"
+  },
+  "approval_materialization_metadata": {
+    "materialization_timestamp": "2026-09-21T14:05:00Z",
+    "materialization_method": "DETERMINISTIC_EXTRACTION_FROM_BOUND_APPROVAL_TEMPLATE",
+    "no_manual_overrides": true,
+    "all_values_from_frozen_template": true
+  }
+}

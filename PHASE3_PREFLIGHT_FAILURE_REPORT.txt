@@ -1,0 +1,78 @@
+PHASE 3 FINAL 5+5 CAMPAIGN — PREFLIGHT FAILURE
+
+TIMESTAMP: 2026-09-20
+SESSION: phase2-ae-snapshot-recovery worktree
+CAMPAIGN: AE vs SE 5+5 paired runs with inline validation gates
+
+================================================================================
+PREFLIGHT RESULTS
+================================================================================
+
+Baseline Identity:
+  HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408 [PASS]
+  CANONICAL_12FILE_MANIFEST_SHA256 = 26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b [PASS]
+  CANONICAL_12FILE_MANIFEST_ENTRY_COUNT = 12 [PASS]
+  ALL_12_FILE_HASHES_MATCH = YES [PASS]
+
+SE Model Artifacts:
+  SE_RUNTIME_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d [PASS]
+  SE_RUNTIME_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 [PASS]
+  SE_STANDALONE_SCORER_READY = YES [PASS]
+
+Alfresco Runtime:
+  DOCKER_DAEMON_REACHABLE = YES [PASS]
+  ALFRESCO_MAIN_CONTEXT_READY = YES [PASS]
+  ALFRESCO_CONTAINER_STATUS = Up 2 days (healthy) [PASS]
+  ALFRESCO_REAL_API_STATUS = HTTP_200 [PASS]
+
+================================================================================
+FATAL FAILURE — INPUT DIMENSION MISMATCH
+================================================================================
+
+SEFANOGAN_REFERENCE_INPUT_DIM:
+  Expected (baseline contract): 32
+  Actual (metadata file): 38
+  
+Status: FAIL
+
+The SE metadata file model_stage/models/sefanogan_es_reference_meta.json
+contains "input_dim": 38, contradicting the frozen baseline requirement
+of INPUT_DIM=32.
+
+This is a structural model incompatibility that prevents valid comparison
+between AE and SE backends. The feature vector dimension must match across
+all model artifacts and the harness configuration.
+
+================================================================================
+CAMPAIGN DECISION
+================================================================================
+
+PHASE3_5PLUS5_VERDICT = ABORTED_PREFLIGHT_INPUT_DIM_MISMATCH
+VALID_AE_RUNS = 0
+VALID_SE_RUNS = 0
+TOTAL_VALID_RUNS = 0
+GLOBAL_5PLUS5_CONTRACT = NOT_ATTEMPTED
+
+No real fuzzing runs executed.
+
+================================================================================
+REQUIRED RESOLUTION
+================================================================================
+
+Before re-attempting Phase 3:
+
+1. Determine authoritative INPUT_DIM value (32 or 38)
+2. If 32 is correct:
+   - Regenerate sefanogan_es_reference.json with INPUT_DIM=32
+   - Regenerate sefanogan_es_reference_meta.json with INPUT_DIM=32
+   - Update canonical SE artifact hashes in baseline contract
+3. If 38 is correct:
+   - Update baseline contract: SEFANOGAN_REFERENCE_INPUT_DIM = 38
+   - Verify all prior Phase 2 results used INPUT_DIM=38
+   - Update all documentation referencing INPUT_DIM=32
+4. Re-run complete preflight verification
+5. Only then execute the 5+5 campaign
+
+================================================================================
+END REPORT
+================================================================================

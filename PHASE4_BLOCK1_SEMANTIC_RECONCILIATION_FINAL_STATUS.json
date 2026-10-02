@@ -1,0 +1,81 @@
+{
+  "semantic_reconciliation_final_status": {
+    "task_name": "PHASE4_BLOCK1_ARTIFACT_GATE_SEMANTIC_RECONCILIATION",
+    "completion_date": "2026-09-21",
+    "status": "COMPLETE",
+    "governance_classification": "A_VALIDATOR_FALSE_NEGATIVE_UNDER_EXISTING_R1_SEMANTICS"
+  },
+  "deliverables": {
+    "semantic_reconciliation_report": {
+      "file": "PHASE4_BLOCK1_ARTIFACT_GATE_SEMANTIC_RECONCILIATION_REPORT.txt",
+      "sha256": "5f82bb23b60ad81da566da5350fba13723ab5e643c47167bde1a53ae9170994e"
+    },
+    "adjudication_package": {
+      "directory": "PHASE4_BLOCK1_SE_FALSE_NEGATIVE_ADJUDICATION/",
+      "sha256_of_checksums": "f7c4ace060e26a87723c5f5500a7458c326f44568562bf33be844121a12a9d20",
+      "files": [
+        "00_ADJUDICATION_STATUS.json",
+        "01_R1_CONTRACT_INTERPRETATION.md",
+        "02_VALIDATOR_FALSE_NEGATIVE_EVIDENCE.json",
+        "03_BLOCK1_SE_EVIDENCE_BINDING.json",
+        "04_PHASE3_PRECEDENT_BINDING.json",
+        "FILE_LIST.txt",
+        "SHA256SUMS.txt",
+        "README.md"
+      ]
+    }
+  },
+  "key_findings": {
+    "r1_semantically_requires_nv_probe_json": false,
+    "r1_semantically_requires_nv_state_db_json": false,
+    "r1_semantically_requires_body_score_pass_gt_0": false,
+    "validator_stricter_than_frozen_r1_contract": true,
+    "scientific_evidence_complete_without_missing_files": true,
+    "phase3_precedent_exact_match": true,
+    "block1_se_scientific_validity": "VALID"
+  },
+  "recommended_resolution": {
+    "option": "2_REPAIR_VALIDATOR_IMPLEMENTATION",
+    "rationale": "Aligns validator with R1 frozen contract, preserves Block 1 evidence, architecturally correct",
+    "implementation": "Conditionally require probe/state_db only when body_score_pass > 0 or nv_total_valid_exec > 0"
+  },
+  "execution_gate_status": {
+    "current_gate": "BLOCKED_PENDING_HUMAN_ADJUDICATION_AND_VALIDATOR_REPAIR_DECISION",
+    "block_1_ae_status": "VALID",
+    "block_1_se_status": "VALID_PENDING_VALIDATOR_REPAIR",
+    "block_2_execution": "BLOCKED",
+    "campaign_continuation": "BLOCKED"
+  },
+  "provenance_chain": [
+    {
+      "artifact": "PHASE4_FORMAL_EXECUTION_FREEZE_R1",
+      "commitment": "5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52"
+    },
+    {
+      "artifact": "PHASE4_R1_EXECUTION_LEDGER",
+      "location": "/tmp/phase4_r1_formal_execution/PHASE4_R1_EXECUTION_LEDGER.json"
+    },
+    {
+      "artifact": "PHASE4_BLOCK1_SE_ADJUDICATION_REPORT",
+      "commitment": "d9ef9cca8ae7f6b5cec96a2677a12e725d0fde38d8803b23be12c0ec1fe32643"
+    },
+    {
+      "artifact": "PHASE4_BLOCK1_SE_FALSE_NEGATIVE_ADJUDICATION",
+      "commitment": "f7c4ace060e26a87723c5f5500a7458c326f44568562bf33be844121a12a9d20"
+    },
+    {
+      "artifact": "PHASE4_BLOCK1_ARTIFACT_GATE_SEMANTIC_RECONCILIATION_REPORT",
+      "commitment": "5f82bb23b60ad81da566da5350fba13723ab5e643c47167bde1a53ae9170994e"
+    }
+  ],
+  "constraints_satisfied": {
+    "no_block_1_rerun": true,
+    "no_block_2_continuation": true,
+    "no_threshold_adjustment": true,
+    "no_model_source_test_changes": true,
+    "no_seed_replacement": true,
+    "no_r1_freeze_edit": true,
+    "no_silent_contract_override": true,
+    "no_commit_push": true
+  }
+}

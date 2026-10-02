@@ -1,0 +1,51 @@
+[05:44:02] ================================================================================
+[05:44:02] PHASE 3: AE vs SE 5+5 ENGINEERING VARIANCE PILOT
+[05:44:02] ================================================================================
+[05:44:02] 
+Step 0: Baseline Integrity Verification
+[05:44:02] --------------------------------------------------------------------------------
+[05:44:02] ✓ HEAD = 87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408
+[05:44:02] 
+Step 1: Runtime Preflight
+[05:44:02] --------------------------------------------------------------------------------
+[05:44:02] DOCKER_DAEMON_REACHABLE = YES
+[05:44:02] ALFRESCO_USER = SET_NONBLANK
+[05:44:02] ALFRESCO_PASS = SET_NONBLANK
+[05:44:02] SE_STANDALONE_SCORER_READY = YES
+[05:44:02] 
+Step 2: Execute 5 Paired Blocks
+[05:44:02] ================================================================================
+[05:44:02] 
+Seed 1/5: 20260915
+[05:44:02] ================================================================================
+[05:44:02] 
+[AE] Running with seed 20260915...
+[05:44:02] 
+================================================================================
+[05:44:02] Run 1: alfresco_ae_v1 with seed=20260915
+[05:44:02] ================================================================================
+[05:44:02] Executing bounded run...
+[05:44:02]   backend=alfresco_ae_v1, seed=20260915, max_cases=5, budget=60s
+[05:44:03] ✓ Run completed successfully in 1.5s
+[05:44:03]   Validating alfresco_ae_v1 evidence...
+[05:44:03]     ✓ All evidence checks passed
+[05:44:03]       RPC ok=5, fail=0
+[05:44:03]       trace_invocations=5, backend=alfresco_ae_v1
+[05:44:03] ✓ Run manifest hash: 43dd82d150eccc28...
+[05:44:03] ✓ AE run VALID
+[05:44:03] 
+[SE] Running with seed 20260915...
+[05:44:03] 
+================================================================================
+[05:44:03] Run 1: sefanogan_es_reference with seed=20260915
+[05:44:03] ================================================================================
+[05:44:03] Executing bounded run...
+[05:44:03]   backend=sefanogan_es_reference, seed=20260915, max_cases=5, budget=60s
+[05:44:04] ✗ Run failed with exit code 3 after 0.7s
+[05:44:04]   stdout tail:
+
+[05:44:04]   stderr tail:
+SCORER_STARTUP_FAILED: SCORER_PROCESS_DIED_DURING_STARTUP
+
+[05:44:04] ✗ SE run failed for seed 20260915
+[05:44:04] STOP: Invalid run detected

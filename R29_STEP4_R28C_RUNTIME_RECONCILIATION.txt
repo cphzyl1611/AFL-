@@ -1,0 +1,223 @@
+R29 STEP 4: R28C RUNTIME RECONCILIATION
+========================================
+
+WHAT AFL EXPECTED (from source code)
+-------------------------------------
+
+File: src/afl-fuzz.c
+Lines: 378, 449-450
+
+Expected task.json schema:
+{
+  "target_type": "http_api",
+  "target_endpoint": "content_update",
+  "seed_source": "seed_file",
+  "seed_location": "/path/to/seed_dir",
+  "mutation_scope": ["field_value", "field_boundary", "field_structure"],
+  "max_test_cases": 3,
+  "time_budget": 30,
+  "enable_validity": 1,
+  "validity_endpoint": "unix:///tmp/r28c_.../scorer.sock"  <-- REQUIRED FOR MODEL COMPARISON
+}
+
+AFL parsing logic:
+  const char *vep = json_get_string(j, "validity_endpoint");
+  if (vep && *vep) {
+    afl->nv_task.validity_endpoint = ck_strdup(vep);
+  } else {
+    afl->nv_task.validity_endpoint = NULL;  // Implicitly
+  }
+
+AFL scorer invocation logic (src/afl-fuzz-run.c:783-784):
+  const char *ep = afl->nv_task.validity_endpoint;
+  if (!ep || !*ep) return 0.0;  // Skip scorer if NULL
+
+WHAT R28C ACTUALLY PROVIDED
+----------------------------
+
+File: /tmp/r28c_real_run_20260929_191711_7312_5f43355c/task.json
+
+Actual task.json content (verified in previous steps):
+{
+  "enable_validity": 1,
+  "input_format": "full_http",
+  "max_test_cases": 3,
+  "mutation_scope": ["field_value", "field_boundary", "field_structure"],
+  "readback": "byte_exact_content",
+  "scenario": "content_update",
+  "seed_location": "/tmp/r28c_real_run_20260929_191711_7312_5f43355c/seed_input",
+  "seed_source": "seed_file",
+  "target_endpoint": "content_update",
+  "target_kind": "existing_file",
+  "target_type": "http_api",
+  "time_budget": 30
+}
+
+Missing field: "validity_endpoint"
+
+RECONCILIATION: WHY THE MISMATCH OCCURRED
+------------------------------------------
+
+1. RUNNER ARGUMENT HANDLING
+   User invoked with: --model_comparison --validity_backend sefanogan_es_reference
+
+   Line 3126: task = build_task_payload(
+     ...
+     validity_backend=args.validity_backend,  # Passed correctly
+   )
+
+2. BUILD_TASK_PAYLOAD DEFECT
+   File: scripts/run_alfresco_bounded_feedback.py:655-736
+
+   Function signature (line 655):
+     def build_task_payload(
+       seed_dir: Path,
+       *,
+       max_test_cases: int,
+       time_budget: int,
+       mutation_scope: Sequence[str] = DEFAULT_MUTATION_SCOPE,
+       target_file_name: str | None = None,
+       seed_source: str = "seed_file",
+       seed_manifest: Path | None = None,
+       scenario: str = "metadata_update",
+       input_format: str = "full_http",
+       parent_node_id: str | None = None,
+       validity_backend: str = DEFAULT_VALIDITY_BACKEND,  # Receives it!
+     ) -> dict:
+
+   Line 676-677: Validates validity_backend
+   Lines 703-736: Builds payload dict
+
+   Payload construction (excerpt):
+     payload = {
+       "target_type": "http_api",
+       "target_endpoint": target_endpoint,
+       "seed_source": seed_source,
+       "seed_location": str(Path(seed_dir).resolve()),
+       "mutation_scope": canonical_scope,
+       "max_test_cases": int(max_test_cases),
+       "time_budget": int(time_budget),
+       "enable_validity": 0 if scenario == "multipart_upload" else 1,
+     }
+     # ... more fields added for specific scenarios ...
+     return payload  # Line 736
+
+   **DEFECT**: validity_backend parameter is validated but never used to
+   populate a validity_endpoint field in the payload.
+
+3. TASK.JSON WRITE TIMING
+   Code flow in main():
+
+   Line 3126-3138: Build and write task.json
+     task = build_task_payload(..., validity_backend=args.validity_backend)
+     layout["task"].write_text(json.dumps(task, ...))
+
+   Line 3165-3179: Start scorer (AFTER task.json written)
+     scorer_socket = layout["run_root"] / "scorer.sock"
+     scorer_manager = ScorerLifecycleManager(
+       socket_path=scorer_socket, ...
+     )
+     scorer_manager.start()
+
+   **GAP**: No code between lines 3179 and 3205 updates task.json to add
+   the scorer socket path.
+
+4. AFL LAUNCH
+   Line 2488-2513: launch_bounded_afl()
+
+   AFL reads task.json at startup (src/afl-fuzz-init.c)
+   Finds no validity_endpoint field
+   Sets afl->nv_task.validity_endpoint = NULL
+   Prints "vep=(null)" in banner (r28c_launch2.log:47)
+
+EXPECTED RUNTIME STATE VS ACTUAL
+---------------------------------
+
+COMPONENT: Scorer Process
+  Expected: Running, listening on Unix socket
+  Actual:   Unknown (likely started but no evidence AFL ever contacted it)
+  Evidence: R28C artifacts don't show scorer stdout/stderr or socket status
+
+COMPONENT: Scorer Socket Path
+  Expected: /tmp/r28c_real_run_20260929_191711_7312_5f43355c/scorer.sock
+  Actual:   Socket likely created but path never reached AFL
+  Evidence: Line 3167 shows socket_path = layout["run_root"] / "scorer.sock"
+
+COMPONENT: AFL task.validity_endpoint
+  Expected: "unix:///tmp/r28c_.../scorer.sock"
+  Actual:   NULL
+  Evidence: r28c_launch2.log:47 shows "vep=(null)"
+
+COMPONENT: AFL scorer invocations
+  Expected: Every valid execution triggers scorer RPC
+  Actual:   Zero scorer RPCs (line 784 early-return due to NULL endpoint)
+  Evidence: model_comparison_validity.json shows scorer_rpc_ok=0
+
+COMPONENT: Model comparison verdict
+  Expected: VALID (or INVALID with scores recorded)
+  Actual:   INVALID_FOR_MODEL_COMPARISON
+  Evidence: Reason codes: ZERO_SCORER_INVOCATIONS, TRACE_MISSING
+
+SOURCE CODE ASSUMPTION VIOLATED
+--------------------------------
+
+AFL's C code assumes:
+  "If a run is configured for model comparison, task.json will contain
+   a validity_endpoint field pointing to a live Unix socket."
+
+This assumption is documented by:
+1. No fallback logic when validity_endpoint is NULL
+2. No environment variable alternative (AFL doesn't check NV_BODY_SCORE_ENDPOINT)
+3. Early-return design: if (!ep || !*ep) return 0.0;
+
+The runner VIOLATES this assumption by:
+1. Starting scorer process ✓
+2. Setting NV_BODY_SCORE_ENDPOINT environment variable ✓
+3. Writing task.json WITHOUT validity_endpoint ✗
+4. Launching AFL which only reads task.json, not environment ✗
+
+WHY THIS WASN'T CAUGHT EARLIER
+-------------------------------
+
+1. The runner code has TWO parallel validity mechanisms:
+   - Environment variables (NV_BODY_SCORE_ENDPOINT, etc.)
+   - Task.json fields (validity_endpoint)
+
+2. The harness (nv_http_harness.py) reads from environment
+   The fuzzer (afl-fuzz) reads from task.json
+
+3. No integration test validates that AFL can actually reach the scorer
+   in model comparison mode
+
+4. The build_task_payload() function signature accepts validity_backend
+   but doesn't document that it's unused for validity_endpoint
+
+ARCHITECTURAL DEBT
+------------------
+
+The split between environment variables and JSON config creates
+coordination failures:
+
+- Harness uses: NV_STATUS_PATH, NV_BODY_RULES, NV_BODY_SCORE_ENDPOINT
+- AFL uses: task.json fields including validity_endpoint
+- Runner must keep both in sync but has no type-safe contract
+
+The validity_backend parameter to build_task_payload() is misleading:
+it's validated but not used, suggesting it controls something (which
+it doesn't).
+
+CONCLUSION
+----------
+
+R28C runtime did not match AFL's expectations because:
+
+1. The runner launched scorer and set environment variables
+2. But AFL doesn't read environment variables for scorer path
+3. AFL only reads task.json, which lacked validity_endpoint
+4. build_task_payload() receives validity_backend but doesn't populate
+   validity_endpoint (because socket path not available yet)
+5. No code after scorer startup updates task.json with the socket path
+6. AFL started with NULL validity_endpoint and skipped all scorer calls
+
+The defect is an orchestration gap: task.json is finalized before the
+scorer socket exists, and never updated afterwards.

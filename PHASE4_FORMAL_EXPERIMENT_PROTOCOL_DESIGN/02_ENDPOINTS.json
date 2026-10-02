@@ -1,0 +1,119 @@
+{
+  "endpoint_classification": {
+    "primary_endpoint": {
+      "name": "security_state_new_total",
+      "type": "count",
+      "description": "Number of testcases that triggered new security_state coverage transitions during the fuzzing run",
+      "source": "fuzzer_stats file emitted by afl-fuzz",
+      "paired_difference_definition": "SE_security_state_new_total_i - AE_security_state_new_total_i",
+      "role": "confirmatory",
+      "justification": "This metric directly reflects the fuzzer's ability to discover new security-relevant program states, which is the primary scientific question."
+    },
+    "secondary_endpoints": {
+      "effectiveness_related": [
+        {
+          "name": "security_state_total",
+          "type": "count",
+          "description": "Total security_state coverage observed (cumulative, not new)",
+          "source": "fuzzer_stats",
+          "role": "exploratory",
+          "justification": "Provides context about absolute coverage levels, but confounds initial corpus with new discoveries."
+        }
+      ],
+      "validity_contract": [
+        {
+          "name": "body_score_rpc_ok",
+          "type": "count",
+          "description": "Number of successful RPC calls to the scoring backend",
+          "source": "run manifest JSON",
+          "role": "diagnostic_gate",
+          "justification": "Required >0 for run validity; not a scientific endpoint."
+        },
+        {
+          "name": "body_score_rpc_fail",
+          "type": "count",
+          "description": "Number of failed RPC calls to the scoring backend",
+          "source": "run manifest JSON",
+          "role": "diagnostic_gate",
+          "justification": "Required =0 for run validity; not a scientific endpoint."
+        },
+        {
+          "name": "trace_invocations",
+          "type": "count",
+          "description": "Number of times the scorer trace mechanism was invoked",
+          "source": "run manifest JSON",
+          "role": "diagnostic_gate",
+          "justification": "Required >0 for run validity; not a scientific endpoint."
+        },
+        {
+          "name": "body_score_pass",
+          "type": "count",
+          "description": "Number of testcases that passed the scoring threshold",
+          "source": "run manifest JSON",
+          "role": "exploratory",
+          "justification": "Describes model-specific filtering behavior; useful for understanding accept/reject patterns but not a primary effectiveness measure."
+        },
+        {
+          "name": "body_score_reject",
+          "type": "count",
+          "description": "Number of testcases that failed the scoring threshold",
+          "source": "run manifest JSON",
+          "role": "exploratory",
+          "justification": "Describes model-specific filtering behavior; useful for understanding accept/reject patterns but not a primary effectiveness measure."
+        }
+      ],
+      "runtime_diagnostics": [
+        {
+          "name": "counted_execution_count",
+          "type": "count",
+          "description": "Total executions counted by the fuzzer during the run",
+          "source": "fuzzer_stats",
+          "role": "diagnostic",
+          "justification": "Engineering diagnostic; helps verify execution budget was actually consumed."
+        },
+        {
+          "name": "wall_clock_seconds",
+          "type": "float",
+          "description": "Wall-clock time elapsed during the fuzzing run",
+          "source": "run manifest JSON",
+          "role": "diagnostic",
+          "justification": "Engineering diagnostic; helps verify time budget was respected."
+        },
+        {
+          "name": "target_baseline_identity",
+          "type": "string",
+          "description": "Hash or identifier of the target baseline state used",
+          "source": "run manifest JSON",
+          "role": "provenance",
+          "justification": "Required for reproducibility; not a scientific endpoint."
+        }
+      ]
+    }
+  },
+  "endpoint_separation_policy": {
+    "confirmatory_analysis": [
+      "security_state_new_total"
+    ],
+    "exploratory_analysis": [
+      "security_state_total",
+      "body_score_pass",
+      "body_score_reject"
+    ],
+    "validity_gates": [
+      "body_score_rpc_ok > 0",
+      "body_score_rpc_fail = 0",
+      "trace_invocations > 0"
+    ],
+    "diagnostic_only": [
+      "counted_execution_count",
+      "wall_clock_seconds",
+      "target_baseline_identity"
+    ]
+  },
+  "notes": [
+    "Validity gates must pass before a run contributes to the analysis denominator.",
+    "A valid run with security_state_new_total = 0 is a scientific zero result, not an exclusion.",
+    "Diagnostic counters do not replace the primary endpoint in the analysis.",
+    "Secondary endpoints are reported descriptively unless explicitly promoted to confirmatory status before execution."
+  ]
+}

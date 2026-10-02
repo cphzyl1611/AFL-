@@ -1,0 +1,153 @@
+{
+  "approved_design_decisions": {
+    "d1_primary_estimand": {
+      "decision_number": 1,
+      "decision_name": "Primary Estimand",
+      "approved_value": "Mean paired difference for security_state_new_total",
+      "formal_specification": "θ = E[Δᵢ] where Δᵢ = security_state_new_total(SE, seed_i) - security_state_new_total(AE, seed_i)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D1"
+    },
+    "d2_secondary_exploratory_endpoints": {
+      "decision_number": 2,
+      "decision_name": "Secondary Exploratory Endpoints",
+      "approved_value": [
+        "security_state_total",
+        "body_score_pass",
+        "body_score_reject"
+      ],
+      "analysis_type": "descriptive only, no multiplicity correction",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D2"
+    },
+    "d3_validity_evidence_gates": {
+      "decision_number": 3,
+      "decision_name": "Validity/Evidence Gates",
+      "approved_value": "Full validity gate set from 04_FULL_VALIDITY_GATE_CONTRACT.json",
+      "universal_gates": 8,
+      "se_specific_gates": 5,
+      "ae_specific_gates": 2,
+      "paired_block_exclusion_rule": "If either run in a pair fails any gate, exclude entire paired block (no replacement)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D3"
+    },
+    "d4_paired_design_confirmation": {
+      "decision_number": 4,
+      "decision_name": "Paired Design Confirmation",
+      "approved_value": "Paired comparison design (AE and SE use identical seed within each block)",
+      "estimand": "Mean paired difference (not independent-samples)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D4"
+    },
+    "d5_execution_order": {
+      "decision_number": 5,
+      "decision_name": "Execution Order",
+      "approved_value": "Counterbalanced alternating order",
+      "exact_rule": "Block i: AE-first if (i mod 2) = 1, SE-first if (i mod 2) = 0",
+      "for_n30": "15 AE-first blocks, 15 SE-first blocks",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D5"
+    },
+    "d6_fuzzing_budget": {
+      "decision_number": 6,
+      "decision_name": "Fuzzing Budget",
+      "approved_value": "Same as Phase-3 (validated in 5+5 pilot)",
+      "max_test_cases": 5,
+      "time_budget_seconds": 60,
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D6"
+    },
+    "d7_sample_size_method": {
+      "decision_number": 7,
+      "decision_name": "Sample Size Method",
+      "approved_value": "Method D: Fixed pragmatic N",
+      "fallback_if_rejected": "Method C: Blinded variance re-estimation",
+      "method_labels_authoritative": {
+        "method_a": "MPID + Power",
+        "method_b": "Precision-Based Design",
+        "method_c": "Blinded Variance Re-estimation",
+        "method_d": "Fixed Pragmatic N"
+      },
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D7"
+    },
+    "d8_fixed_n_value": {
+      "decision_number": 8,
+      "decision_name": "Fixed N Value (Method D chosen)",
+      "approved_value": 30,
+      "n30_role": "OPERATIONAL_FEASIBILITY_DRIVEN",
+      "n30_power_justified": false,
+      "n30_precision_justified": false,
+      "n30_clt_heuristic_reference": "DESCRIPTIVE_ONLY (not prescriptive)",
+      "human_acceptance_of_pragmatic_n": true,
+      "inferential_limitations_acknowledged": true,
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D8"
+    },
+    "d9_master_seed_selection": {
+      "decision_number": 9,
+      "decision_name": "Master Seed Selection",
+      "approved_value": "Commitment-derived deterministic seed",
+      "derivation_rule": "int(design_commitment[:8], 16)",
+      "design_commitment": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+      "first_8_hex": "cfc10e18",
+      "master_seed": 3485535768,
+      "seed_domain": "32-bit unsigned integer",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D9"
+    },
+    "d10_source_baseline_identity": {
+      "decision_number": 10,
+      "decision_name": "Source Baseline Identity",
+      "approved_value": "Composite 4-field source identity",
+      "identity_type": "COMPOSITE_4_FIELD_SOURCE_IDENTITY",
+      "git_head_commit": "87bee5c6fa1f0a8f7d6df2a301df3b7f879aa408",
+      "runner_sha256": "7acb5192fc7c4c6fbb3f24155d94eb68809cca0306d7600855c6504444bf3650",
+      "tracked_diff_sha256": "686a1e65035ac38145b606f4c765f6a1220e6f9f9f2206338354bd2a84112140",
+      "canonical_12file_manifest_sha256": "26c2e4f3871d7deffb4ab7fc356f6973b8f01b5985d189ed6afcc79b251a2c5b",
+      "working_tree_status": "DIRTY (intentionally preserved)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D10"
+    },
+    "d11_stopping_rule": {
+      "decision_number": 11,
+      "decision_name": "Stopping Rule",
+      "approved_value": "Fixed-N design (no interim analysis, no early stopping)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D11"
+    },
+    "d12_hypothesis_test": {
+      "decision_number": 12,
+      "decision_name": "Hypothesis Test",
+      "approved_value": "Permutation test (if requested)",
+      "primary_deliverable": "Point estimate θ̂ and 95% bootstrap confidence interval",
+      "hypothesis_test_status": "Optional supplementary analysis",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D12"
+    },
+    "d13_confidence_interval_method": {
+      "decision_number": 13,
+      "decision_name": "Confidence Interval Method",
+      "approved_value": "Bootstrap percentile method (95% CI)",
+      "bootstrap_iterations": 10000,
+      "bootstrap_type": "paired resampling",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D13"
+    },
+    "d14_failure_replacement": {
+      "decision_number": 14,
+      "decision_name": "Failure Replacement",
+      "approved_value": "No replacement (intent-to-treat paired blocks)",
+      "exclusion_rule": "If either run in paired block fails validity gates, exclude entire block",
+      "zero_observation_status": "Valid scientific observation (not a failure)",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D14"
+    },
+    "d15_multi_stage_evidence_freeze": {
+      "decision_number": 15,
+      "decision_name": "Multi-Stage Evidence Freeze",
+      "approved_value": "Five-stage evidence freeze protocol",
+      "stages": [
+        "Protocol Design Freeze",
+        "Reconciliation Freeze",
+        "Execution Log Freeze",
+        "Run Evidence Freeze",
+        "Campaign Freeze"
+      ],
+      "commitment_per_stage": "SHA256 commitment of freeze package",
+      "source": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION/07_FINAL_HUMAN_APPROVAL_TEMPLATE.md D15"
+    }
+  },
+  "approval_summary": {
+    "total_decisions_approved": 15,
+    "all_recommended_values_approved": true,
+    "no_alternative_values_specified": true,
+    "approval_complete": true
+  }
+}

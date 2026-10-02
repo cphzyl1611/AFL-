@@ -1,0 +1,74 @@
+PHASE4 R1 FORMAL EXECUTION - BLOCK 1 FAILURE REPORT
+====================================================
+
+EXECUTION STATUS: BLOCKED_AT_BLOCK_1
+FAIL_FAST_TRIGGERED: YES
+
+Block 1 Schedule
+----------------
+formal_seed: 1120356083
+first_backend: alfresco_ae_v1 (AE-first)
+second_backend: sefanogan_es_reference
+
+First Run (AE) - VALID
+----------------------
+Backend: alfresco_ae_v1
+Status: VALID
+body_score_rpc_ok: 5
+body_score_pass: 5
+body_score_reject: 0
+target_invoked: YES (all executions)
+security_state_new_total: 1
+nv_mab_total_pulls: 2
+trace_invocations: 5
+artifact_contract: PASS
+model_comparison_validity: PASS
+readback: PASS
+
+Second Run (SE) - INVALID
+--------------------------
+Backend: sefanogan_es_reference
+Status: INVALID_EXCLUDED
+body_score_rpc_ok: 5
+body_score_pass: 0
+body_score_reject: 5
+target_invoked: NO (zero executions)
+security_state_new_total: 1 (seed only)
+nv_mab_total_pulls: 0
+trace_invocations: 5 (scoring only)
+artifact_contract: FAILED
+missing_artifacts: nv_probe.json, nv_state_db.json
+
+ROOT CAUSE
+----------
+The SE validity backend rejected all 5 mutated inputs at the body_score
+validation gate, preventing any HTTP execution from reaching the target.
+
+With zero valid executions:
+- No primary endpoint observations beyond seed
+- No MAB reward updates
+- Required artifacts not created
+- Cannot compute paired delta
+
+VALIDITY GATE COMPARISON
+------------------------
+AE: 5/5 bodies passed score gate → 5 valid executions
+SE: 0/5 bodies passed score gate → 0 valid executions
+
+The SE scorer is more restrictive than AE for this seed's mutation space.
+
+FROZEN EXECUTION PROTOCOL COMPLIANCE
+------------------------------------
+Per R1 fail-fast contract:
+- Any invalid run stops the campaign before the next run
+- No automatic rerun permitted
+- No replacement seed permitted
+- Campaign blocks pending human adjudication
+
+COMPLETED_BLOCKS: 0
+VALID_AE_RUNS: 1
+VALID_SE_RUNS: 0
+TOTAL_VALID_RUNS: 1
+
+NEXT_GATE: BLOCKED_PENDING_HUMAN_ADJUDICATION
+ANALYSIS_EXECUTED: NO

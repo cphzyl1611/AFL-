@@ -1,0 +1,141 @@
+================================================================================
+STEP 2 — FIXED EXECUTION CONTRACT RECONFIRMATION
+================================================================================
+
+TIMESTAMP: 2026-09-23
+WORKTREE: /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery
+EVIDENCE_DIRECTORY: alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/
+
+================================================================================
+HUMAN AUTHORIZATION SCOPE (PRESERVED FROM PRELAUNCH)
+================================================================================
+
+AUTHORIZATION_SCOPE = GRANTED
+AUTHORIZED_AE_RUNS = 1
+AUTHORIZED_SE_RUNS = 1
+AUTHORIZED_MAX_TEST_CASES = 5
+AUTHORIZED_TIME_BUDGET = 60
+AUTHORIZED_SEED = SAME_SEED_BOTH_BACKENDS
+AUTHORIZED_MODEL_COMPARISON = ENABLED
+AUTHORIZED_SCORER_READY_TIMEOUT = 10
+
+Source: Human authorization message (2026-09-23)
+Status: BINDING
+
+================================================================================
+FROZEN PILOT SEED
+================================================================================
+
+PILOT_SEED = 6103669
+PILOT_SEED_FROZEN = YES
+PILOT_SEED_FILE = alfresco_multiinterface_expansion/round3_content_update_real_dual_backend_1p1/PILOT_SEED.txt
+
+Preservation Reason: No experimental process launched during prelaunch failure
+Reuse Status: AUTHORIZED
+
+================================================================================
+AE RUN EXECUTION PARAMETERS (RUN 1 OF 2)
+================================================================================
+
+SCENARIO = content_update
+VALIDITY_BACKEND = alfresco_ae_v1
+AFL_SEED = 6103669
+MAX_TEST_CASES = 5
+TIME_BUDGET = 60
+MODEL_COMPARISON = enabled
+SCORER_READY_TIMEOUT = 10
+SCORER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+MUTATION_SCOPE = field_value
+
+Target Binding:
+  target_node_id = 1d16a46c-5518-4f11-96a4-6c55188f1172
+  target_name = nv-afl-levelc-metadata.txt
+  endpoint = PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/1d16a46c-5518-4f11-96a4-6c55188f1172/content
+
+Scorer Configuration:
+  backend = alfresco_ae_v1
+  threshold_source = alfresco_ae_v1_meta.json::threshold_high
+  rpc_endpoint = unix://<run_root>/scorer.sock
+
+================================================================================
+SE RUN EXECUTION PARAMETERS (RUN 2 OF 2)
+================================================================================
+
+SCENARIO = content_update
+VALIDITY_BACKEND = sefanogan_es_reference
+AFL_SEED = 6103669
+MAX_TEST_CASES = 5
+TIME_BUDGET = 60
+MODEL_COMPARISON = enabled
+SCORER_READY_TIMEOUT = 10
+SCORER_PYTHON = /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+MUTATION_SCOPE = field_value
+
+Target Binding:
+  target_node_id = 1d16a46c-5518-4f11-96a4-6c55188f1172
+  target_name = nv-afl-levelc-metadata.txt
+  endpoint = PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/1d16a46c-5518-4f11-96a4-6c55188f1172/content
+
+Scorer Configuration:
+  backend = sefanogan_es_reference
+  checkpoint_sha256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  metadata_sha256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  input_dim = 32
+  threshold_source = sefanogan_es_realrun_threshold.json
+  rpc_endpoint = unix://<run_root>/scorer.sock
+
+Canonical Provenance:
+  checkpoint_path = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  metadata_path = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+================================================================================
+ARTIFACT CONTRACT REQUIREMENTS (BOTH RUNS)
+================================================================================
+
+Setup Required:
+  - target.json (runtime config with placeholder substitution)
+  - task.json (scenario=content_update, input_format=full_http)
+  - seed_dir/seed.http (HTTP PUT request with text/plain body)
+  - afl-out/ (AFL output directory)
+  - evidence/ (evidence directory)
+  - err_dir/ (error cases directory)
+
+Execution Required:
+  - nv_http_status.json (HTTP response stats)
+  - nv_http_status.json.seq (sequence file)
+  - nv_probe.json (state probe output)
+  - nv_state_db.json (state database)
+  - nv_state_trace.jsonl (state trace)
+  - afl-out/fuzzer_stats (AFL stats)
+  - evidence/mab_updates.jsonl (MAB journal)
+  - evidence/seed_selection.jsonl (seed selection audit)
+
+Model-Comparison Required:
+  - nv_body_valid_stats.json (RPC counters: body_score_rpc_ok > 0)
+  - scorer_trace.jsonl (backend identity matches expected backend)
+  - evidence/model_comparison_validity.json (participation verdict = PASS)
+
+Readback Required:
+  - evidence/readback.json (content hash verification, correlation with exec_seq)
+
+================================================================================
+STEP 2 VERDICT
+================================================================================
+
+FIXED_EXECUTION_CONTRACT_RECONFIRMED = YES
+
+All execution parameters match human authorization:
+  ✓ seed = 6103669 (frozen, preserved from prelaunch)
+  ✓ max_test_cases = 5
+  ✓ time_budget = 60
+  ✓ model_comparison = enabled
+  ✓ scorer_ready_timeout = 10
+  ✓ AE backend = alfresco_ae_v1
+  ✓ SE backend = sefanogan_es_reference (canonical provenance)
+  ✓ target = content_update (node 1d16a46c-5518-4f11-96a4-6c55188f1172)
+
+GATE_STATUS = OPEN_FOR_AE_LAUNCH
+
+Next: STEP 3 (Execute AE run with model-comparison mode)
+
+================================================================================

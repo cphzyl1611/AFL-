@@ -1,0 +1,391 @@
+================================================================================
+PHASE 4 FORMAL EXPERIMENT PROTOCOL DESIGN - FINAL VERDICT
+================================================================================
+
+PHASE4_FORMAL_DESIGN_VERDICT = DESIGN_COMPLETE_AWAITING_HUMAN_APPROVAL
+
+--------------------------------------------------------------------------------
+PHASE-3 BINDING
+--------------------------------------------------------------------------------
+
+PHASE3_FREEZE_COMMITMENT = 517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8
+PHASE3_ACCEPTANCE = PASS
+ENGINEERING_VARIANCE_PILOT = PASS
+
+This protocol binds to the frozen Phase-3 evidence package and does not
+reinterpret or rewrite Phase-3 evidence.
+
+--------------------------------------------------------------------------------
+PRIMARY ESTIMAND
+--------------------------------------------------------------------------------
+
+PRIMARY_ESTIMAND = Mean paired difference E[Δᵢ] where Δᵢ = SE_i - AE_i
+
+ESTIMAND_DEFINITION:
+  - Δᵢ = SE_security_state_new_total_i - AE_security_state_new_total_i
+  - Experimental unit = one paired seed block
+  - Pairing removes between-seed variance
+  - Isolates model-conditioned testing behavior difference
+
+INTERPRETATION:
+  - Positive Δᵢ: SE observed more security_state_new_total than AE for that seed
+  - Zero Δᵢ: Both backends observed same count for that seed
+  - Negative Δᵢ: AE observed more security_state_new_total than SE for that seed
+
+--------------------------------------------------------------------------------
+PRIMARY ENDPOINT
+--------------------------------------------------------------------------------
+
+PRIMARY_ENDPOINT = security_state_new_total
+
+ENDPOINT_TYPE = Count (non-negative integer)
+ROLE = Confirmatory
+SOURCE = fuzzer_stats file emitted by afl-fuzz
+
+SECONDARY_ENDPOINTS = Exploratory (unless promoted to confirmatory before execution)
+  - security_state_total
+  - body_score_pass
+  - body_score_reject
+  - runtime diagnostics
+
+VALIDITY_GATES = Required for all runs
+  - body_score_rpc_ok > 0
+  - body_score_rpc_fail = 0
+  - trace_invocations > 0
+  - exact backend recorded
+  - trace stats reconciliation = PASS
+  - artifact contract = PASS
+  - SE provenance verification = PASS (SE runs only)
+
+--------------------------------------------------------------------------------
+PAIRING STRATEGY
+--------------------------------------------------------------------------------
+
+PAIRING_STRATEGY = Paired seed blocks with identical experimental conditions
+
+PAIRED_BLOCK_STRUCTURE:
+  - Block_i contains: AE(seed_i) and SE(seed_i)
+  - Both runs share: identical seed, source, corpus, target, baseline, budget
+  - Paired difference: Δᵢ = SE_i - AE_i
+
+BASELINE_RESET = Between runs within each pair to ensure identical coverage baseline
+
+PAIRING_VALIDITY = Both runs in a pair must pass all validity gates
+
+--------------------------------------------------------------------------------
+ORDER STRATEGY
+--------------------------------------------------------------------------------
+
+ORDER_STRATEGY = Human decision required (D8)
+
+OPTIONS:
+  - Fixed order: AE always first, then SE (recommended, matches Phase-3)
+  - Randomized/counterbalanced order: preregistered deterministic randomization
+
+RECOMMENDATION = Fixed order (AE first) unless order effects are a scientific concern
+
+ORDER_RECORDING = Every run manifest must record execution order within pair
+
+--------------------------------------------------------------------------------
+SAMPLE SIZE PLAN
+--------------------------------------------------------------------------------
+
+SAMPLE_SIZE_METHOD_RECOMMENDATION = Four methods evaluated (A, B, C, D)
+
+METHOD_A = MPID + Power (conventional, requires justified MPID and variance)
+METHOD_B = Precision-based (targets CI width, requires justified variance)
+METHOD_C = Blinded re-estimation (data-adaptive, two-stage)
+METHOD_D = Fixed pragmatic N (resource-constrained)
+
+FORMAL_SAMPLE_SIZE_STATUS = REQUIRES_HUMAN_CHOICE_OF_MPID_OR_PRECISION_TARGET
+
+PHASE3_CONSTRAINT:
+  - Phase-3 observed paired differences: [0, 0, 0, 0, 0]
+  - Sample variance = 0 (cannot be used for power calculation)
+  - Must justify variance assumption independently
+
+HUMAN_DECISIONS_REQUIRED_FOR_N:
+  - D1: Which sample size method (A, B, C, or D)?
+  - D2: MPID (if method A)
+  - D3: Variance assumption (if method A or B)
+  - D4: α and power (if method A)
+  - D5: Target CI width (if method B)
+  - D6: Blinded stage parameters (if method C)
+  - D7: Fixed N (if method D)
+
+--------------------------------------------------------------------------------
+PRIMARY ANALYSIS RECOMMENDATION
+--------------------------------------------------------------------------------
+
+PRIMARY_ANALYSIS_RECOMMENDATION = Bootstrap CI + Permutation test (if hypothesis test desired)
+
+POINT_ESTIMATE = Sample mean paired difference Δ̄
+UNCERTAINTY = 95% percentile bootstrap CI (B = 10,000 resamples)
+HYPOTHESIS_TEST = Permutation test (if D12 = yes) or declare 0 not in CI
+
+RATIONALE:
+  - Robust to discrete counts, ties at zero, small N
+  - No normality assumptions required
+  - Handles Phase-3 observed tie structure naturally
+
+ALTERNATIVE_METHODS = Paired t-test only if N large and normality holds
+
+DESCRIPTIVE_STATISTICS = Always report:
+  - Full list of paired differences
+  - Mean, median, SD, min, max
+  - Proportion of ties, positive, negative
+  - Visual summaries (histogram, scatter plot)
+
+--------------------------------------------------------------------------------
+MULTIPLICITY POLICY
+--------------------------------------------------------------------------------
+
+MULTIPLICITY_POLICY = Single primary confirmatory comparison, no adjustment required
+
+CONFIRMATORY_COMPARISON = SE vs AE on security_state_new_total (one comparison)
+
+SECONDARY_ENDPOINTS = Reported descriptively unless promoted to confirmatory before execution
+
+MULTIPLICITY_ADJUSTMENT = Required only if D14 promotes secondary endpoints to confirmatory status
+
+--------------------------------------------------------------------------------
+FAIL-FAST POLICY
+--------------------------------------------------------------------------------
+
+FAIL_FAST_POLICY = Phase-3 validated gates enforced on every run
+
+PER_RUN_GATES:
+  - Body score RPC ok > 0, RPC fail = 0
+  - Trace invocations > 0
+  - Backend identity recorded
+  - Trace stats reconciliation = PASS
+  - Artifact contract = PASS
+  - SE provenance exact match (SE runs only)
+
+PAIRED_BLOCK_VALIDITY = Both runs must pass gates; either fails → entire pair excluded
+
+NO_REPLACEMENT = Failed pairs are excluded, not replaced; denominator remains N
+
+VALID_ZERO_RESULT = security_state_new_total = 0 is a scientific observation, not a failure
+
+--------------------------------------------------------------------------------
+INTERRUPTION POLICY
+--------------------------------------------------------------------------------
+
+INTERRUPTION_POLICY = Between-run interruption allowed; during-run interruption invalidates run
+
+BETWEEN_RUNS = Allowed; no validity compromise (e.g., overnight pause)
+
+DURING_RUN = Invalidates the interrupted run; paired block containing it is excluded
+
+EVIDENCE_RECORDING = Every run manifest records start/end timestamps and interruption flag
+
+SINGLE_INVOCATION_REQUIREMENT = Each run must complete in one uninterrupted invocation
+
+--------------------------------------------------------------------------------
+RUNTIME PROVENANCE CONTRACT
+--------------------------------------------------------------------------------
+
+RUNTIME_PROVENANCE_CONTRACT = Frozen artifacts from Phase-3 with exact identity verification
+
+SE_BACKEND = sefanogan_es_reference
+SE_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+SE_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+SE_METADATA_INPUT_DIM = 32
+SE_THRESHOLD = 1.2847454080581664
+SE_PROVENANCE_REQUIREMENT = Every SE run must prove exact checkpoint/metadata SHA256 at runtime
+
+AE_BACKEND = alfresco_ae_v1
+AE_THRESHOLD = 1.623614
+AE_PROVENANCE_REQUIREMENT = Every AE run must record exact backend and threshold
+
+SOURCE_BASELINE = Human decision required (D10) - which git commit SHA?
+
+TARGET_BASELINE_RESET = Required between every AE/SE pair to ensure identical coverage baseline
+
+--------------------------------------------------------------------------------
+FORMAL STUDY BUDGET RECOMMENDATION
+--------------------------------------------------------------------------------
+
+FORMAL_STUDY_BUDGET_RECOMMENDATION = Human decision required (D9)
+
+PHASE3_BUDGET:
+  - MAX_TEST_CASES = 5
+  - TIME_BUDGET = 60 seconds
+
+OPTIONS:
+  - Keep Phase-3 budget (maintains continuity)
+  - Increase moderately (10-20 testcases, 120-300 seconds)
+  - Increase substantially (50+ testcases, 600+ seconds)
+
+CONSTRAINT:
+  - Must be identical within every AE/SE pair
+  - Cannot combine Phase-3 observations with formal study if budgets differ
+  - Do not increase budget merely to increase apparent signal
+
+--------------------------------------------------------------------------------
+HUMAN DECISIONS REQUIRED
+--------------------------------------------------------------------------------
+
+CRITICAL_DECISIONS (Block Execution):
+  D1 = Sample size method (A, B, C, or D)
+  D2 = MPID (if D1 = A)
+  D3 = Variance assumption (if D1 = A or B)
+  D4 = α and power (if D1 = A) [default: 0.05, 0.80]
+  D5 = Target CI width (if D1 = B)
+  D6 = Blinded stage parameters (if D1 = C)
+  D7 = Fixed N (if D1 = D)
+  D8 = Execution order (fixed vs randomized) [recommendation: fixed]
+  D9 = Execution budget (MAX_TEST_CASES, TIME_BUDGET)
+  D10 = Source baseline (git commit SHA)
+  D11 = Protocol master seed (for deterministic seed generation)
+
+SECONDARY_DECISIONS (Analysis Clarification):
+  D12 = Hypothesis testing (yes/no) [recommendation: yes, permutation test]
+  D13 = Equivalence testing (yes/no) [recommendation: no]
+  D14 = Secondary endpoints confirmatory (yes/no) [recommendation: no, all exploratory]
+  D15 = Multiplicity adjustment (if D14 = yes)
+
+ALL_DECISIONS_DOCUMENTED_IN = 10_HUMAN_DECISIONS_REQUIRED.md
+
+--------------------------------------------------------------------------------
+DESIGN PACKAGE
+--------------------------------------------------------------------------------
+
+DESIGN_PACKAGE_DIRECTORY = PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN/
+
+DESIGN_PACKAGE_CONTENTS:
+  00_DESIGN_STATUS.json
+  01_SCIENTIFIC_QUESTION_AND_ESTIMAND.md
+  02_ENDPOINTS.json
+  03_PAIRED_DESIGN_AND_ORDER.md
+  04_SEED_GENERATION_AND_FREEZE.md
+  05_SAMPLE_SIZE_PLAN.md
+  06_STATISTICAL_ANALYSIS_PLAN.md
+  07_FAILURE_EXCLUSION_AND_STOPPING_RULES.md
+  08_RUNTIME_PROVENANCE_CONTRACT.json
+  09_EVIDENCE_FREEZE_CONTRACT.md
+  10_HUMAN_DECISIONS_REQUIRED.md
+  README.md
+  FILE_LIST.txt
+  SHA256SUMS.txt
+  PHASE4_FORMAL_DESIGN_VERDICT.txt (this file)
+
+DESIGN_PACKAGE_COMMITMENT_SHA256 = cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19
+
+COMMITMENT_BASIS = SHA256 of SHA256SUMS.txt (which contains hashes of all protocol files)
+
+--------------------------------------------------------------------------------
+EXECUTION STATUS
+--------------------------------------------------------------------------------
+
+REAL_EXPERIMENT_RUNS = 0
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+FORMAL_EXECUTION_STATUS:
+  - Protocol design complete
+  - No formal experiment runs performed
+  - No source/test/model changes made
+  - All experimental units, seeds, and outcomes remain undefined
+
+--------------------------------------------------------------------------------
+EXECUTION GATE
+--------------------------------------------------------------------------------
+
+FORMAL_EXPERIMENT_EXECUTION_GATE = BLOCKED_PENDING_HUMAN_DESIGN_APPROVAL
+
+GATE_REQUIREMENTS:
+  1. Human reviewers approve this protocol design
+  2. All critical decisions (D1-D11) are resolved
+  3. Execution freeze package (Stage 2) is created with:
+     - Frozen seed list generated from chosen N and protocol master seed
+     - Frozen source baseline (git SHA)
+     - Frozen analysis script
+     - All parameters committed with SHA256
+  4. Human approval granted to begin formal runs
+
+NEXT_STEPS:
+  1. Human design review
+  2. Resolve critical decisions
+  3. Create execution freeze package
+  4. Obtain human approval
+  5. Execute formal experiment according to frozen protocol
+
+--------------------------------------------------------------------------------
+EVIDENCE FREEZE STAGES
+--------------------------------------------------------------------------------
+
+STAGE_1 = Protocol Design Freeze (this package) ← CURRENT STAGE
+STAGE_2 = Execution Freeze (preregistered parameters, seed list, analysis script) ← NEXT GATE
+STAGE_3 = Run-Level Freeze (per-run artifacts)
+STAGE_4 = Paired-Block Freeze (per-pair outcomes)
+STAGE_5 = Campaign Completion Freeze (all data collected before analysis)
+STAGE_6 = Analysis Freeze (final results)
+
+CHAIN_OF_TRUST = Phase-3 → Protocol Design → Execution → Runs → Campaign → Analysis
+
+--------------------------------------------------------------------------------
+REPRODUCIBILITY CONTRACT
+--------------------------------------------------------------------------------
+
+REPRODUCIBILITY_ELEMENTS:
+  - Protocol design frozen with SHA256 commitment
+  - Binds to Phase-3 frozen evidence package
+  - Deterministic seed generation from protocol master seed
+  - Exact model artifact provenance (SE checkpoint/metadata SHA256)
+  - Fixed source baseline (git SHA)
+  - Frozen analysis script
+  - Complete run manifests with provenance fields
+  - Multi-stage evidence freeze with SHA256 chain
+
+INDEPENDENT_VERIFICATION:
+  Given execution freeze package, an independent party can:
+  - Re-run with same seed list
+  - Verify model artifact identity
+  - Apply frozen analysis script to their data
+  - Compare results to original frozen analysis
+
+--------------------------------------------------------------------------------
+WORDING CORRECTIONS APPLIED
+--------------------------------------------------------------------------------
+
+PROHIBITED_PHRASES (Not Carried Forward as Scientific Conclusions):
+  ❌ "coverage equivalence"
+  ❌ "SE threshold is more conservative because 1.285 < 1.624"
+  ❌ "AE and SE are equivalent"
+  ❌ "AE better than SE"
+  ❌ "SE better than AE"
+
+PERMITTED_DESCRIPTIVE_STATEMENTS:
+  ✅ "Across the five paired seeds in the Phase-3 engineering pilot,
+     AE and SE each observed security_state_new_total = 1,
+     so all five observed paired deltas for that metric were 0."
+
+  ✅ "On the Phase-3 input distribution,
+     AE and SE exhibited different empirical accept/reject behavior."
+
+THRESHOLD_COMPARABILITY:
+  - This protocol does NOT compare raw AE and SE threshold magnitudes
+    as if score scales were directly comparable
+  - Thresholds are recorded for provenance, not for cross-model comparison
+
+--------------------------------------------------------------------------------
+FINAL STATUS
+--------------------------------------------------------------------------------
+
+DESIGN_COMPLETE = YES
+HUMAN_APPROVAL_REQUIRED = YES
+FORMAL_EXECUTION_PERMITTED = NO (blocked on human approval and decision resolution)
+
+DESIGN_VERDICT = PASS_DESIGN_PHASE_AWAITING_HUMAN_APPROVAL
+
+DATE = 2026-09-21
+PROTOCOL_VERSION = 1.0.0
+
+================================================================================
+END OF PHASE 4 FORMAL DESIGN VERDICT
+================================================================================

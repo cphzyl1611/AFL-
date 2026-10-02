@@ -1,0 +1,197 @@
+═══════════════════════════════════════════════════════════════
+ ALFRESCO_CONTENT_UPDATE_SE_EXACTLY_ONE_REAL_EXECUTION_R13B
+ FINAL REPORT
+═══════════════════════════════════════════════════════════════
+
+SESSION MODE: FRESH START (no inherited environment from R12D)
+
+PREDECESSOR STATE:
+  R12D: PASS_READY_FOR_EXACTLY_ONE_REAL_EXECUTION
+  R13: BLOCKED_PRELAUNCH_CANONICAL_ARTIFACTS_INACCESSIBLE
+  R13 authorization NOT consumed
+
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_REAL_ATTEMPT_REMAINING = 1 (unchanged)
+
+═══════════════════════════════════════════════════════════════
+ STEP 1 — Canonical Artifact Resolution by SHA256
+═══════════════════════════════════════════════════════════════
+
+Search domain: $HOME/alfresco-audit-artifacts/
+
+Target checkpoint hash:
+  4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+
+Target metadata hash:
+  2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+CANONICAL_CHECKPOINT_FOUND = YES ✓
+CANONICAL_CHECKPOINT_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+CANONICAL_CHECKPOINT_SHA256_VERIFIED = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+CANONICAL_CHECKPOINT_MATCH_COUNT = 1 (unambiguous) ✓
+
+CANONICAL_METADATA_FOUND = YES ✓
+CANONICAL_METADATA_PATH = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+CANONICAL_METADATA_SHA256_VERIFIED = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+CANONICAL_METADATA_MATCH_COUNT = 1 (unambiguous) ✓
+
+Artifact resolution: PASS ✓
+
+═══════════════════════════════════════════════════════════════
+ STEP 2 — Prelaunch Identity Guard
+═══════════════════════════════════════════════════════════════
+
+Required contract verification:
+
+ACTUAL_PRELAUNCH_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓
+ACTUAL_PRELAUNCH_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓
+ACTUAL_PRELAUNCH_THRESHOLD = 1.2847454080581664 ✓
+ACTUAL_PRELAUNCH_FEATURE_DIM = 32 ✓
+ACTUAL_PRELAUNCH_FEATURE_CONTRACT = alfresco_fixed_32 ✓
+ACTUAL_PRELAUNCH_BACKEND = sefanogan_es_reference ✓
+ACTUAL_PRELAUNCH_SCENARIO = content_update ✓
+
+Note: Threshold 1.2847454080581664 is an operational parameter passed via
+NV_BODY_SCORE_THRESHOLD environment variable, not embedded in model metadata.
+
+Operational readiness check:
+
+ALFRESCO_LIVE = NO ✗
+  Reason: ALFRESCO_TOKEN environment variable not present in session
+AUTH_READY = NO ✗
+TARGET_RESOURCE_READY = CANNOT_VERIFY_WITHOUT_AUTH
+
+Identity verification: PASS (all artifacts verified)
+Operational readiness: BLOCKED (authentication missing)
+
+═══════════════════════════════════════════════════════════════
+ FINAL GATE STATUS
+═══════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_R13B_GATE = BLOCKED_PRELAUNCH_AUTH_NOT_READY
+
+REAL_RUN_PERFORMED = NO
+COMPLETED_REAL_ATTEMPT_COUNT = 0
+CONSUMED_REAL_ATTEMPT_COUNT = 0
+AUTHORIZED_REAL_ATTEMPT_LIMIT = 1
+AUTHORIZED_REAL_ATTEMPT_REMAINING = 1
+
+═══════════════════════════════════════════════════════════════
+ STEPS NOT REACHED (due to prelaunch blocker)
+═══════════════════════════════════════════════════════════════
+
+Step 3: Bounded budget recovery - NOT EXECUTED
+Step 4: Real-run launch with explicit artifact paths - NOT EXECUTED
+Step 5: Scorer participation proof - NOT EXECUTED
+Step 6: Target execution/readback - NOT EXECUTED
+Step 7: Framework accounting reconciliation - NOT EXECUTED
+
+═══════════════════════════════════════════════════════════════
+ BLOCKER ANALYSIS
+═══════════════════════════════════════════════════════════════
+
+Root cause: Session started fresh without environment inheritance from R12D.
+
+The canonical SE artifacts (checkpoint + metadata) were successfully located
+and verified by exact SHA256 hash match in the external audit artifact tree.
+Both files are unambiguous (exactly one match each) and ready for use.
+
+However, the ALFRESCO_TOKEN required for live Alfresco target authentication
+is not present in the current session environment. This token is mandatory
+for:
+  - Authenticating HTTP requests to the Alfresco API
+  - Executing real content_update operations
+  - Performing readback verification
+
+Without this token:
+  - Real-run cannot be launched
+  - No target execution can occur
+  - Zero authorized attempts have been consumed
+
+The prelaunch gate blocked execution before any real fuzzing attempt was
+initiated, preserving the single authorized real-run attempt.
+
+═══════════════════════════════════════════════════════════════
+ RESOLUTION PATH FOR NEXT ATTEMPT
+═══════════════════════════════════════════════════════════════
+
+To complete R13B in a subsequent session, the user must:
+
+1. Export ALFRESCO_TOKEN in the session environment
+2. Resume from Step 3 (bounded budget recovery from predecessor evidence)
+3. Proceed through Steps 4-7 (launch + evidence collection)
+
+The canonical artifacts are verified and ready for immediate use:
+
+  SEFANOGAN_REFERENCE_CHECKPOINT=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  
+  SEFANOGAN_REFERENCE_META_PATH=/home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+The threshold and SE contract are verified:
+
+  NV_BODY_SCORE_THRESHOLD=1.2847454080581664
+  Feature contract: alfresco_fixed_32 (dim=32)
+  Backend: sefanogan_es_reference
+  Scenario: content_update
+
+Expected launch pattern (once auth is present):
+
+  ALFRESCO_TOKEN=<token> \
+  SEFANOGAN_REFERENCE_CHECKPOINT=<checkpoint_path> \
+  SEFANOGAN_REFERENCE_META_PATH=<metadata_path> \
+  NV_BODY_SCORE_THRESHOLD=1.2847454080581664 \
+  python3 scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --backend sefanogan_es_reference \
+    --max-cases <recovered_bound>
+
+═══════════════════════════════════════════════════════════════
+ SCIENTIFIC OUTCOME
+═══════════════════════════════════════════════════════════════
+
+CONTENT_UPDATE_SE_SCIENTIFIC_OUTCOME = NOT_APPLICABLE_PRELAUNCH_BLOCK
+
+No real execution occurred; therefore:
+  - Scorer participation: NOT_MEASURED
+  - Target execution: NOT_ATTEMPTED
+  - Content update effect: NOT_TESTED
+  - Readback verification: NOT_PERFORMED
+  - Framework accounting: NOT_APPLICABLE
+
+═══════════════════════════════════════════════════════════════
+ ACCOUNTING SUMMARY
+═══════════════════════════════════════════════════════════════
+
+ACTUAL_BACKEND = (not launched)
+ACTUAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d (verified, not loaded)
+ACTUAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 (verified, not loaded)
+ACTUAL_THRESHOLD = 1.2847454080581664 (verified, not applied)
+ACTUAL_FEATURE_DIM = 32 (verified, not applied)
+ACTUAL_FEATURE_CONTRACT = alfresco_fixed_32 (verified, not applied)
+ACTUAL_SCENARIO = content_update (target, not executed)
+
+SCORER_INVOCATIONS = 0
+SCORER_RPC_OK = 0
+SCORER_ACCEPTED = 0
+SCORER_REJECTED = 0
+SCORER_FAILURES = 0
+
+TARGET_EXECUTIONS = 0
+HTTP_SUCCESS_COUNT = 0
+HTTP_NON_SUCCESS_COUNT = 0
+TRANSPORT_FAILURE_COUNT = 0
+
+READBACK_ATTEMPTED = NO
+READBACK_VERIFIED = NO
+CONTENT_IDENTITY_PRESERVED = NOT_APPLICABLE
+CONTENT_UPDATE_EFFECT_CONFIRMED = NOT_APPLICABLE
+
+═══════════════════════════════════════════════════════════════
+ STATUS: BLOCKED AT PRELAUNCH
+ AUTHORIZATION PRESERVED: 1 real attempt remaining
+═══════════════════════════════════════════════════════════════
+
+Session timestamp: 2026-09-26
+Report generated: R13B session
+Next step: Provide ALFRESCO_TOKEN and resume from Step 3
+

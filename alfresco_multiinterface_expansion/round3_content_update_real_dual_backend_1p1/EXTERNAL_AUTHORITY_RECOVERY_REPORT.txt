@@ -1,0 +1,181 @@
+═══════════════════════════════════════════════════════════════════════════════
+EXTERNAL CANONICAL SE AUTHORITY RECOVERY REPORT
+Alfresco content_update Dual-Backend 1+1 Pilot - Session Recovery
+Generated: 2026-09-23
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+═════════════════
+
+Status: ALL GATES PASS - Protocol Ready to Resume
+Blocker Resolution: FALSE_POSITIVE (incorrect authority location assumption)
+Action Required: User authorization to execute SE launch
+
+RECOVERY PROTOCOL EXECUTION
+═══════════════════════════
+
+STEP 1: Recover External Binding from Environment/Provenance → PASS ✓
+─────────────────────────────────────────────────────────────────────
+
+Environment variables verified:
+  SEFANOGAN_REFERENCE_CHECKPOINT = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.pt
+  SEFANOGAN_REFERENCE_META_PATH  = /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/sefanogan_es_reference.json
+
+External files status:
+  Checkpoint: EXISTS (SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d)
+  Metadata:   EXISTS (SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226)
+
+STEP 2: Verify Exact Canonical Identity → PASS ✓
+──────────────────────────────────────────────────
+
+Required canonical authority parameters:
+  EXTERNAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d ✓ MATCH
+  EXTERNAL_METADATA_SHA256   = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226 ✓ MATCH
+  EXTERNAL_BACKEND           = sefanogan_es_reference ✓ MATCH (metadata field: model_family)
+  EXTERNAL_INPUT_DIM         = 32 ✓ MATCH
+
+Metadata field reconciliation:
+  - Canonical metadata uses 'model_family' field, not 'backend'
+  - Value: 'se_fanogan_es_reference' (matches expected backend 'sefanogan_es_reference')
+  - Schema version: 1
+  - Feature contract: alfresco_fixed_32 (32-dimensional fixed vector)
+
+EXTERNAL_CANONICAL_SE_IDENTITY_GATE = PASS
+
+STEP 3: Verify Scorer Python Binds to External Authority → PASS ✓
+───────────────────────────────────────────────────────────────────
+
+Scorer configuration:
+  Python environment: /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python (3.10.21)
+  Scorer script:      model_stage/nv_valid_server_real.py
+
+Checkpoint loading verification:
+  1. NV_VALIDITY_BACKEND='sefanogan_es_reference' code path:
+     - Loads checkpoint from: SEFANOGAN_REFERENCE_CHECKPOINT (env var)
+     - Loads metadata from:   SEFANOGAN_REFERENCE_META_PATH (env var)
+     - Line 141-142: backend_config = {checkpoint: env, metadata: env}
+
+  2. Legacy SEFANOGAN_MODE='se_fanogan_es_reference' code path:
+     - Loads model from: SEFANOGAN_MODEL_PATH (env var)
+     - Loads meta from:  SEFANOGAN_REFERENCE_META_PATH (env var)
+     - Line 111: meta_path = _get_env_required("SEFANOGAN_REFERENCE_META_PATH")
+
+  3. No hardcoded references to repo-local checkpoint detected
+     - Searched for: "model_stage/models/sefanogan_gan_model.pt"
+     - Result: NOT FOUND in scorer script
+
+SCORER_BINDING_TO_EXTERNAL_AUTHORITY_GATE = PASS
+
+STEP 4: Reclassify Repo-Local Checkpoint Blocker → RESOLVED ✓
+───────────────────────────────────────────────────────────────
+
+Prior session FALSE PREMISE:
+  Location checked:    model_stage/models/sefanogan_gan_model.pt (repo-local)
+  Checkpoint SHA256:   205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+  Expected SHA256:     4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  Result:              MISMATCH → blocked STEP 2
+
+CORRECTED UNDERSTANDING:
+  - Canonical SE authority is EXTERNAL to repository (audit artifacts directory)
+  - External checkpoint SHA256 matches expected: 4eace87a... ✓
+  - Scorer binds to external authority via environment variables ✓
+  - Repo-local checkpoint is NOT used in this experiment ✓
+
+Proposed options REJECTED:
+  [A] Accept repo-local checkpoint → REJECTED (violates canonical authority)
+  [B] Copy external into repo     → REJECTED (pollutes git worktree)
+  [C] Recalibrate threshold       → REJECTED (invalidates frozen protocol)
+
+RECLASSIFICATION_VERDICT = FALSE_POSITIVE
+BLOCKER_STATUS          = RESOLVED
+ROOT_CAUSE              = incorrect_canonical_authority_location_assumption
+
+STEP 5: Resume Protocol at SE Launch Gate → READY ✓
+─────────────────────────────────────────────────────
+
+All recovery gates: PASS
+Protocol status:    READY TO RESUME
+Preflight:          Container healthy, credentials verified
+
+FROZEN SE LAUNCH PARAMETERS
+═══════════════════════════
+
+Experiment configuration (unchanged from prior authorization):
+  scenario:              content_update
+  target_file_name:      nv-afl-levelc-metadata.txt
+  target_node_id:        1d16a46c-5518-4f11-96a4-6c55188f1172
+  afl_seed:              6103669 (frozen)
+  max_test_cases:        5 (authoritative budget)
+  time_budget:           60 (safety fuse)
+  mutation_scope:        field_value (single-arm)
+  validity_backend:      sefanogan_es_reference
+  model_comparison:      true
+
+SE model configuration (external canonical authority):
+  checkpoint:            /home/dministrator/alfresco-audit-artifacts/.../sefanogan_es_reference.pt
+  checkpoint_sha256:     4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  metadata:              /home/dministrator/alfresco-audit-artifacts/.../sefanogan_es_reference.json
+  metadata_sha256:       2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  model_family:          se_fanogan_es_reference
+  input_dim:             32
+  threshold:             1.2847454080581664
+  threshold_source:      sefanogan_es_realrun_threshold.json
+
+Scorer process:
+  python:                /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python (3.10.21)
+  script:                model_stage/nv_valid_server_real.py
+  ready_timeout:         10.0 seconds
+
+LAUNCH COMMAND
+══════════════
+
+python3 scripts/run_alfresco_bounded_feedback.py \
+  --scenario content_update \
+  --target-file-name nv-afl-levelc-metadata.txt \
+  --max-test-cases 5 \
+  --time-budget 60 \
+  --mutation-scope field_value \
+  --validity-backend sefanogan_es_reference \
+  --model-comparison \
+  --afl-seed 6103669 \
+  --scorer-python /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python \
+  --scorer-ready-timeout 10.0
+
+Environment variables (verified present):
+  ALFRESCO_USER
+  ALFRESCO_PASS
+  SEFANOGAN_REFERENCE_CHECKPOINT
+  SEFANOGAN_REFERENCE_META_PATH
+
+SECURITY CONSTRAINTS (PRESERVED)
+═════════════════════════════════
+
+禁止启动新的 AE/SE run，禁止修改源码、测试、模型、seed 或 evidence
+
+Enforcement record:
+  PILOT_SEED                = 6103669 (unchanged)
+  AE_RERUN_REQUIRED         = NO
+  SE_PROCESS_LAUNCHED       = NO (awaiting authorization)
+  AUTOMATIC_RERUN_COUNT     = 0
+  REPLACEMENT_SEED_COUNT    = 0
+  SOURCE_CHANGED            = NO
+  TESTS_CHANGED             = NO
+  MODEL_FILES_CHANGED       = NO
+  THRESHOLD_CHANGED         = NO
+  EVIDENCE_CHANGED          = NO
+  COMMIT                    = NO
+  PUSH                      = NO
+
+FINAL VERDICT
+═════════════
+
+Recovery Status:     SUCCESS
+All Protocol Gates:  PASS
+Blocker Resolution:  FALSE_POSITIVE (external authority location corrected)
+Launch Readiness:    READY (awaiting user authorization)
+
+Next Action: Execute SE launch command with user approval
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

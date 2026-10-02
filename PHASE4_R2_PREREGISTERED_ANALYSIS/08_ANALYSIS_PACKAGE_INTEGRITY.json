@@ -1,0 +1,46 @@
+{
+  "analysis_package_commitment": "9b5d90b7033d5a3d76c78599def8b9c31debdf88760f29ae3fb1d28d6c0e794b",
+  "analysis_directory": "PHASE4_R2_PREREGISTERED_ANALYSIS",
+  "evidence_commitment": "e1330de8d1effbe3daaeb1d7070403b6dacc82a49dfc438a31a8ed9029743486",
+  "protocol_steps_completed": {
+    "step_1_verify_evidence": "COMPLETE",
+    "step_2_recover_analysis_contract": "COMPLETE (NONE found, acceptable)",
+    "step_3_paired_primary_table": "COMPLETE",
+    "step_4_primary_descriptive": "COMPLETE",
+    "step_5_confirmatory_analysis": "COMPLETE (SKIPPED per protocol)",
+    "step_6_exploratory_secondary": "COMPLETE",
+    "step_7_sensitivity_adjudication": "COMPLETE",
+    "step_8_order_balance": "COMPLETE",
+    "step_9_produce_artifacts": "COMPLETE",
+    "step_10_results_for_paper": "COMPLETE",
+    "step_11_package_integrity": "COMPLETE"
+  },
+  "data_completeness": {
+    "total_blocks": 30,
+    "blocks_with_complete_primary_data": 28,
+    "blocks_missing_data": [
+      {
+        "block": 1,
+        "reason": "Block 1 carried forward from incomplete block, no primary endpoint data in R2 execution"
+      },
+      {
+        "block": 2,
+        "backend": "sefanogan_es_reference",
+        "reason": "Block 2 SE primary endpoint data not found, carried forward"
+      }
+    ],
+    "effective_n_for_primary_analysis": 28
+  },
+  "analysis_files": {
+    "json_files": 7,
+    "all_parse_valid": true,
+    "sha256sums_present": true,
+    "readme_present": true
+  },
+  "key_findings": {
+    "primary_endpoint_n": 28,
+    "primary_endpoint_mean_delta": 0.0,
+    "zero_variance": true,
+    "order_balance_confirmed": true
+  }
+}

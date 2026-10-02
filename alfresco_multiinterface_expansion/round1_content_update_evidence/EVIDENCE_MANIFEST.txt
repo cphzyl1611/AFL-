@@ -1,0 +1,118 @@
+===============================================================================
+Alfresco Multi-Interface Expansion — Round 1
+Content Update Scenario Evidence Package
+Generated: 2026-09-22
+===============================================================================
+
+SCENARIO: content_update
+INTERFACE: PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/{nodeId}/content
+BACKEND: alfresco_ae_v1 (AE with 32-dim text content features)
+DETERMINATION: READY
+
+PILOT EXECUTION:
+- Run Directory: /tmp/nv-alfresco-bounded-716461-daf58303363e4f0a9e0b30a041807157
+- Max Test Cases: 3
+- Time Budget: 30s
+- Mutation Scope: field_value (0x1)
+- AFL Seed: None (non-deterministic)
+- Validity Backend: alfresco_ae_v1
+
+ARTIFACT CONTRACT STATUS:
+- Runner Exit Code: 0
+- Runner Exit Status: success
+- Artifact Contract: PASS (ok=True, missing_required=[])
+- Execution Proved: True
+- Launch Return Code: 0
+
+EXECUTION EVIDENCE:
+- Total Executions: 3
+- Valid Executions: 3
+- Last Exec Seq: 6
+- State: PUT /alfresco/api/-default-/public/alfresco/versions/1/nodes/{nodeId}/content|2xx
+- All requests returned 2xx responses
+
+READBACK VERIFICATION:
+- Verdict: pass
+- Reconciled: True
+- Artifact Valid: True
+- Method: GET (byte-exact content retrieval)
+- Status: 200
+- Content Hash: sha256:f7a9ebf51f997aa6d0946d2697ca2488a692ad4d53835f8f84ff7cf90405d814
+
+MAB FEEDBACK:
+- Journal Valid: True
+- Journal Reconciled: True
+- Update Count: 2
+- Ledger Valid: True
+- Ledger Reconciled: True
+- Committed Update Count: 2
+
+SEED SELECTION AUDIT:
+- Valid: True
+- Reconciled: True
+
+VALIDITY GATES (All PASS):
+1. Readback Artifact Schema Validation: PASS
+2. Readback Artifact Reconciliation: PASS
+3. Content Hash Presence (SHA256): PASS
+4. Request Status 200: PASS
+5. Correlation with Final Execution State: PASS
+
+EVIDENCE FILES:
+- artifact_report.json: Complete runner artifact report
+- readback.json: Byte-exact content readback verification
+- mab_updates.jsonl: Multi-armed bandit update journal
+- executions.jsonl: Execution lifecycle ledger
+- seed_selection.jsonl: Seed selection audit trail
+- nv_state_trace.jsonl: HTTP state transition trace
+- nv_http_status.json: Final HTTP status snapshot
+- task.json: Task configuration payload
+- target.json: Runtime target configuration
+- fuzzer_stats: AFL++ fuzzer statistics
+- SHA256SUMS.txt: Cryptographic checksums for all files
+
+CODE MODIFICATIONS (scripts/run_alfresco_bounded_feedback.py):
+1. Line 510-516: seed_request_metadata() dynamic endpoint lookup
+   - Fixed hardcoded "metadata_update" to use cfg.get("default_endpoint")
+   - Enables correct seed generation for content_update scenario
+
+2. Line 1516-1522: artifact_contract() body_valid_stats exclusion
+   - Added explicit elif branch for content_update scenario
+   - Excludes body_valid_stats (JSON-only artifact) for text/plain content
+
+3. Line 1268-1293: Content readback artifact schema alignment
+   - event: READBACK_EVENT (canonical constant)
+   - request: {"method": "GET", "status": 200} (standard schema)
+   - result: {"metadata_hash": <content_hash>, "field_presence": [], "version_label": null}
+   - Aligns content_update readback with metadata_update artifact schema
+
+BACKEND APPLICABILITY ANALYSIS:
+- AE Backend (alfresco_ae_v1): READY
+  * Feature dimension: 32-dim (extract_text_content_features)
+  * Compatible with text/plain content
+  * Pilot execution: SUCCESS
+  * All validity gates: PASS
+
+- SE Backend (sefanogan_es_reference): NOT_APPLICABLE
+  * Feature dimension: 38-dim (metadata field structure)
+  * Incompatible with text content (lacks JSON metadata fields)
+  * Feature mismatch: 32-dim ≠ 38-dim
+  * Semantic gap: text content has no cm:title, cm:description, etc.
+  * By design limitation, not a deficiency
+
+SECURITY CONSTRAINTS OBSERVED:
+- No Phase-4 metadata_update evidence modified
+- No metadata_update experiments rerun
+- No model thresholds changed
+- No AFL++ C code modified
+- No git commits or pushes
+- No large campaigns executed
+- No AE/SE superiority claims
+
+CRYPTOGRAPHIC COMMITMENT:
+See SHA256SUMS.txt for complete file integrity manifest.
+Package root hash: [computed from SHA256SUMS.txt]
+
+===============================================================================
+End of Evidence Manifest
+===============================================================================

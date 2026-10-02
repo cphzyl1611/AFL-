@@ -1,0 +1,23 @@
+{
+  "description": "Order balance descriptive analysis - no pre-planned interaction test",
+  "order_distribution": {
+    "ae_first_count": 15,
+    "se_first_count": 15,
+    "balance_confirmed": true
+  },
+  "primary_endpoint_by_order": {
+    "ae_first": {
+      "n": 14,
+      "mean_delta": 0.0,
+      "min_delta": 0,
+      "max_delta": 0
+    },
+    "se_first": {
+      "n": 14,
+      "mean_delta": 0.0,
+      "min_delta": 0,
+      "max_delta": 0
+    }
+  },
+  "note": "This is descriptive cross-tabulation only. No hypothesis test was pre-registered for order effects."
+}

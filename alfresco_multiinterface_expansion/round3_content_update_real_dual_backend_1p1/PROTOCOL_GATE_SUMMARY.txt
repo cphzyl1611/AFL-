@@ -1,0 +1,119 @@
+═══════════════════════════════════════════════════════════════════════
+Alfresco content_update Dual-Backend 1+1 Pilot — Protocol Gate Summary
+═══════════════════════════════════════════════════════════════════════
+
+CAMPAIGN ID: round3_content_update_real_dual_backend_1p1
+EXECUTED:    2026-09-23
+PARAMETERS:  afl_seed=6103669, max_test_cases=5, time_budget=60
+
+───────────────────────────────────────────────────────────────────────
+STEP 1: Fresh Non-Mutating Readiness Checks
+───────────────────────────────────────────────────────────────────────
+✓ PASS — All service/credential/target gates verified
+
+Container health:     HEALTHY
+Alfresco service:     401→200 authentication sequence verified
+Target node:          1d16a46c-5518-4f11-96a4-6c55188f1172
+Target file:          nv-afl-levelc-metadata.txt
+Parent folder:        nv-afl-levelc-trials-2026-08-23
+Endpoint:             PUT /alfresco/api/.../nodes/<id>/content
+Authentication:       Basic (ALFRESCO_USER + ALFRESCO_PASS)
+
+───────────────────────────────────────────────────────────────────────
+STEP 2: Reconfirm Frozen SE Execution Contract
+───────────────────────────────────────────────────────────────────────
+⛔ BLOCKED — CANONICAL PROVENANCE HASH MISMATCH
+
+Expected canonical contract (from user authorization):
+  checkpoint_sha256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+  metadata_sha256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+  backend:           sefanogan_es_reference
+  threshold:         1.2847454080581664
+
+Actual repository state:
+  Checkpoint: sefanogan_gan_model.pt
+    SHA256:      205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+    Git tracked: YES (commit 6fc82d8, stable since 2026-08-22)
+    Status:      ❌ MISMATCH
+
+  Metadata: sefanogan_es_reference.json
+    SHA256:      8d4223f05a0ac0191519594f169f23bd66af40b7d179d3b3ea47308e125d67e7
+    Git tracked: NO (untracked file)
+    Status:      ❌ MISMATCH
+
+FORENSIC FINDING:
+  Expected checkpoint hash 4eace87a... does NOT exist in repository:
+    • Not in current filesystem (searched 6 .pt/.pth files)
+    • Not in git history (6fc82d8 shows 205a6a20...)
+    • Not in any checkpoint file
+
+ROOT CAUSE:
+  Threshold calibration artifact (sefanogan_es_realrun_threshold.json)
+  is UNTRACKED and declares checkpoint hash that never existed in repo.
+
+BLOCKER VERDICT:
+  Cannot proceed to STEP 3 without user resolution. Using checkpoint
+  205a6a20... would violate canonical provenance requirement.
+
+───────────────────────────────────────────────────────────────────────
+STEP 3: Execute Exactly One SE Run
+───────────────────────────────────────────────────────────────────────
+⏸️  SUSPENDED — Blocked by STEP 2 provenance gate failure
+
+SE launch command prepared:
+  python scripts/run_alfresco_bounded_feedback.py \
+    --scenario content_update \
+    --afl-seed 6103669 \
+    --max-test-cases 5 \
+    --time-budget 60 \
+    --validity-backend sefanogan_es_reference \
+    --model-comparison \
+    --scorer-python /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python \
+    --target-file-name nv-afl-levelc-metadata.txt
+
+Previous attempt: Aborted by user during AFL initialization
+Status: NOT EXECUTED (blocked by provenance mismatch)
+
+───────────────────────────────────────────────────────────────────────
+STEP 4: Generate Final 1+1 Capability Verdict
+───────────────────────────────────────────────────────────────────────
+⏸️  SUSPENDED — Cannot compare AE vs SE without SE execution evidence
+
+AE run status:     ✓ COMPLETE (evidence in ae_evidence/)
+SE run status:     ⛔ NOT STARTED (blocked by STEP 2)
+
+Comparison pending: AE participation vs SE participation
+                    Security-state sensitivity across backends
+
+───────────────────────────────────────────────────────────────────────
+STEP 5: Finalize Round-3 Evidence Package
+───────────────────────────────────────────────────────────────────────
+⏸️  SUSPENDED — Cannot finalize package without complete 1+1 results
+
+Required artifacts:
+  • FILE_LIST.txt (inventory)
+  • SHA256SUMS.txt (integrity manifest)
+  • README.md (protocol summary)
+  • Commitment hash (SHA256 of sorted evidence)
+
+Current status: Evidence package structure incomplete (no SE results)
+
+═══════════════════════════════════════════════════════════════════════
+FINAL STATUS
+═══════════════════════════════════════════════════════════════════════
+
+Protocol execution:  ⛔ BLOCKED AT STEP 2
+Blocking reason:     Checkpoint SHA256 mismatch (4eace87a... vs 205a6a20...)
+Resolution required: User must clarify which checkpoint is authoritative
+
+Options for user:
+  [A] Confirm 205a6a20... is correct → Update expected hash → Continue
+  [B] Provide 4eace87a... checkpoint → Replace current → Continue
+  [C] Recalibrate for 205a6a20... → But violates "no model mods" constraint
+
+PROTOCOL CANNOT CONTINUE WITHOUT USER DECISION.
+
+Detailed investigation: See STEP2_FINAL_GATE_STATUS.txt
+Forensic analysis:      See STEP2_PROVENANCE_RECONCILIATION.txt
+
+═══════════════════════════════════════════════════════════════════════

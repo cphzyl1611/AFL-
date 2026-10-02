@@ -1,0 +1,28 @@
+{
+  "human_approval_and_r1_binding": {
+    "r1_predecessor_commitment": "5225953ce7fc194a3eebcd02be4609bd89fdf0abddf3bac65442053bb75f0f52",
+    "r1_execution_status": "BLOCKED_AT_BLOCK_1_DUE_TO_VALIDATOR_FALSE_NEGATIVE",
+    "block1_execution_evidence_commitment": "5b519874542be57f0431ebbbdeeff9e0104a12c36f693f1264d2e1e263a91506",
+    "block1_forensic_adjudication_commitment": "d9ef9cca8ae7f6b5cec96a2677a12e725d0fde38d8803b23be12c0ec1fe32643",
+    "block1_false_negative_adjudication_commitment": "f7c4ace060e26a87723c5f5500a7458c326f44568562bf33be844121a12a9d20",
+    "governance_classification": "A_VALIDATOR_FALSE_NEGATIVE_UNDER_EXISTING_R1_SEMANTICS"
+  },
+  "r2_governance_decision": {
+    "resolution_option_selected": "3_CREATE_R2_SUCCESSOR_FREEZE",
+    "rationale": "Formal successor governance with semantic artifact-gate adapter",
+    "human_authorization_required": true,
+    "r2_authorization_status": "PENDING"
+  },
+  "d1_d15_design_approval": {
+    "design_approval_status": "APPROVED_AND_MATERIALIZED",
+    "design_commitment": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+    "approval_date": "2026-09-21",
+    "all_decisions_preserved_in_r2": true
+  },
+  "phase3_precedent": {
+    "phase3_evidence_freeze_commitment": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+    "phase3_all_se_body_score_pass": 0,
+    "phase3_all_se_validation": "pass",
+    "block1_se_alignment_with_phase3": "EXACT_MATCH"
+  }
+}

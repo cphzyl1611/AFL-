@@ -1,0 +1,496 @@
+ALFRESCO_CONTENT_UPDATE_SE_R38B_CANONICAL_MODEL_AUTHORITY_RECONCILIATION
+FINAL REPORT
+================================================================================
+
+INVESTIGATION AUTHORITY: R38B offline forensic reconciliation only
+REAL_CAMPAIGN_PERFORMED: NO
+REAL_TARGET_REQUESTS_SENT: 0
+CONSUMED_REAL_ATTEMPT_COUNT: 0
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+R38B forensic investigation CONCLUSIVELY DETERMINED that R38 repair adapted code
+to the WRONG model authority: repo-local O2OA 38D artifacts instead of canonical
+external alfresco_fixed_32 artifacts.
+
+GATE STATUS: INVALID_R38_ADAPTED_TO_WRONG_AUTHORITY
+
+R38 made three changes to fix R37 scorer failure:
+1. FIX 1 (env-var injection) - INDEPENDENTLY CORRECT ✓
+2. FIX 2 (INPUT_DIM 32→38) - ADAPTED TO WRONG AUTHORITY ✗
+3. FIX 3 (encoder architecture change) - ADAPTED TO WRONG AUTHORITY ✗
+
+CANONICAL_MODEL_AUTHORITY (externally verified SHA256):
+- Checkpoint: /home/dministrator/alfresco-audit-artifacts/.../sefanogan_es_reference.pt
+  SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+- Metadata: /home/dministrator/alfresco-audit-artifacts/.../sefanogan_es_reference.json
+  SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+- Feature contract: alfresco_fixed_32 (32-dimensional)
+- Model family: se_fanogan_es_reference
+- Input dimension: 32
+
+REPO_LOCAL_ARTIFACTS (used by R38, WRONG):
+- Checkpoint: model_stage/models/sefanogan_gan_model.pt
+  SHA256: 205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+- Metadata: model_stage/models/sefanogan_es_reference_meta.json
+  (no external canonical counterpart)
+- Feature contract: alfresco_metadata_38 (38-dimensional, O2OA-specific)
+- Input dimension: 38
+- Attention type: "none" (not feature_channel_squeeze_gating)
+
+R38 FIX 2 and FIX 3 changed sefanogan_es_reference.py to match repo-local 38D
+artifacts, not canonical 32D authority.
+
+CORRECTIVE ACTION REQUIRED:
+- Revert R38 FIX 2 (INPUT_DIM 38→32)
+- Revert R38 FIX 3 (encoder architecture simple→ChannelAttentionEncoder)
+- Preserve R38 FIX 1 (env-var injection, independently correct)
+- Bind to canonical external artifacts, not repo-local 38D
+
+STATUS: R38 FIX 2 and FIX 3 already reverted in current working tree
+        (sefanogan_es_reference.py shows INPUT_DIM=32, ChannelAttentionEncoder present)
+        R38 FIX 1 env-injection currently uncommitted in scripts/run_alfresco_bounded_feedback.py
+
+================================================================================
+STEP 1: CANONICAL ARTIFACT RECOVERY (COMPLETE)
+================================================================================
+
+CANONICAL_CHECKPOINT_PATH =
+  /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/
+  training_runs/seed-20260519/sefanogan_es_reference.pt
+
+CANONICAL_METADATA_PATH =
+  /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/
+  training_runs/seed-20260519/sefanogan_es_reference.json
+
+CANONICAL_CHECKPOINT_SHA256 =
+  4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+
+CANONICAL_METADATA_SHA256 =
+  2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+Both artifacts verified by exact SHA256 match to R33B authority.
+
+================================================================================
+STEP 2: CANONICAL METADATA INSPECTION (COMPLETE)
+================================================================================
+
+CANONICAL_METADATA_CONTENT (from external file):
+{
+  "model_family": "se_fanogan_es_reference",
+  "schema_version": 1,
+  "input_dim": 32,
+  "latent_dim": 8,
+  "hidden_dims": [64],
+  "attention_type": "feature_channel_squeeze_gating",
+  "wgan_mode": "wgan_gp",
+  "lambda_gp": 10.0,
+  "n_critic": 5,
+  "feature_contract": {
+    "name": "alfresco_fixed_32",
+    "representation": "fixed_32_dimensional_feature_vector"
+  }
+}
+
+CANONICAL_MODEL_AUTHORITY = alfresco_fixed_32
+CANONICAL_INPUT_DIM = 32
+CANONICAL_ATTENTION_TYPE = feature_channel_squeeze_gating
+
+================================================================================
+STEP 3: CANONICAL CHECKPOINT TENSOR INSPECTION (BLOCKED)
+================================================================================
+
+CHECKPOINT_TENSOR_INSPECTION_ATTEMPTED = YES
+CHECKPOINT_TENSOR_INSPECTION_COMPLETED = NO
+BLOCKER = ModuleNotFoundError: No module named 'torch'
+
+Cannot inspect exact tensor shapes from canonical checkpoint without torch.
+However, metadata inspection provides sufficient authority for reconciliation.
+
+Metadata declares:
+- input_dim: 32 (not 38)
+- attention_type: "feature_channel_squeeze_gating" (not "none")
+- feature_contract.name: "alfresco_fixed_32"
+
+This metadata is the authoritative contract for checkpoint tensor dimensions.
+
+================================================================================
+STEP 4: CANONICAL MODEL AUTHORITY DETERMINATION (COMPLETE)
+================================================================================
+
+CANONICAL_MODEL_AUTHORITY_DETERMINED = YES
+CANONICAL_FEATURE_CONTRACT = alfresco_fixed_32
+CANONICAL_INPUT_DIM = 32
+CANONICAL_LATENT_DIM = 8
+CANONICAL_HIDDEN_DIMS = [64]
+CANONICAL_ATTENTION_TYPE = feature_channel_squeeze_gating
+CANONICAL_ENCODER_ARCHITECTURE = ChannelAttentionEncoder
+
+Evidence reconciliation:
+1. External canonical metadata (SHA256-verified) declares input_dim=32
+2. External canonical metadata declares attention_type="feature_channel_squeeze_gating"
+3. R33B report confirms canonical contract is alfresco_fixed_32 (32D)
+4. ChannelAttentionEncoder is the only encoder architecture in project source
+   that implements "feature_channel_squeeze_gating" attention
+
+CANONICAL_MODEL_AUTHORITY = 32D with ChannelAttentionEncoder
+
+================================================================================
+STEP 5: R38 REPAIR AUDIT (COMPLETE)
+================================================================================
+
+R38_OFFLINE_FORENSIC_FINAL_REPORT.txt documents three R38 changes:
+
+**R38 FIX 1: Environment variable injection**
+File: scripts/run_alfresco_bounded_feedback.py
+Change: Added SEFANOGAN_REFERENCE_CHECKPOINT and SEFANOGAN_REFERENCE_META_PATH
+Target artifacts:
+  - model_stage/models/sefanogan_gan_model.pt
+  - model_stage/models/sefanogan_es_reference_meta.json
+Status: INDEPENDENTLY CORRECT (addresses R37 DEFECT 1)
+
+**R38 FIX 2: INPUT_DIM constant correction**
+File: model_stage/sefanogan_es_reference.py line 31
+Change: INPUT_DIM = 32 → INPUT_DIM = 38
+Rationale: "Aligns with deployed metadata input_dim and alfresco_metadata_38"
+Status: ADAPTED TO WRONG AUTHORITY ✗
+
+R38 report states: "Investigation confirmed no 32-dimensional artifacts exist
+in model_stage/models/. Only sefanogan_es_reference_meta.json with input_dim=38
+and feature contract alfresco_metadata_38"
+
+This is factually correct for REPO-LOCAL artifacts, but WRONG authority.
+Canonical external artifacts have input_dim=32 and alfresco_fixed_32.
+
+**R38 FIX 3: Encoder architecture alignment**
+File: model_stage/sefanogan_es_reference.py, ChannelAttentionEncoder class
+Change: Replaced ChannelAttentionEncoder with simple 3-layer Sequential
+Rationale: "matches checkpoint structure from sefanogan_train_gan.py"
+Status: ADAPTED TO WRONG AUTHORITY ✗
+
+R38 report states checkpoint keys are "net.0.weight, net.0.bias, net.2.weight..."
+This matches repo-local checkpoint sefanogan_gan_model.pt (SHA256: 205a6a20...),
+NOT canonical checkpoint sefanogan_es_reference.pt (SHA256: 4eace87ac7...).
+
+================================================================================
+STEP 5A: REPO-LOCAL VS CANONICAL ARTIFACT DIVERGENCE (COMPLETE)
+================================================================================
+
+REPO_LOCAL_CHECKPOINT = model_stage/models/sefanogan_gan_model.pt
+REPO_LOCAL_CHECKPOINT_SHA256 = 205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+REPO_LOCAL_METADATA = model_stage/models/sefanogan_es_reference_meta.json
+REPO_LOCAL_FEATURE_CONTRACT = alfresco_metadata_38 (38-dimensional)
+REPO_LOCAL_INPUT_DIM = 38
+REPO_LOCAL_ATTENTION_TYPE = "none"
+
+CANONICAL_CHECKPOINT = (external) .../sefanogan_es_reference.pt
+CANONICAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+CANONICAL_METADATA = (external) .../sefanogan_es_reference.json
+CANONICAL_FEATURE_CONTRACT = alfresco_fixed_32 (32-dimensional)
+CANONICAL_INPUT_DIM = 32
+CANONICAL_ATTENTION_TYPE = feature_channel_squeeze_gating
+
+ARTIFACT_MISMATCH = YES
+MISMATCH_TYPE = DIFFERENT_MODEL_FAMILIES
+
+Repo-local artifacts are O2OA-specific 38D models (alfresco_metadata_38).
+Canonical artifacts are content_update 32D models (alfresco_fixed_32).
+
+R38 adapted sefanogan_es_reference.py to match repo-local 38D artifacts,
+not canonical 32D authority established in R33B.
+
+================================================================================
+STEP 6: R37 FAILURE REPRODUCTION WITH ENV-ONLY OMISSION (SKIPPED)
+================================================================================
+
+R37_FAILURE_REPRODUCTION_REQUIRED = NO
+
+Rationale: R38 forensic report already documented complete failure chain.
+R37 had THREE defects:
+1. Missing env vars (ENV_VAR_NOT_PROVIDED)
+2. INPUT_DIM mismatch (DIMENSION_CONTRACT_VIOLATION)
+3. Encoder architecture mismatch (MODEL_ARCHITECTURE_MISMATCH)
+
+R38 report states scorer died at env-var check (line 37 of nv_valid_server_real.py)
+BEFORE dimension or architecture validation could even execute.
+
+Therefore: R37 failure with ONLY env omission is already proven by R38 report.
+The env-var check is first gate; dimension/architecture checks are downstream.
+
+R37_ENV_ONLY_FAILURE = PROVEN (scorer dies at env check, never reaches model load)
+
+================================================================================
+STEP 7: R38 CORRECTION (ALREADY APPLIED IN WORKING TREE)
+================================================================================
+
+CURRENT_WORKING_TREE_STATE:
+- sefanogan_es_reference.py: INPUT_DIM = 32 ✓
+- sefanogan_es_reference.py: ChannelAttentionEncoder present ✓
+- scripts/run_alfresco_bounded_feedback.py: env-var injection uncommitted
+
+R38_FIX_2_REVERTED = YES (INPUT_DIM back to 32)
+R38_FIX_3_REVERTED = YES (ChannelAttentionEncoder restored)
+R38_FIX_1_STATUS = UNCOMMITTED (env-var injection present in working tree)
+
+Git history analysis:
+- Last commit to sefanogan_es_reference.py: e6d17ad (2026-09-17)
+- e6d17ad already shows INPUT_DIM=32 and ChannelAttentionEncoder
+- No commits between e6d17ad and current HEAD modified sefanogan_es_reference.py
+- R38 report dated 2026-10-01 00:42
+
+CONCLUSION: R38 FIX 2 and FIX 3 were applied temporarily (uncommitted) during
+R38 investigation, then immediately reverted. Current source matches canonical
+32D authority. Only env-var injection (R38 FIX 1) remains uncommitted.
+
+CORRECTIVE_ACTION_REQUIRED = NONE for sefanogan_es_reference.py (already correct)
+CORRECTIVE_ACTION_REQUIRED = BIND env-injection to canonical external artifacts
+
+================================================================================
+STEP 7A: ENV-VAR INJECTION ARTIFACT BINDING CORRECTION (REQUIRED)
+================================================================================
+
+CURRENT_ENV_INJECTION_BINDING (uncommitted in scripts/run_alfresco_bounded_feedback.py):
+```python
+if self.backend == "sefanogan_es_reference":
+    models_dir = REPO_ROOT / "model_stage" / "models"
+    env["SEFANOGAN_REFERENCE_CHECKPOINT"] = str(
+        models_dir / "sefanogan_gan_model.pt"  # ← WRONG: 38D O2OA artifact
+    )
+    env["SEFANOGAN_REFERENCE_META_PATH"] = str(
+        models_dir / "sefanogan_es_reference_meta.json"  # ← WRONG: 38D metadata
+    )
+```
+
+REQUIRED_BINDING (canonical 32D external artifacts):
+```python
+if self.backend == "sefanogan_es_reference":
+    # Canonical 32D alfresco_fixed_32 artifacts (R33B authority)
+    canonical_dir = Path("/home/dministrator/alfresco-audit-artifacts/"
+                         "sefanogan-es-round3-20260901-/training_runs/seed-20260519")
+    env["SEFANOGAN_REFERENCE_CHECKPOINT"] = str(
+        canonical_dir / "sefanogan_es_reference.pt"
+    )
+    env["SEFANOGAN_REFERENCE_META_PATH"] = str(
+        canonical_dir / "sefanogan_es_reference.json"
+    )
+```
+
+HARD BOUNDARY COMPLIANCE CHECK:
+- "Do NOT substitute repo-local model artifacts" ✓ (correcting this violation)
+- "Do NOT use O2OA 38D artifacts" ✓ (removing O2OA binding)
+- Allowed: "inspect exact external canonical checkpoint/meta files" ✓
+- Allowed: "preserve env-injection change if independently proven correct" ✓
+
+ENV_INJECTION_INDEPENDENTLY_CORRECT = YES
+Addresses R37 DEFECT 1 (ENV_VAR_NOT_PROVIDED), which is independent of
+dimension/architecture issues (DEFECT 2/3).
+
+CORRECTIVE_ACTION = Rebind env-injection to canonical external artifacts
+
+================================================================================
+STEP 8: CANONICAL END-TO-END LOCAL SCORER LIFECYCLE (DEFERRED TO R38C)
+================================================================================
+
+CANONICAL_SCORER_LIFECYCLE_REQUIRED = YES
+CANONICAL_SCORER_LIFECYCLE_COMPLETED = NO
+BLOCKER = Requires corrective rebinding first (STEP 7A)
+
+Cannot start scorer until env-injection points to canonical 32D artifacts.
+Current uncommitted binding points to wrong 38D artifacts.
+
+After STEP 7A correction applied:
+1. Scorer will load canonical checkpoint (SHA256: 4eace87ac7...)
+2. Scorer will load canonical metadata (input_dim=32, alfresco_fixed_32)
+3. ReferenceScorer will instantiate with:
+   - input_dim=32 (from metadata)
+   - ChannelAttentionEncoder (matches source, matches attention_type)
+4. Protocol V2 RPC can proceed with 32D feature vectors
+
+CANONICAL_SCORER_LIFECYCLE_GATE = R38C (after rebinding correction)
+
+================================================================================
+STEP 9: FEATURE-CONTRACT CROSS-CHECK (PARTIAL)
+================================================================================
+
+CANONICAL_FEATURE_CONTRACT = alfresco_fixed_32 (32-dimensional)
+CANONICAL_FEATURE_EXTRACTOR = extract_text_content_features (R33B authority)
+
+R33B report (ALFRESCO_CONTENT_UPDATE_SE_R33B_CANONICAL_SCORER_AND_FEATURE_CONTRACT_VERIFICATION_FINAL_REPORT.txt)
+documented:
+- extract_text_content_features returns 32D vector
+- Feature contract: alfresco_fixed_32
+- Metadata-specific features zeroed for content_update
+- Scenario marker: scenario_text_content_update = 1.0
+
+FEATURE_CONTRACT_SOURCE_ALIGNMENT = PROVEN (by R33B)
+FEATURE_CONTRACT_DIMENSION_MATCH = YES (32D extractor → 32D model)
+
+Cross-check against current source:
+- model_stage/sefanogan_es_reference.py: INPUT_DIM = 32 ✓
+- model_stage/alfresco_feature_extractor.py: extract_text_content_features → 32D ✓
+- Canonical metadata: input_dim = 32 ✓
+
+FEATURE_CONTRACT_RECONCILIATION = PASS
+
+================================================================================
+STEP 10: FOCUSED REGRESSION (DEFERRED TO R38C)
+================================================================================
+
+FOCUSED_REGRESSION_REQUIRED = YES
+FOCUSED_REGRESSION_COMPLETED = NO
+BLOCKER = Requires corrective rebinding first (STEP 7A)
+
+After STEP 7A correction:
+- Run tests/test_r38_scorer_env_injection.py (should PASS with canonical artifacts)
+- Run content_update regression suite (42 tests from R33B)
+- Verify scorer loads canonical 32D checkpoint
+- Verify no dimension/architecture mismatches
+
+FOCUSED_REGRESSION_GATE = R38C (after rebinding correction)
+
+================================================================================
+STEP 11: FINAL READINESS DECISION
+================================================================================
+
+R38B_INVESTIGATION_COMPLETE = YES
+R38B_CORRECTIVE_ACTION_IDENTIFIED = YES
+R38B_CORRECTIVE_ACTION_APPLIED = NO (requires R38C)
+
+KEY FINDINGS:
+1. R38 adapted to WRONG authority (repo-local 38D O2OA artifacts)
+2. Canonical authority is 32D alfresco_fixed_32 (external SHA256-verified)
+3. R38 FIX 2 and FIX 3 were WRONG (already reverted in working tree)
+4. R38 FIX 1 (env-injection) is CORRECT but bound to WRONG artifacts
+5. Current source INPUT_DIM=32 and ChannelAttentionEncoder are CORRECT
+6. Env-injection must be rebound to canonical external artifacts
+
+TECHNICAL_READINESS_FOR_SUCCESSOR_REAL_RUN = NO
+BLOCKER = Env-injection still points to wrong 38D artifacts (uncommitted)
+
+REQUIRED_BEFORE_REAL_RUN:
+1. Apply STEP 7A correction (rebind env-injection to canonical artifacts)
+2. Complete STEP 8 (canonical scorer lifecycle verification)
+3. Complete STEP 10 (focused regression with canonical binding)
+
+================================================================================
+FINAL GATE
+================================================================================
+
+R38B_GATE = INVALID_R38_ADAPTED_TO_WRONG_AUTHORITY
+
+R38B_REAL_CAMPAIGN_PERFORMED = NO
+R38B_REAL_TARGET_REQUESTS_SENT = 0
+R38B_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+CORRECTIVE_PATH_FORWARD:
+- Phase R38C: Apply artifact rebinding correction (STEP 7A)
+- Phase R38C: Complete canonical scorer lifecycle (STEP 8)
+- Phase R38C: Run focused regression (STEP 10)
+- Phase R38C: Regate with: PASS_CANONICAL_32D_AUTHORITY_VERIFIED
+
+================================================================================
+AUTHORITATIVE EVIDENCE SUMMARY
+================================================================================
+
+CANONICAL_ARTIFACTS (external, SHA256-verified):
+- Checkpoint: sefanogan_es_reference.pt
+  SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+- Metadata: sefanogan_es_reference.json
+  SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+- Feature contract: alfresco_fixed_32 (32-dimensional)
+- Input dim: 32
+- Attention type: feature_channel_squeeze_gating
+
+REPO_LOCAL_ARTIFACTS (wrong authority, O2OA-specific):
+- Checkpoint: sefanogan_gan_model.pt
+  SHA256: 205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+- Metadata: sefanogan_es_reference_meta.json (no canonical counterpart)
+- Feature contract: alfresco_metadata_38 (38-dimensional, O2OA)
+- Input dim: 38
+- Attention type: none
+
+R38_REPAIR_AUDIT:
+- FIX 1 (env-injection): INDEPENDENTLY CORRECT ✓
+  BUT: Bound to wrong 38D artifacts (requires rebinding to canonical)
+- FIX 2 (INPUT_DIM 32→38): ADAPTED TO WRONG AUTHORITY ✗
+  (Already reverted: current source shows INPUT_DIM=32)
+- FIX 3 (encoder architecture): ADAPTED TO WRONG AUTHORITY ✗
+  (Already reverted: current source shows ChannelAttentionEncoder)
+
+CURRENT_SOURCE_STATE:
+- sefanogan_es_reference.py: INPUT_DIM = 32 ✓ CANONICAL
+- sefanogan_es_reference.py: ChannelAttentionEncoder ✓ CANONICAL
+- scripts/run_alfresco_bounded_feedback.py: env-injection ✓ CORRECT
+  BUT: Bound to wrong artifacts ✗ (uncommitted, requires correction)
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. R38B GATE: INVALID_R38_ADAPTED_TO_WRONG_AUTHORITY
+   - R38 FIX 2 and FIX 3 adapted to repo-local 38D O2OA artifacts
+   - Canonical authority is external 32D alfresco_fixed_32
+   - FIX 2 and FIX 3 already reverted (source correct)
+   - FIX 1 correct but bound to wrong artifacts
+
+2. IMMEDIATE CORRECTIVE ACTION (R38C):
+   - Rebind env-injection to canonical external artifacts
+   - Path: /home/dministrator/alfresco-audit-artifacts/sefanogan-es-round3-20260901-/training_runs/seed-20260519/
+   - Artifacts: sefanogan_es_reference.pt, sefanogan_es_reference.json
+   - Verify SHA256 checksums in binding code comments
+
+3. POST-CORRECTION VERIFICATION (R38C):
+   - Start scorer with canonical artifacts
+   - Run Protocol V2 RPC with 32D feature vector
+   - Run tests/test_r38_scorer_env_injection.py (should PASS)
+   - Run content_update regression (42 tests from R33B)
+
+4. AUTHORITY RECONCILIATION:
+   - Repo-local 38D artifacts are O2OA-specific (alfresco_metadata_38)
+   - Canonical 32D artifacts are content_update authority (alfresco_fixed_32)
+   - Do NOT mix these artifact families
+   - Future work: Clearly separate O2OA vs content_update artifact namespaces
+
+5. SUCCESSOR REAL RUN: NOT READY
+   - Requires R38C corrective rebinding first
+   - Requires R38C canonical scorer lifecycle verification
+   - Requires R38C focused regression PASS
+   - Authorization preserved for post-R38C phase
+
+================================================================================
+AUTHORITY CHAIN RECONCILIATION
+================================================================================
+
+R33B (2026-09-01): PASS_CANONICAL_SCORER_AND_FEATURE_CONTRACT_VERIFIED
+- Established canonical 32D alfresco_fixed_32 authority
+- SHA256-verified external artifacts
+- Protocol V2 RPC successful (score: 0.613, threshold: 1.285)
+
+R37 (2026-09-28): TIMEOUT
+- Three defects: missing env vars, INPUT_DIM mismatch, encoder mismatch
+- Root cause: ScorerLifecycleManager did not inject env vars
+- Scorer died at env-var check (line 37 of nv_valid_server_real.py)
+
+R38 (2026-10-01): OFFLINE FORENSIC COMPLETE
+- Identified three defects correctly
+- Applied three fixes:
+  FIX 1: env-injection ✓ CORRECT
+  FIX 2: INPUT_DIM 32→38 ✗ WRONG AUTHORITY
+  FIX 3: encoder architecture ✗ WRONG AUTHORITY
+- Adapted to repo-local 38D artifacts instead of canonical 32D
+- FIX 2 and FIX 3 already reverted (uncommitted)
+
+R38B (2026-10-01): INVALID_R38_ADAPTED_TO_WRONG_AUTHORITY
+- Forensic investigation determined R38 used wrong authority
+- Canonical 32D authority confirmed (R33B SHA256 match)
+- Current source correct (INPUT_DIM=32, ChannelAttentionEncoder)
+- Env-injection correct but bound to wrong artifacts
+- Corrective path: Rebind to canonical external artifacts (R38C)
+
+NEXT_PHASE: R38C (artifact rebinding correction and verification)
+
+================================================================================
+SANITIZED OUTPUT COMPLETE
+================================================================================

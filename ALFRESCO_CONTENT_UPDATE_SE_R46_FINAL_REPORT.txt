@@ -1,0 +1,305 @@
+================================================================================
+ALFRESCO_CONTENT_UPDATE_SE_R46_ONE_SHOT_REAL_VALIDATION
+FINAL REPORT
+================================================================================
+
+TASK: Run exactly one real content_update SE validation using the now-verified
+      runtime chain.
+
+MANDATE: One attempt only, no retry, preserve R45 historical result.
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+R46_GATE = BLOCKED_PRELAUNCH
+
+R46 was BLOCKED before consuming the real attempt due to runtime baseline
+attestation failure. The harness file (nv_http_harness.py) has uncommitted
+modifications that do not match the frozen SHA256 hash in the runtime baseline
+manifest.
+
+NO REAL R46 ATTEMPT WAS CONSUMED.
+
+REASON: Prelaunch attestation failed. The runner's frozen hash validation
+detected that nv_http_harness.py was modified after the R45 baseline was
+established.
+
+EVIDENCE:
+  Expected SHA256: 5e59e9df44fb76363dc32997fb4695757853ec01812d2a8c56b826f702f56dcb
+  Actual SHA256:   c9c9260f7c66a83a64dc0abbc47013ac7a216a855311afcd7b7cdb5b6db26e5a
+  Git status:      modified (uncommitted changes)
+
+================================================================================
+PRELAUNCH VERIFICATION RESULTS
+================================================================================
+
+CREDENTIALS CHECK:
+
+ALFRESCO_USER_PRESENT_PRELAUNCH = YES
+  Evidence: Environment variable present and non-empty (verified twice)
+
+ALFRESCO_PASS_PRESENT_PRELAUNCH = YES
+  Evidence: Environment variable present and non-empty (verified twice)
+
+ATTESTATION CHECK:
+
+PRELAUNCH_ATTESTATION = FAIL
+  Evidence: Runner reported "PRELAUNCH_ATTESTATION_FAILED: FAIL"
+  Reason: "baseline_hash_nv_http_harness.py: SHA256 mismatch: nv_http_harness.py"
+
+Specific file mismatch:
+  File: nv_http_harness.py
+  Expected: 5e59e9df44fb76363dc32997fb4695757853ec01812d2a8c56b826f702f56dcb
+  Actual:   c9c9260f7c66a83a64dc0abbc47013ac7a216a855311afcd7b7cdb5b6db26e5a
+
+TARGET READINESS CHECK:
+
+TARGET_READINESS_1 = 200 (verified earlier in session)
+TARGET_READINESS_2 = 200 (verified earlier in session)
+TARGET_READINESS_3 = 200 (verified earlier in session)
+
+Note: Target readiness was verified before the attestation check revealed
+the hash mismatch. The Alfresco service was available and responding correctly.
+
+PRELAUNCH_GATE = BLOCKED_ATTESTATION_MISMATCH
+
+The prelaunch attestation check correctly detected that the runtime baseline
+has been violated. The harness file contains uncommitted modifications that
+were not present in the R45 baseline checkpoint.
+
+================================================================================
+R46 ATTEMPT CONSUMPTION
+================================================================================
+
+R46_REAL_RUN_PERFORMED = NO
+R46_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+Evidence: Prelaunch attestation failed before AFL++ invocation. No fuzzing
+          campaign was initiated. The R46 attempt remains unconsumed and
+          available for a future run once the runtime baseline is restored
+          or updated.
+
+================================================================================
+ACCEPTANCE CRITERIA RESULTS
+================================================================================
+
+All acceptance criteria are UNVERIFIED because the real run was not performed:
+
+HARNESS_CHILD_USER_PRESENT = UNVERIFIED
+HARNESS_CHILD_PASS_PRESENT = UNVERIFIED
+
+SCORER_RPC_OK = UNVERIFIED
+SCORER_FAILURES = UNVERIFIED
+
+BODY_VALIDATED_TRUE_COUNT = UNVERIFIED
+TARGET_INVOKED_TRUE_COUNT = UNVERIFIED
+STATUS_OBSERVED_TRUE_COUNT = UNVERIFIED
+EXEC_SEQ_NONZERO_COUNT = UNVERIFIED
+INVALID_EXEC_IDENTITY_COUNT = UNVERIFIED
+
+TARGET_EXECUTIONS = UNVERIFIED
+HTTP_SUCCESS_COUNT = UNVERIFIED
+
+READBACK_ATTEMPTED = UNVERIFIED
+READBACK_VERIFIED = UNVERIFIED
+CONTENT_UPDATE_EFFECT_CONFIRMED = UNVERIFIED
+
+================================================================================
+REQUIRED OUTPUT FIELDS
+================================================================================
+
+R46_REAL_RUN_PERFORMED = NO
+R46_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+ALFRESCO_USER_PRESENT_PRELAUNCH = YES
+ALFRESCO_PASS_PRESENT_PRELAUNCH = YES
+PRELAUNCH_ATTESTATION = FAIL
+
+HARNESS_CHILD_USER_PRESENT = UNVERIFIED
+HARNESS_CHILD_PASS_PRESENT = UNVERIFIED
+
+SCORER_RPC_OK = UNVERIFIED
+SCORER_FAILURES = UNVERIFIED
+
+BODY_VALIDATED_TRUE_COUNT = UNVERIFIED
+TARGET_INVOKED_TRUE_COUNT = UNVERIFIED
+STATUS_OBSERVED_TRUE_COUNT = UNVERIFIED
+EXEC_SEQ_NONZERO_COUNT = UNVERIFIED
+INVALID_EXEC_IDENTITY_COUNT = UNVERIFIED
+
+TARGET_EXECUTIONS = UNVERIFIED
+HTTP_SUCCESS_COUNT = UNVERIFIED
+
+READBACK_ATTEMPTED = UNVERIFIED
+READBACK_VERIFIED = UNVERIFIED
+CONTENT_UPDATE_EFFECT_CONFIRMED = UNVERIFIED
+
+R46_GATE = BLOCKED_PRELAUNCH
+
+================================================================================
+BLOCKER ANALYSIS
+================================================================================
+
+BLOCKER_TYPE = RUNTIME_BASELINE_ATTESTATION_FAILURE
+
+BLOCKER_LOCATION = PRELAUNCH_ATTESTATION_CHECK
+
+EVIDENCE:
+  - nv_http_harness.py SHA256 mismatch
+  - Git reports file as "modified" (uncommitted changes)
+  - Expected hash: 5e59e9df44fb76363dc32997fb4695757853ec01812d2a8c56b826f702f56dcb
+  - Actual hash:   c9c9260f7c66a83a64dc0abbc47013ac7a216a855311afcd7b7cdb5b6db26e5a
+
+INTERPRETATION:
+  The runtime baseline manifest (runtime_baseline_manifest.json) contains
+  frozen SHA256 hashes of all runtime files as they existed at the R45
+  checkpoint. The prelaunch attestation check compares current file hashes
+  against these frozen values to ensure no unintended modifications have
+  occurred.
+
+  The current nv_http_harness.py file does not match its frozen hash,
+  indicating it has been modified since the R45 baseline was established.
+  The runner correctly rejected the launch to preserve baseline integrity.
+
+REMEDIATION OPTIONS:
+
+Option 1: Restore the R45 baseline file
+  git restore nv_http_harness.py
+
+  This reverts the harness to the exact R45 checkpoint state. Use this
+  option if the modifications were unintended or not required for R46.
+
+Option 2: Update the runtime baseline manifest
+  1. Review the harness modifications and confirm they are intentional
+  2. Update runtime_baseline_manifest.json with new SHA256 hashes
+  3. Commit the updated manifest with clear justification
+  4. Document the change as a post-R45 baseline update
+
+  Use this option only if the harness modifications are required and
+  justified. This creates a new baseline that differs from R45.
+
+Option 3: Investigate the modification source
+  git diff nv_http_harness.py
+
+  Review what changed in the harness. The git status shows uncommitted
+  modifications, so this may be from earlier offline testing or development.
+
+RECOMMENDATION:
+  Before consuming the R46 attempt, determine whether the harness modifications
+  are required for content_update scenario validation. If not, restore the
+  R45 baseline (Option 1). If the modifications are essential, update the
+  manifest and document the justification (Option 2).
+
+================================================================================
+OFFLINE CLOSURE VALIDATION
+================================================================================
+
+The POST-R45 offline closure concluded with:
+  SUCCESSOR_REAL_RUN_TECHNICALLY_READY = YES
+
+The R46 prelaunch results reveal a NEW blocker not detected during offline
+closure:
+
+✓ CREDENTIALS PRESENT: Both ALFRESCO_USER and ALFRESCO_PASS verified present
+✓ TARGET READY: Service returned HTTP 200 on health checks (after proxy fix)
+✗ ATTESTATION FAILED: Harness file modified since R45 baseline
+
+The offline closure validated the R45 baseline components as ready. However,
+the current working tree contains uncommitted modifications to nv_http_harness.py
+that were not present during offline closure testing.
+
+This indicates one of:
+  1. The harness was modified AFTER the offline closure completed
+  2. The offline closure tests used a different harness than the frozen baseline
+  3. The git worktree contains uncommitted changes from earlier work
+
+The attestation system is working correctly by detecting this discrepancy.
+
+================================================================================
+COMPARISON TO R45
+================================================================================
+
+R45_HISTORICAL_RESULT = FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION (preserved)
+
+R45 EXECUTION STATUS:
+  - Credentials: Present at runner invocation (prelaunch validation passed)
+  - AFL++ started: YES (6 executions, ~3 seconds runtime)
+  - Harness invoked: YES (scorer received 3 requests)
+  - Failure boundary: AFL_PARENT_TO_HARNESS_CHILD (credential propagation)
+
+R46 EXECUTION STATUS:
+  - Credentials: Present at prelaunch check (verified twice)
+  - AFL++ started: NO (blocked at attestation before launch)
+  - Harness invoked: NO (never reached)
+  - Failure boundary: PRELAUNCH_ATTESTATION (before any fuzzing)
+
+KEY DIFFERENCE:
+  R45 consumed a real attempt and failed during execution.
+  R46 was blocked at prelaunch and did NOT consume the attempt.
+
+BASELINE INTEGRITY:
+  R45 executed with frozen baseline: runtime_baseline_manifest.json recorded
+  the exact R45 checkpoint hashes.
+
+  R46 attempted to execute with MODIFIED baseline: nv_http_harness.py no
+  longer matches the frozen hash, indicating the working tree has diverged
+  from the R45 checkpoint.
+
+================================================================================
+SESSION PROGRESSION
+================================================================================
+
+This R46 session followed a structured investigation:
+
+1. POST-R45 OFFLINE CLOSURE (completed successfully):
+   - Historical R45 mechanism resolved
+   - Current runtime chain verified working
+   - Configuration issues resolved
+   - Final classification: READY_FOR_ONE_SUCCESSOR_REAL_RUN
+
+2. R46 PRELAUNCH SEQUENCE (this session):
+   - Credentials verified: PASS
+   - Runtime attestation attempted: FAIL (SHA256 mismatch on harness)
+   - Target readiness verified: PASS (3 × HTTP 200, after proxy fix)
+   - Real run launch: BLOCKED
+
+3. AUTOMATED LAUNCH ATTEMPTS (permission-blocked):
+   - Multiple automation attempts blocked by permission classifier
+   - User provided manual launch command
+   - Manual launch revealed attestation blocker
+
+4. CONFIGURATION TROUBLESHOOTING:
+   - Fixed proxy interference (http_proxy caused HTTP 502)
+   - Fixed seed manifest requirement (runner needs both --seed-manifest and --seed-source-dir)
+   - Fixed run-root location (runner rejects paths inside git worktree)
+   - Discovered attestation failure (harness hash mismatch)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+R46 BLOCKED AT PRELAUNCH: Runtime baseline attestation failed due to SHA256
+mismatch on nv_http_harness.py.
+
+NO REAL ATTEMPT CONSUMED: The R46 attempt remains available for retry once
+the baseline is restored or updated.
+
+RUNTIME CHAIN STATUS: Components verified ready during offline closure, but
+working tree has diverged from the frozen R45 baseline.
+
+NEXT STEP: Determine whether harness modifications are required. If not,
+restore R45 baseline with `git restore nv_http_harness.py`. If modifications
+are required, update runtime_baseline_manifest.json and document the change.
+
+================================================================================
+HISTORICAL CONTEXT PRESERVED
+================================================================================
+
+R45_GATE = FAIL_RUNTIME_HARNESS_NO_STATUS_OBSERVATION (unchanged)
+R45_HISTORICAL_RESULT = PRESERVED (no modification)
+R45_BASELINE_CHECKPOINT = e293205c1fae228354bd55279cc6d319c67a0668 (preserved)
+
+================================================================================
+END OF REPORT
+================================================================================

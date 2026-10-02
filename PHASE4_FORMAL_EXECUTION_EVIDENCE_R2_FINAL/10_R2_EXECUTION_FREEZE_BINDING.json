@@ -1,0 +1,23 @@
+{
+  "r2_freeze_commitment": "1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f",
+  "r2_freeze_location": "PHASE4_FORMAL_EXECUTION_FREEZE_R2/",
+  "formal_seed_count": 30,
+  "paired_schedule_count": 30,
+  "frozen_budget": {
+    "max_test_cases": 5,
+    "time_budget_seconds": 60,
+    "scorer_ready_timeout_seconds": 10,
+    "authority": "Phase-3 validated budget (5+5 pilot)",
+    "approved_decision": "D6",
+    "frozen_timestamp": "2026-09-21T14:06:00Z"
+  },
+  "resume_state": {
+    "completed_blocks": 1,
+    "valid_ae_runs": 1,
+    "valid_se_runs": 1,
+    "total_valid_runs": 2,
+    "last_completed_block": 1,
+    "resume_from_block": 2
+  },
+  "verification_status": "R2_COMMITMENT_VERIFIED"
+}

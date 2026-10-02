@@ -1,0 +1,83 @@
+{
+  "evidence_inventory": [
+    {
+      "artifact_path": "PHASE3_FINAL_5PLUS5_CAMPAIGN_MANIFEST.json",
+      "artifact_role": "Primary campaign results manifest with per-seed and aggregate data",
+      "artifact_type": "campaign_manifest",
+      "required_for": ["global_contract", "descriptive_results", "pair_contracts"]
+    },
+    {
+      "artifact_path": "PHASE3_FINAL_5PLUS5_CAMPAIGN_REPORT.txt",
+      "artifact_role": "Human-readable campaign report with interpretation",
+      "artifact_type": "campaign_report",
+      "required_for": ["campaign_summary", "human_review"]
+    },
+    {
+      "artifact_path": "PHASE3_FORENSIC_RUNTIME_PROVENANCE_FINAL_VERDICT.txt",
+      "artifact_role": "Final forensic audit verdict unblocking campaign acceptance",
+      "artifact_type": "forensic_verdict",
+      "required_for": ["model_identity_verification", "acceptance_decision"]
+    },
+    {
+      "artifact_path": "PHASE3_FORENSIC_AUDIT_EXECUTIVE_SUMMARY.txt",
+      "artifact_role": "Executive summary of forensic findings",
+      "artifact_type": "forensic_summary",
+      "required_for": ["acceptance_rationale", "human_review"]
+    },
+    {
+      "artifact_path": "PHASE3_FORENSIC_AUDIT_COMPARISON_TABLE.txt",
+      "artifact_role": "Comparison of post-campaign vs forensic audit findings",
+      "artifact_type": "forensic_comparison",
+      "required_for": ["audit_reconciliation", "error_analysis"]
+    },
+    {
+      "artifact_path": "model_stage/models/sefanogan_es_realrun_threshold.json",
+      "artifact_role": "Frozen SE threshold artifact with canonical model hashes",
+      "artifact_type": "threshold_artifact",
+      "required_for": ["model_identity_binding", "threshold_provenance"]
+    },
+    {
+      "artifact_path": "scripts/run_alfresco_bounded_feedback.py",
+      "artifact_role": "Campaign runner script",
+      "artifact_type": "source_code",
+      "required_for": ["baseline_identity", "reproducibility"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/ae_seed_20260915/nv_body_valid_stats.json",
+      "artifact_role": "AE seed 20260915 validation statistics",
+      "artifact_type": "run_evidence",
+      "required_for": ["run_validation", "acceptance_rates"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/se_seed_20260915/nv_body_valid_stats.json",
+      "artifact_role": "SE seed 20260915 validation statistics",
+      "artifact_type": "run_evidence",
+      "required_for": ["run_validation", "acceptance_rates"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/ae_seed_20260915/afl-out/fuzzer_stats",
+      "artifact_role": "AE seed 20260915 fuzzer coverage statistics",
+      "artifact_type": "run_evidence",
+      "required_for": ["coverage_results", "descriptive_analysis"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/se_seed_20260915/afl-out/fuzzer_stats",
+      "artifact_role": "SE seed 20260915 fuzzer coverage statistics",
+      "artifact_type": "run_evidence",
+      "required_for": ["coverage_results", "descriptive_analysis"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/ae_seed_20260915/scorer_trace.jsonl",
+      "artifact_role": "AE seed 20260915 scorer trace",
+      "artifact_type": "run_evidence",
+      "required_for": ["scorer_participation", "rpc_validation"]
+    },
+    {
+      "artifact_path": "/tmp/phase3_5plus5_final_20260920_140206/se_seed_20260915/scorer_trace.jsonl",
+      "artifact_role": "SE seed 20260915 scorer trace",
+      "artifact_type": "run_evidence",
+      "required_for": ["scorer_participation", "rpc_validation"]
+    }
+  ],
+  "note": "Full evidence inventory includes all 10 run directories with validation stats, fuzzer stats, and scorer traces. This index shows representative samples. All artifacts referenced exist and are bound by SHA256 in campaign manifest."
+}

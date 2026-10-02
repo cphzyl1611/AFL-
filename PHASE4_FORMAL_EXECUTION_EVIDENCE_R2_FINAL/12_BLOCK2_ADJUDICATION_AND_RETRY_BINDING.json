@@ -1,0 +1,25 @@
+{
+  "block_index": 2,
+  "se_run": {
+    "backend": "sefanogan_es_reference",
+    "status": "CARRIED_FORWARD_FROM_PRIOR_R2_EXECUTION",
+    "not_rerun_in_current_campaign": true
+  },
+  "old_ae_attempt": {
+    "backend": "alfresco_ae_v1",
+    "budget": "3/30/10",
+    "status": "EXCLUDED_INVALID_ATTEMPT",
+    "reason": "WRONG_BUDGET_OUT_OF_SCOPE",
+    "excluded_count": 1
+  },
+  "ae_retry": {
+    "backend": "alfresco_ae_v1",
+    "budget": "5/60/10",
+    "authorized_quota": 1,
+    "inventory_entry_count": 5,
+    "status": "VALID",
+    "discrepancy_note": "run_inventory.jsonl contains 5 AE_RETRY entries but authorization specified exactly 1 retry"
+  },
+  "pair_contract": "PASS",
+  "included_in_final_60_count": true
+}

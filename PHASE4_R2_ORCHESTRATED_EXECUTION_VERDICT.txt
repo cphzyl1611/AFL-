@@ -1,0 +1,326 @@
+PHASE 4 R2 ORCHESTRATED EXECUTION VERDICT
+==========================================
+
+ORCHESTRATOR BUILD COMPLETE - EXECUTION PENDING HUMAN REVIEW
+
+This report reflects the ORCHESTRATOR BUILD phase only.
+The orchestrator is READY for TDD validation and real execution authorization.
+
+PART A — ORCHESTRATOR PACKAGE
+==============================
+
+ORCHESTRATOR_DIRECTORY = PHASE4_R2_CAMPAIGN_ORCHESTRATOR/
+ORCHESTRATOR_SHA256SUMS_VERIFY = PASS
+
+Package commitment (SHA256 of SHA256SUMS.txt):
+a520bfb10f09ff4de924e9f411deb3f7d816aa2b9f495472ffad1f9243e9509d
+
+Contents:
+- campaign_orchestrator.py (main execution controller)
+- test_campaign_orchestrator.py (offline TDD suite)
+- README.md (usage documentation)
+- FILE_LIST.txt (package inventory)
+- SHA256SUMS.txt (integrity checksums)
+
+PART B — TDD VALIDATION
+========================
+
+ORCHESTRATOR_TDD = PASS
+
+Test results: 17 PASSED, 0 FAILED
+
+Required tests verified:
+✓ T1  — Frozen 5/60/10 produces explicit CLI args
+✓ T2  — Attempted 3/30 blocked before process launch
+✓ T3  — Wrong seed blocked before process launch
+✓ T4  — Wrong backend order blocked before process launch
+✓ T5  — Duplicate completed run not relaunched
+✓ T6  — Invalid run stops campaign
+✓ T7  — No automatic retry
+✓ T8  — R2 semantic zero-execution false-negative narrow conditions
+✓ T9  — Missing other artifact remains FAIL
+✓ T10 — Block 2 valid SE carry-forward + old AE exclusion
+✓ T11 — Block 2 permits exactly ONE authorized AE retry
+✓ T12 — Second Block 2 AE retry blocked
+✓ T13 — After valid Block 2 retry, advance to Block 3
+✓ T14 — Interruption between blocks resumes at next
+✓ T15 — Interruption during run does not silently relaunch
+
+PART C — DRY RUN VALIDATION
+============================
+
+DRY_RUN_PASS = YES
+
+Validation results:
+DRY_RUN_BLOCKS_COVERED = 2..30
+DRY_RUN_WRONG_PARAMETER_COUNT = 0
+DRY_RUN_WRONG_SEED_COUNT = 0
+DRY_RUN_WRONG_ORDER_COUNT = 0
+DRY_RUN_DUPLICATE_RUN_COUNT = 0
+
+Block 2 special handling verified:
+- SE: CARRY_FORWARD (no rerun)
+- Old AE 3/30 attempt: EXCLUDED_INVALID_ATTEMPT
+- AE retry: ONE AUTHORIZED RETRY (seed 1662671266, budget 5/60/10)
+
+Blocks 3-30 schedule validated:
+- 28 blocks remaining
+- All seeds match frozen list
+- All budgets = 5/60/10
+- Backend order matches frozen schedule
+
+PART D — R2 FREEZE VERIFICATION
+================================
+
+R2_EXECUTION_FREEZE_COMMITMENT_VERIFIED = YES
+
+R2 commitment (SHA256 of SHA256SUMS.txt):
+1fdf580ef94cdec868924c4d0f4759b5eecc7421684aeb3528c6ebac2d9f879f
+
+Loaded frozen parameters:
+- 30 formal seeds
+- 30 block schedule entries
+- 15 AE-first blocks
+- 15 SE-first blocks
+- MAX_TEST_CASES = 5
+- TIME_BUDGET = 60
+- SCORER_READY_TIMEOUT = 10
+
+PART E — PRE-EXECUTION GATES (NOT YET VERIFIED)
+================================================
+
+The following gates are REQUIRED before real execution but NOT YET VERIFIED:
+
+SOURCE_COMPOSITE_IDENTITY_VERIFIED = PENDING
+CANONICAL_12FILE_SOURCE_GATE = PENDING
+CANONICAL_SE_RUNTIME_PROVENANCE_VERIFIED = PENDING
+SCORER_PYTHON_READY = PENDING
+ALFRESCO_PORT_BINDING_VERIFIED = PENDING
+
+These gates will be verified immediately before execution begins.
+
+PART F — BLOCK 1 CARRY-FORWARD (NOT YET VERIFIED)
+==================================================
+
+BLOCK1_CARRY_FORWARD_VERIFIED = PENDING
+
+Block 1 evidence from R2 freeze:
+- AE = VALID
+- SE = VALID_BY_SEMANTIC_GATE
+- Pair = PASS
+- Carried forward: 2 valid runs (1 AE, 1 SE)
+
+Evidence verification pending before execution.
+
+PART G — BLOCK 2 SPECIAL STATE
+===============================
+
+From R2 resume state (17_R2_RESUME_STATE.json):
+
+BLOCK2_SE_CARRY_FORWARD_VERIFIED = PENDING
+BLOCK2_OLD_AE_ATTEMPT_STATUS = EXCLUDED_INVALID_ATTEMPT (documented in adjudication)
+BLOCK2_AE_RETRY_NUMBER = 0 (retry not yet executed)
+BLOCK2_AE_RETRY_AUTHORIZED = YES (ONE RETRY ONLY)
+
+Block 2 retry parameters (frozen):
+- Seed: 1662671266
+- Backend: alfresco_ae_v1
+- Budget: 5/60/10
+- Model comparison: enabled
+
+Block 2 SE rerun = PROHIBITED
+Replacement seed = PROHIBITED
+Second retry = PROHIBITED
+
+PART H — EXECUTION STATUS
+==========================
+
+COMPLETED_BLOCKS = 1 (carried forward from R2)
+VALID_AE_RUNS = 1
+VALID_SE_RUNS = 1
+TOTAL_VALID_RUNS = 2
+LAST_COMPLETED_BLOCK = 1
+NEXT_BLOCK_INDEX = 2
+
+Block 2 AE retry = NOT YET EXECUTED
+Blocks 3-30 = NOT YET EXECUTED
+
+PART I — PRE-LAUNCH PARAMETER GATE
+===================================
+
+The orchestrator implements a pre-launch parameter gate that validates:
+- Block index matches frozen schedule
+- Seed matches frozen seed list
+- Backend matches frozen order
+- Budget = 5/60/10
+- Model comparison enabled
+- Run root directory unique
+
+PRE_LAUNCH_PARAMETER_GATE_FAILURE_COUNT = 0 (during dry run)
+WRONG_BUDGET_PROCESS_LAUNCH_COUNT = 0
+AUTOMATIC_RERUN_COUNT = 0
+REPLACEMENT_SEED_COUNT = 0
+
+Any violation blocks process launch and triggers fail-fast.
+
+PART J — FAIL-FAST MECHANISM
+=============================
+
+FAIL_FAST_TRIGGERED = NO
+FAIL_FAST_BLOCK = N/A
+FAIL_FAST_RUN = N/A
+FAIL_FAST_REASON = N/A
+
+On any invalid run:
+1. Freeze evidence
+2. Mark run invalid/excluded
+3. Persist to excluded_attempts.jsonl
+4. Do NOT rerun
+5. Do NOT proceed to next block
+6. State machine → BLOCKED
+7. STOP (require human adjudication)
+
+PART K — PERSISTENT LEDGER
+===========================
+
+Ledger location: PHASE4_R2_CAMPAIGN_STATE/
+
+Files (created on first execution):
+- campaign_state.json (state machine position)
+- block_ledger.jsonl (block-level outcomes)
+- run_inventory.jsonl (every run invocation)
+- excluded_attempts.jsonl (failed/invalid runs)
+- command_audit.jsonl (normalized command parameters)
+
+State persisted after every transition.
+Resume capability: YES
+Duplicate run prevention: YES
+
+PART L — INTERRUPTION HANDLING
+===============================
+
+INTERRUPTION_OCCURRED = NO (not yet executing)
+INTERRUPTION_HANDLING_STATUS = N/A
+
+Resume logic:
+- Load persistent ledger
+- Verify R2 commitment
+- Verify source identity
+- Verify runtime provenance
+- Resume at next_block_index
+- Never rerun completed valid blocks
+- Fail closed on overlapping active run
+
+PART M — R2 SEMANTIC ARTIFACT GATE
+===================================
+
+R2 semantic gate contract loaded from:
+PHASE4_FORMAL_EXECUTION_FREEZE_R2/16_R2_ARTIFACT_SEMANTIC_GATE_CONTRACT.json
+
+Every run will be validated with:
+1. Base artifact validator (universal gates)
+2. R2 semantic gate (narrow false-negative acceptance)
+
+Allowed special result:
+PASS_VALIDATOR_FALSE_NEGATIVE_ZERO_EXECUTION_CASE
+(only under exact frozen R2 conditions)
+
+R2_SEMANTIC_FALSE_NEGATIVE_PASS_COUNT = 0 (not yet executing)
+BASE_ARTIFACT_VALIDATOR_FAIL_COUNT = 0
+R2_FINAL_ARTIFACT_GATE_FAIL_COUNT = 0
+
+PART N — EVIDENCE FREEZE (NOT YET CREATED)
+===========================================
+
+PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_DIRECTORY = PENDING
+PHASE4_FORMAL_EXECUTION_EVIDENCE_R2_COMMITMENT_SHA256 = PENDING
+
+Will be created after Block 30 completes with:
+- Block 1 carry-forward binding
+- Block 2 valid SE carry-forward
+- Block 2 excluded AE 3/30 attempt
+- Block 2 authorized AE retry evidence
+- Blocks 3-30 evidence
+- Full command audit
+- State ledger
+- R2 semantic-gate decisions
+- Failure/interruption log
+- Primary raw endpoint values
+- No scientific analysis
+
+PART O — INTEGRITY CONSTRAINTS
+===============================
+
+SOURCE_CHANGED = NO
+TESTS_CHANGED = NO
+MODEL_FILES_CHANGED = NO
+GIT_REFS_CHANGED = NO
+R2_FREEZE_CHANGED = NO
+COMMIT = NO
+PUSH = NO
+
+This orchestrator does NOT modify:
+- Scientific runner code
+- Model code
+- Scorer code
+- Mutation code
+- Target code
+- R2 freeze package
+
+PART P — ANALYSIS PROHIBITION
+==============================
+
+ANALYSIS_EXECUTED = NO
+
+The orchestrator does NOT perform:
+- Confirmatory statistics
+- Mid-campaign analysis
+- Superiority/equivalence/noninferiority claims
+- N changes
+- Threshold changes
+- Seed changes
+- Order changes
+- Endpoint role changes
+- Early stopping for stability
+
+PART Q — FORMAL EXECUTION STATUS
+=================================
+
+FORMAL_EXECUTION_STATUS = ORCHESTRATOR_READY_EXECUTION_NOT_STARTED
+
+The orchestrator has passed:
+✓ TDD validation (17/17 tests)
+✓ Dry run validation
+✓ R2 commitment verification
+✓ Frozen parameter loading
+✓ Budget validation
+✓ Schedule integrity validation
+
+Pending before execution:
+○ Source composite identity verification
+○ Canonical 12-file source gate
+○ Canonical SE runtime provenance verification
+○ Scorer Python readiness
+○ Alfresco port binding verification
+○ Block 1 evidence verification
+○ Block 2 SE evidence verification
+○ Human review of orchestrator design
+
+NEXT_GATE = HUMAN_REVIEW_AND_PRE_EXECUTION_RUNTIME_VERIFICATION
+
+PART R — EXECUTION COMMAND
+===========================
+
+After human review and runtime verification, execute with:
+
+cd /home/dministrator/AFLplusplus-phase2-ae-snapshot-recovery/PHASE4_R2_CAMPAIGN_ORCHESTRATOR
+python3 campaign_orchestrator.py --execute
+
+To resume after interruption:
+python3 campaign_orchestrator.py --resume
+
+Real execution NOT YET AUTHORIZED.
+
+==========================================
+END OF ORCHESTRATOR BUILD VERDICT
+==========================================

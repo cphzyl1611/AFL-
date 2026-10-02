@@ -357,17 +357,31 @@ static void nv_observe_security_state_once(afl_state_t *afl,
     static u8 tp_resolved = 0;
     if (unlikely(!tp_resolved)) {
 
+      fprintf(stderr, "[STATE_TRACE_DEBUG] Resolving NV_STATE_TRACE_PATH...\n");
+      fflush(stderr);
+
       const char *env = getenv("NV_STATE_TRACE_PATH");
       /* copied, not aliased: see the NV_STATUS_PATH note in common_fuzz_stuff */
       tp = (env && *env) ? (const char *)ck_strdup((u8 *)env) : NULL;
       tp_resolved = 1;
 
+      fprintf(stderr, "[STATE_TRACE_DEBUG] Resolved: tp=%s\n", tp ? tp : "(NULL)");
+      fflush(stderr);
+
     }
+
+    fprintf(stderr, "[STATE_TRACE_DEBUG] Check: tp=%s obs->has=%d exec_seq=%llu\n",
+            tp ? tp : "(NULL)", obs->has, (unsigned long long)obs->exec_seq);
+    fflush(stderr);
 
     if (unlikely(tp && *tp)) {
 
       FILE *tf = fopen(tp, "a");
       if (tf) {
+
+        fprintf(stderr, "[STATE_TRACE_DEBUG] Writing: exec_seq=%llu state=%s\n",
+                (unsigned long long)obs->exec_seq, key);
+        fflush(stderr);
 
         fprintf(tf,
                 "{\"exec_seq\":%llu,\"state\":\"%s\",\"state_id\":\"%llx\","
@@ -375,6 +389,14 @@ static void nv_observe_security_state_once(afl_state_t *afl,
                 (unsigned long long)obs->exec_seq, key,
                 (unsigned long long)h, (unsigned)obs->new_states);
         fclose(tf);
+
+        fprintf(stderr, "[STATE_TRACE_DEBUG] Write complete\n");
+        fflush(stderr);
+
+      } else {
+
+        fprintf(stderr, "[STATE_TRACE_DEBUG] FAILED to open %s: %s\n", tp, strerror(errno));
+        fflush(stderr);
 
       }
 
@@ -575,6 +597,17 @@ fsrv_run_result_t __attribute__((hot)) fuzz_run_target(afl_state_t      *afl,
 
         }
 
+      }
+
+      /* R161970 fix: Call observation function to emit state_trace for
+         non-persistent mode (e.g. multipart_upload). This mirrors the
+         observation call in common_fuzz_stuff() but runs for every
+         fuzz_run_target() completion, ensuring state_trace emission
+         regardless of execution mode. */
+      const char *status_path = getenv("NV_STATUS_PATH");
+      if (status_path && *status_path) {
+        nv_state_obs_t obs;
+        nv_observe_security_state_once(afl, status_path, &obs, 0);
       }
 
     }

@@ -1,0 +1,82 @@
+STEP 2 — SE Canonical Provenance Gate
+=====================================
+
+EXECUTED: 2026-09-23
+PROTOCOL: Alfresco content_update Final Authorized SE Launch
+VERDICT: HASH_MISMATCH_DETECTED
+
+CANONICAL CONTRACT (from sefanogan_es_realrun_threshold.json)
+-------------------------------------------------------------
+Expected checkpoint_sha256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+Expected metadata_sha256:   2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+Source: calibration artifact frozen before real pilot
+Policy: MATCHED_OPERATING_CRITERION (FRR absolute mismatch = 0.0)
+
+ACTUAL PROVENANCE (from model_stage/models/)
+---------------------------------------------
+Actual checkpoint SHA256:   205a6a20a499a39b994a7ea5a770d0f701fcaba37cd9328da7e71d4aaf856624
+  File: sefanogan_gan_model.pt
+  
+Actual metadata SHA256:     8d4223f05a0ac0191519594f169f23bd66af40b7d179d3b3ea47308e125d67e7
+  File: sefanogan_es_reference.json
+
+CHECKPOINT SEARCH RESULTS
+-------------------------
+Searched all *.pt and *.pth files in model_stage/models/
+NO FILE MATCHES expected checkpoint hash 4eace87a...
+
+Available checkpoints:
+- sefanogan_gan_model.pt:              205a6a20... (CURRENT, MISMATCH)
+- sefanogan_ae_model.pt:               5de67e66...
+- alfresco_fanogan_v1_candidate.pt:    4006cc71...
+- flowable_ae_model.pt:                023c28a1...
+- flowable_ae_v2_model.pt:             72780ccf...
+- flowable_ae_v3_model.pt:             8b73a779...
+
+ROOT CAUSE ANALYSIS
+-------------------
+The expected checkpoint hash 4eace87a... from calibration artifact does NOT exist
+in the current model_stage/models/ directory. Two possibilities:
+
+A) Calibration was performed with a different checkpoint version that was later
+   replaced/updated in the repository
+   
+B) The checkpoint file was modified after calibration artifact was frozen
+
+The threshold artifact shows:
+- created_by: scripts/calibrate_se_realrun_threshold.py
+- frozen_before_real_pilot: true
+- calibration_sample_count: 10
+- se_threshold: 1.2847454080581664
+
+This is a PROVENANCE GATE FAILURE, not a FALSE_POSITIVE.
+
+IMPACT ON SE LAUNCH
+-------------------
+BLOCKING: SE launch cannot proceed with canonical provenance verification failure.
+
+The SE backend sefanogan_es_reference.py enforces checkpoint validation:
+- ReferenceScorer.__init__() requires checkpoint_path parameter
+- load_state_dict() would load from sefanogan_gan_model.pt (205a6a20...)
+- But this contradicts the frozen calibration contract (4eace87a...)
+
+Running SE with mismatched checkpoint would violate the canonical provenance
+requirement stated in authorization protocol.
+
+REQUIRED RESOLUTION
+-------------------
+Before SE launch, must resolve ONE of:
+
+1. LOCATE the checkpoint file with SHA256=4eace87a... that was used during
+   calibration (if it exists in git history or backup)
+   
+2. DOCUMENT that the current checkpoint (205a6a20...) is the authoritative
+   version and EXPLAIN why calibration artifact references different hash
+   
+3. RE-CALIBRATE threshold using current checkpoint (205a6a20...) and generate
+   new frozen artifact - BUT this violates "no model modifications" constraint
+
+RECOMMENDATION: Request user guidance on hash mismatch before declaring
+PROVENANCE_GATE status.
+
+SE_CANONICAL_PROVENANCE_GATE = PENDING_HASH_RECONCILIATION

@@ -1,0 +1,159 @@
+================================================================================
+R33B CANONICAL SCORER AND FEATURE CONTRACT VERIFICATION
+EXECUTIVE SUMMARY
+================================================================================
+
+SESSION: R33B local offline verification
+DATE: 2026-09-30
+AUTHORITY: No real Alfresco campaign authorized
+
+================================================================================
+MANDATORY FIELDS
+================================================================================
+
+R33B_REAL_CAMPAIGN_PERFORMED = NO
+R33B_REAL_TARGET_REQUESTS_SENT = 0
+R33B_CONSUMED_REAL_ATTEMPT_COUNT = 0
+
+================================================================================
+VERIFICATION PROTOCOL RESULTS
+================================================================================
+
+STEP 1: R33 REPAIR CONFIRMATION
+CONTENT_UPDATE_RAW_TEXT_BRANCH_PRESENT = YES
+CONTENT_UPDATE_SKIPS_JSON_NORMALIZATION = YES
+CONTENT_UPDATE_PRESERVES_RAW_TEXT_SEMANTICS = YES
+OTHER_JSON_SCENARIOS_KEEP_JSON_NORMALIZATION = YES
+
+STEP 2: REFERENCE SEED RECOVERY
+REFERENCE_SEED_FOUND = YES
+REFERENCE_SEED_PATH = in/alfresco_content_update_dataset/seed_ok_0.txt
+REFERENCE_SEED_BYTES = 110
+REFERENCE_SEED_IS_PLAIN_UTF8_TEXT = YES
+REFERENCE_SEED_IS_JSON_PARSEABLE = NO
+
+STEP 3: CANONICAL ARTIFACT RECOVERY
+CANONICAL_CHECKPOINT_MATCH_COUNT = 1
+CANONICAL_METADATA_MATCH_COUNT = 1
+CANONICAL_CHECKPOINT_SHA256 = 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+CANONICAL_METADATA_SHA256 = 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+STEP 4: FEATURE CONTRACT VERIFICATION
+CONTENT_UPDATE_FEATURE_EXTRACTOR = extract_text_content_features
+CONTENT_UPDATE_FEATURE_DIM_SOURCE = alfresco_feature_extractor.py
+CONTENT_UPDATE_FEATURE_VECTOR_LENGTH = 32
+CONTENT_UPDATE_USES_RAW_TEXT_BYTES = YES
+CONTENT_UPDATE_USES_UTF8_TEXT_FEATURES = YES
+CONTENT_UPDATE_METADATA_SPECIFIC_FEATURES_ZEROED = YES
+
+STEP 5: PROTOCOL V2 REQUEST CONSTRUCTION
+PROTOCOL_V2_REQUEST_BUILT = YES
+PROTOCOL_V2_SCENARIO = content_update
+PROTOCOL_V2_TARGET_ENDPOINT = content_update
+PROTOCOL_V2_BODY_ENCODING = base64
+PROTOCOL_V2_BODY_ROUNDTRIP_MATCH = YES
+
+STEP 6: CANONICAL SCORER STARTUP
+LOCAL_CANONICAL_SCORER_PROCESS_STARTED = YES
+LOCAL_CANONICAL_SCORER_READY = YES
+LOCAL_CANONICAL_SCORER_BACKEND = se_fanogan_es_reference
+LOCAL_CANONICAL_SCORER_FEATURE_CONTRACT = alfresco_fixed_32
+LOCAL_CANONICAL_SCORER_FEATURE_DIM = 32
+
+STEP 7: LOCAL SCORER RPC
+LOCAL_SCORER_RPC_ATTEMPTED = YES
+LOCAL_SCORER_RPC_OK = YES
+LOCAL_SCORER_PROTOCOL_VERSION = V2
+LOCAL_SCORER_SCORE = 0.612859845161438
+LOCAL_SCORER_THRESHOLD = 1.2847454080581664
+LOCAL_SCORER_DECISION = ACCEPT
+
+STEP 8: HISTORICAL SCORE COMPARISON
+HISTORICAL_SCORE_REFERENCE_AVAILABLE = YES
+HISTORICAL_SCORE_REFERENCE = 0.683438
+CURRENT_SCORE_NUMERIC = 0.612859845161438
+SCORE_RATIO = 0.897
+CURRENT_SCORE_COMPATIBLE_WITH_HISTORICAL_AUTHORITY = YES
+
+STEP 9: FOCUSED REGRESSION
+CONTENT_UPDATE_TESTS_DISCOVERED = 42
+CONTENT_UPDATE_TESTS_PASSED = 42
+CONTENT_UPDATE_TESTS_FAILED = 0
+CONTENT_UPDATE_TESTS_ERRORS = 0
+
+BROADER_REGRESSION_NOTES:
+- Two non-R33-scope test failures observed:
+  1. metadata_update seed format evolution (not content_update)
+  2. RED test now obsolete (R33 fixed the documented bug)
+
+STEP 10: READINESS DECISION
+R33_REPAIR_ACCEPTED = YES
+CANONICAL_LOCAL_SCORER_PATH_VERIFIED = YES
+CONTENT_UPDATE_FEATURE_CONTRACT_VERIFIED = YES
+SUCCESSOR_REAL_RUN_TECHNICALLY_READY = YES
+
+================================================================================
+FINAL GATE
+================================================================================
+
+CONTENT_UPDATE_SE_R33B_GATE = PASS_CANONICAL_SCORER_AND_FEATURE_CONTRACT_VERIFIED
+
+================================================================================
+KEY ACHIEVEMENTS
+================================================================================
+
+✓ R33 raw-text validation repair confirmed operational
+✓ Canonical artifacts recovered by exact SHA256 match
+✓ 32D alfresco_fixed_32 feature contract directly proven from source
+✓ Metadata-specific feature zeroing directly verified
+✓ Raw-text feature extraction path directly proven
+✓ Protocol V2 request/response roundtrip verified
+✓ Canonical local scorer RPC successful (score: 0.613)
+✓ Historical score compatibility confirmed (ratio: 0.897)
+✓ All 42 content_update regression tests PASS
+✓ Zero failures in R33 scope
+
+================================================================================
+CANONICAL SCORER EVIDENCE
+================================================================================
+
+Canonical Python: /home/dministrator/miniconda3/envs/aflpp-se-calib-pip/bin/python3
+Backend: sefanogan_es_reference
+Feature contract: alfresco_fixed_32
+Feature dimension: 32
+Threshold: 1.2847454080581664
+
+Checkpoint SHA256: 4eace87ac7d7759a729ff98916a5acead4154c803c53884e3ca7f27570dbf20d
+Metadata SHA256: 2a73ccc3729a3734ab9901b4474feb73d4d42f912ccbc717af48f970ab568226
+
+Reference seed: in/alfresco_content_update_dataset/seed_ok_0.txt (110 bytes, UTF-8 text)
+Scorer result: 0.612859845161438 → ACCEPT
+
+================================================================================
+TECHNICAL READINESS
+================================================================================
+
+Complete offline path verified:
+  raw UTF-8 text bytes
+  → body_validate(scenario="content_update") [R33 repair: no JSON normalization]
+  → extract_text_content_features() [32D vector, metadata dims zeroed]
+  → Protocol V2 envelope [base64 body, scenario, endpoint fields]
+  → ReferenceScorer.score() [canonical checkpoint/metadata]
+  → numeric anomaly score + accept/reject decision
+
+All verification objectives achieved.
+Successor real campaign: TECHNICALLY READY (pending user authorization).
+
+================================================================================
+AUTHORITY CHAIN
+================================================================================
+
+R33 (predecessor): PASS_CONTENT_UPDATE_RAW_TEXT_VALIDATION_REPAIR_VERIFIED
+R33B (current): PASS_CANONICAL_SCORER_AND_FEATURE_CONTRACT_VERIFIED
+
+Combined R33+R33B closes all local verification gaps.
+Real Alfresco campaign authorization: PRESERVED for successor phase.
+
+================================================================================
+END REPORT
+================================================================================

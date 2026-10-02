@@ -1,0 +1,72 @@
+{
+  "provenance_chain": {
+    "stage_0_phase3_evidence_freeze": {
+      "package_name": "PHASE3_FINAL_EVIDENCE_FREEZE",
+      "commitment_sha256": "517cd241b85632142a8e74322bb284ce3e5832722cd5afdb2702dbac7c6415a8",
+      "date": "2026-08-27",
+      "status": "FROZEN",
+      "role": "Baseline SE/AE runtime provenance and 5+5 pilot evidence"
+    },
+    "stage_1_protocol_design": {
+      "package_name": "PHASE4_FORMAL_EXPERIMENT_PROTOCOL_DESIGN",
+      "commitment_sha256": "cfc10e1861161522f8187ae7c9aa8a98d834578252bc15e33957a97e2fc44b19",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Complete protocol design with 15 human decision points"
+    },
+    "stage_2_human_decision_reconciliation": {
+      "package_name": "PHASE4_HUMAN_DECISION_RECONCILIATION",
+      "commitment_sha256": "f129d6f230b5dec8b47913f06dab6a60b45125be8b68dc2bda458a5a63c94d44",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Initial reconciliation of sample-size method and order strategy"
+    },
+    "stage_3_approval_blocker_reconciliation": {
+      "package_name": "PHASE4_FINAL_APPROVAL_BLOCKER_RECONCILIATION",
+      "commitment_sha256": "7aede8f3266322c70835d8c82fd88015533a4968f95bf7739fc85f38c0cfa6c3",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Correction of 6 critical approval blockers"
+    },
+    "stage_4_human_approval_materialization": {
+      "package_name": "PHASE4_HUMAN_APPROVAL_MATERIALIZED",
+      "commitment_sha256": "ed7fff25b1df98de46e6b70de7d967239cda2b5145d3ec7938c213cbf5c769ad",
+      "date": "2026-09-21",
+      "status": "FROZEN",
+      "role": "Materialization of human approval for all D1-D15 recommended values"
+    },
+    "stage_5_formal_execution_freeze_original": {
+      "package_name": "PHASE4_FORMAL_EXECUTION_FREEZE",
+      "reported_commitment_sha256": "fb888b1068e430f025c6d17971d61494cd84a3d12283e64620f6a7a1ae0201ed",
+      "date": "2026-09-21",
+      "status": "FROZEN_DEFECTIVE",
+      "role": "Original execution freeze with integrity defects",
+      "integrity_status": "PACKAGE_CONTENT_CHANGED_AFTER_ORIGINAL_COMMITMENT_BUT_BEFORE_HUMAN_APPROVAL",
+      "defects": [
+        "README.md omitted from SHA256SUMS coverage",
+        "01_HUMAN_APPROVAL_BINDING.json referenced but absent",
+        "Original reported commitment not reproducible from current package contents"
+      ]
+    },
+    "stage_6_successor_execution_freeze_r1": {
+      "package_name": "PHASE4_FORMAL_EXECUTION_FREEZE_R1",
+      "date": "2026-09-21",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "role": "Successor execution freeze with repaired evidence contract",
+      "change_classification": "EVIDENCE_CONTRACT_AND_RUNTIME_PREREQUISITE_REPAIR_ONLY",
+      "scientific_semantics_preserved": true,
+      "d1_d15_decisions_preserved": true
+    }
+  },
+  "r1_semantic_preservation_proof": {
+    "d1_d15_semantics_changed": false,
+    "formal_seed_list_changed": false,
+    "paired_order_schedule_changed": false,
+    "run_budget_changed": false,
+    "endpoint_roles_changed": false,
+    "model_provenance_changed": false,
+    "source_identity_changed": false,
+    "thresholds_changed": false,
+    "validity_gates_weakened": false
+  }
+}
