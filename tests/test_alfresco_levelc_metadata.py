@@ -606,6 +606,7 @@ class MetadataBodyTest(unittest.TestCase):
         from nv_body_valid import body_validate
 
         result = body_validate(
+            scenario="metadata_update",
             endpoint_name="metadata_update",
             raw_body=launcher.metadata_body("NV_LEVELC_SMOKE_1").encode("utf-8"),
             rules_path=str(REPO_ROOT / "validity" / "alfresco_metadata_update_rules.json"),

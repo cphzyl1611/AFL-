@@ -214,6 +214,12 @@ class BodyOnlyRepresentationBridgeTest(unittest.TestCase):
         self.assertEqual(status["http_code"], 0)
 
     def test_malformed_http_envelope_fails_closed_before_body_validation(self) -> None:
+        """R27: adapter errors MUST write status to maintain exec_seq monotonicity.
+
+        Pre-R27, this path failed silently without status. Post-R27, the C-side
+        contract requires exec_seq advancement on every input to prevent
+        invalid_exec_identity timeouts.
+        """
         malformed = (
             b"PUT /alfresco/node/test-only HTTP/1.1\r\n"
             b"Content-Type: application/json\r\n"
@@ -225,8 +231,12 @@ class BodyOnlyRepresentationBridgeTest(unittest.TestCase):
         self.assertEqual(return_code, 0)
         self.assertEqual(validation_inputs, [])
         urlopen.assert_not_called()
-        self.assertFalse(self.status.exists())
-        self.assertFalse(Path(str(self.status) + ".seq").exists())
+        # R27: status MUST be written even on adapter error
+        self.assertTrue(self.status.exists(), "R27: adapter error must write status")
+        status = json.loads(self.status.read_text(encoding="utf-8"))
+        self.assertEqual(status["validation_reject"], 1)
+        self.assertGreater(status["exec_seq"], 0)
+        self.assertEqual(status["http_code"], 0)
 
     def test_malformed_body_only_input_writes_non_target_validation_reject(self) -> None:
         return_code, validation_inputs, urlopen = self.run_harness(b"not-json")

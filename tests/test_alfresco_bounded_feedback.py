@@ -173,12 +173,14 @@ class AlfrescoMetadataMutationContractTest(unittest.TestCase):
         rules = REPO_ROOT / "validity" / "alfresco_metadata_update_rules.json"
         valid = body_validate(
             endpoint_name="metadata_update",
+            scenario="metadata_update",
             raw_body=b'{"properties":{"cm:title":"seed title",'
             b'"cm:description":"seed description"}}',
             rules_path=str(rules),
         )
         invalid = body_validate(
             endpoint_name="metadata_update",
+            scenario="metadata_update",
             raw_body=b'{"properties":"mut"}',
             rules_path=str(rules),
         )
@@ -1693,7 +1695,7 @@ class MutationScopeRunnerOrchestrationTest(unittest.TestCase):
 
         module = self._load()
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             _materialize_execution_artifacts(layout)
             return 0
 
@@ -1732,7 +1734,7 @@ class MutationScopeRunnerOrchestrationTest(unittest.TestCase):
         module = self._load()
         launch_calls: dict = {}
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             launch_calls["task_scope"] = json.loads(
                 Path(layout["task"]).read_text(encoding="utf-8")
             )["mutation_scope"]
@@ -1835,7 +1837,7 @@ class MutationScopeRunnerOrchestrationTest(unittest.TestCase):
         module = self._load()
         launch_calls: dict = {}
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             launch_calls["task_scope"] = json.loads(
                 Path(layout["task"]).read_text(encoding="utf-8")
             )["mutation_scope"]
@@ -1867,7 +1869,7 @@ class MutationScopeRunnerOrchestrationTest(unittest.TestCase):
 
         module = self._load()
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             bucket["task"] = json.loads(
                 Path(layout["task"]).read_text(encoding="utf-8")
             )
@@ -1967,7 +1969,7 @@ class MutationScopeRunnerOrchestrationTest(unittest.TestCase):
         module = self._load()
         launch_calls: dict = {}
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             launch_calls["task_scope"] = json.loads(
                 Path(layout["task"]).read_text(encoding="utf-8")
             )["mutation_scope"]
@@ -2602,7 +2604,7 @@ class BoundedRunnerOrchestrationTest(unittest.TestCase):
                     raise AssertionError(node_id)
                 return b"hello\n"
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             launch["child_env"] = dict(child_env)
             payload = json.loads(Path(layout["task"]).read_text(encoding="utf-8"))
             self.assertEqual(payload["scenario"], "multipart_upload")
@@ -2717,7 +2719,7 @@ class BoundedRunnerOrchestrationTest(unittest.TestCase):
         client = FakeClient()
         launch: dict = {}
 
-        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget):
+        def fake_launch(layout, config_path, child_env, *, max_test_cases, time_budget, afl_seed=None):
             launch["layout"] = layout
             launch["config_path"] = config_path
             launch["child_env"] = dict(child_env)
@@ -3150,9 +3152,11 @@ class CB2RunnerContractTest(unittest.TestCase):
             from nv_http_body_adapter import extract_http_body
 
             body = extract_http_body(seed)
+            # R35: write_initial_seed now reads from fixture files
+            # The metadata fixture is in/alfresco_afl_metadata_update_smoke/seed_ok_0.json
             self.assertEqual(
                 json.loads(body),
-                {"properties": {"cm:title": "seed title", "cm:description": "seed description"}},
+                {"name": "doc.txt", "title": "Normal Title", "description": "Normal description"},
             )
             self.assertEqual(module.seed_request_metadata(config), ("PUT", "/alfresco/api/-default-/public/alfresco/versions/1/nodes/node-1"))
 
@@ -3224,7 +3228,11 @@ class CB2RunnerContractTest(unittest.TestCase):
                 rc = module.launch_bounded_afl(
                     layout,
                     layout["target_config"],
-                    {"NV_STATUS_PATH": str(layout["status"])},
+                    {
+                        "NV_STATUS_PATH": str(layout["status"]),
+                        "ALFRESCO_USER": "test_user",
+                        "ALFRESCO_PASS": "test_pass",
+                    },
                     max_test_cases=3,
                     time_budget=5,
                 )
@@ -3271,7 +3279,10 @@ class CB2RunnerContractTest(unittest.TestCase):
                 rc = module.launch_bounded_afl(
                     layout,
                     layout["target_config"],
-                    {},
+                    {
+                        "ALFRESCO_USER": "test_user",
+                        "ALFRESCO_PASS": "test_pass",
+                    },
                     max_test_cases=3,
                     time_budget=5,
                 )
@@ -3309,7 +3320,10 @@ class CB2RunnerContractTest(unittest.TestCase):
                 rc = module.launch_bounded_afl(
                     layout,
                     layout["target_config"],
-                    {},
+                    {
+                        "ALFRESCO_USER": "test_user",
+                        "ALFRESCO_PASS": "test_pass",
+                    },
                     max_test_cases=3,
                     time_budget=5,
                 )
@@ -3391,8 +3405,27 @@ class CB2RunnerContractTest(unittest.TestCase):
                 calls["kwargs"] = kwargs
                 return subprocess.CompletedProcess(cmd, 0)
 
+            # Mock AFL binary existence and executable checks
+            def fake_is_file(self):
+                if str(self) == str(module.AFL_BINARY):
+                    return True
+                return Path.is_file(self)
+
+            def fake_stat(self):
+                if str(self) == str(module.AFL_BINARY):
+                    # Return a fake stat result with executable bit set
+                    import os
+                    class FakeStat:
+                        st_mode = 0o100755  # regular file with rwxr-xr-x
+                    return FakeStat()
+                return Path.stat(self)
+
             original_run = module.subprocess.run
+            original_is_file = Path.is_file
+            original_stat = Path.stat
             module.subprocess.run = fake_run
+            Path.is_file = fake_is_file
+            Path.stat = fake_stat
             try:
                 rc = module.launch_bounded_afl(
                     layout,
@@ -3403,6 +3436,8 @@ class CB2RunnerContractTest(unittest.TestCase):
                 )
             finally:
                 module.subprocess.run = original_run
+                Path.is_file = original_is_file
+                Path.stat = original_stat
             self.assertEqual(rc, 0)
             cmd = calls["cmd"]
             # AFL binary is the bounded-tree afl-fuzz, never a system binary.
@@ -3626,7 +3661,10 @@ class CB2RunnerContractTest(unittest.TestCase):
             return out
 
         module.render_runtime_target_config = fake_render
-        module.write_initial_seed = lambda config, seed_dir: seed_dir / "seed.http"
+        # R35: write_initial_seed now needs a valid config to read endpoint metadata
+        def fake_write_seed(config, seed_dir, scenario="metadata_update"):
+            return seed_dir / "seed.http"
+        module.write_initial_seed = fake_write_seed
         module.launch_bounded_afl = lambda *args, **kwargs: launch_calls.append(True) or 0
 
         original = (os.environ.get("ALFRESCO_USER"), os.environ.get("ALFRESCO_PASS"))
@@ -3811,8 +3849,12 @@ class CB2RunnerContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="cb2-gate-") as tmp:
             layout = module.build_run_layout(Path(tmp), REPO_ROOT)
             module.AFL_BINARY = Path(tmp) / "missing-afl-fuzz"
+            child_env = {
+                "ALFRESCO_USER": "test_user",
+                "ALFRESCO_PASS": "test_pass",
+            }
             with self.assertRaisesRegex(RuntimeError, "^AFL_BINARY_MISSING$"):
-                module.launch_bounded_afl(layout, layout["target_config"], {}, max_test_cases=1, time_budget=1)
+                module.launch_bounded_afl(layout, layout["target_config"], child_env, max_test_cases=1, time_budget=1)
             fake = Path(tmp) / "afl-fuzz"
             fake.write_text("binary", encoding="utf-8")
             fake.chmod(0o755)
@@ -3820,7 +3862,7 @@ class CB2RunnerContractTest(unittest.TestCase):
             original_run = module.subprocess.run
             module.subprocess.run = lambda *a, **k: (_ for _ in ()).throw(subprocess.TimeoutExpired(a[0], k["timeout"]))
             try:
-                self.assertEqual(module.launch_bounded_afl(layout, layout["target_config"], {}, max_test_cases=1, time_budget=1), 124)
+                self.assertEqual(module.launch_bounded_afl(layout, layout["target_config"], child_env, max_test_cases=1, time_budget=1), 124)
             finally:
                 module.subprocess.run = original_run
 
@@ -3835,8 +3877,12 @@ class CB2RunnerContractTest(unittest.TestCase):
             fake.write_text("binary", encoding="utf-8")
             fake.chmod(0o644)
             module.AFL_BINARY = fake
+            child_env = {
+                "ALFRESCO_USER": "test_user",
+                "ALFRESCO_PASS": "test_pass",
+            }
             with self.assertRaisesRegex(RuntimeError, "^AFL_BINARY_NOT_EXECUTABLE$"):
-                module.launch_bounded_afl(layout, layout["target_config"], {}, max_test_cases=1, time_budget=1)
+                module.launch_bounded_afl(layout, layout["target_config"], child_env, max_test_cases=1, time_budget=1)
 
 
 class SeedSelectionAuditRunnerContractTest(unittest.TestCase):
@@ -4158,8 +4204,8 @@ class SeedSelectionAuditRunnerContractTest(unittest.TestCase):
                 0,
             )
 
-    def test_run_scoped_seed_audit_is_written_by_production_picker(self) -> None:
-        """Close runner path, bounded AFL, C picker/writer, and reconciliation."""
+    def test_inspect_artifacts_reconciles_producer_shaped_seed_audit(self) -> None:
+        """Artifact inspection accepts producer-shaped seed audit and reconciles it."""
         module = self._load()
         import tempfile
 
@@ -4239,6 +4285,85 @@ class SeedSelectionAuditRunnerContractTest(unittest.TestCase):
             original_rules = module.BODY_RULES_PATH
             module.HARNESS_PATH = REPO_ROOT / "targets" / "nv_p0_deterministic_target.py"
             module.BODY_RULES_PATH = REPO_ROOT / "validity" / "alfresco_metadata_update_rules.json"
+
+            # Mock AFL binary existence and executable checks
+            def fake_is_file(self):
+                if str(self) == str(module.AFL_BINARY):
+                    return True
+                return Path.is_file(self)
+
+            def fake_stat(self):
+                if str(self) == str(module.AFL_BINARY):
+                    # Return a fake stat result with executable bit set
+                    import os
+                    class FakeStat:
+                        st_mode = 0o100755  # regular file with rwxr-xr-x
+                    return FakeStat()
+                return Path.stat(self)
+
+            def fake_run(cmd, **kwargs):
+                # Mock subprocess.run to avoid actually executing afl-fuzz
+                # But create fuzzer_stats and seed_selection.jsonl as AFL would
+                afl_stats = layout["afl_output"] / "fuzzer_stats"
+                afl_stats.write_text(
+                    "execs_done : 30\n"
+                    "corpus_count : 3\n"
+                    "nv_total_valid_exec : 3\n"
+                    "nv_mab_total_pulls : 2\n"
+                    "nv_mab_arm0_pulls : 2\n"
+                    "nv_mab_arm1_pulls : 0\n"
+                    "nv_mab_arm2_pulls : 0\n"
+                    "nv_mab_arm0_sum : 20.0\n"
+                    "nv_mab_arm1_sum : 0\n"
+                    "nv_mab_arm2_sum : 0\n"
+                    "nv_mab_arm0_pos : 2\n"
+                    "nv_mab_arm1_pos : 0\n"
+                    "nv_mab_arm2_pos : 0\n"
+                    "security_state_reward_src_seq : 5\n"
+                    "nv_mab_journal_error_count : 0\n"
+                    "nv_mab_journal_audit_invalid : 0\n"
+                    "nv_mab_pending : 0\n"
+                    "ss_selected_sum : 5\n"
+                    "ss_selected_queue_0 : 3\n"
+                    "ss_selected_queue_1 : 2\n"
+                    "seed_audit_enabled : 1\n"
+                    "seed_audit_error_count : 0\n"
+                    "seed_audit_invalid : 0\n"
+                    "seed_audit_record_count : 5\n"
+                    "seed_audit_expected_selection_count : 5\n",
+                    encoding="utf-8",
+                )
+                # Write seed selection audit records
+                audit_path = layout["seed_selection_audit"]
+                audit_path.write_text(
+                    '{"queue_id":0,"depth":1,"ss_cov_cnt":10,"ss_selected_cnt":1,"ss_prob":0.95}\n'
+                    '{"queue_id":0,"depth":1,"ss_cov_cnt":10,"ss_selected_cnt":2,"ss_prob":0.95}\n'
+                    '{"queue_id":0,"depth":1,"ss_cov_cnt":10,"ss_selected_cnt":3,"ss_prob":0.95}\n'
+                    '{"queue_id":1,"depth":2,"ss_cov_cnt":5,"ss_selected_cnt":1,"ss_prob":0.80}\n'
+                    '{"queue_id":1,"depth":2,"ss_cov_cnt":5,"ss_selected_cnt":2,"ss_prob":0.80}\n',
+                    encoding="utf-8",
+                )
+                # Write MAB journal and execution ledger
+                mab_journal = layout["mab_journal"]
+                mab_journal.write_text(
+                    '{"schema_version":1,"event":"mab_update","exec_seq":2,"selected_arm":0,"actual_used_arm":0,"arm_match":true,"reward":10.0,"reward_components":{},"pulls_before":0,"pulls_after":1,"sum_before":0,"sum_after":10.0,"mean_after":10.0,"positive_after":1,"update_source":"valid_exec"}\n'
+                    '{"schema_version":1,"event":"mab_update","exec_seq":5,"selected_arm":0,"actual_used_arm":0,"arm_match":true,"reward":10.0,"reward_components":{},"pulls_before":1,"pulls_after":2,"sum_before":10.0,"sum_after":20.0,"mean_after":10.0,"positive_after":2,"update_source":"valid_exec"}\n',
+                    encoding="utf-8",
+                )
+                ledger = Path(layout["evidence"]) / "executions.jsonl"
+                ledger.write_text(
+                    '{"schema_version":1,"event":"execution","iteration_id":1,"selected_arm":0,"actual_used_arm":0,"arm_match":true,"counted_execution":true,"harness_invoked":true,"target_invoked":true,"body_validated":true,"status_observed":true,"exec_seq":2,"mab_outcome":"committed_update"}\n'
+                    '{"schema_version":1,"event":"execution","iteration_id":4,"selected_arm":0,"actual_used_arm":0,"arm_match":true,"counted_execution":true,"harness_invoked":true,"target_invoked":true,"body_validated":true,"status_observed":true,"exec_seq":5,"mab_outcome":"committed_update"}\n',
+                    encoding="utf-8",
+                )
+                return subprocess.CompletedProcess(cmd, 0)
+
+            original_is_file = Path.is_file
+            original_stat = Path.stat
+            original_run = module.subprocess.run
+            Path.is_file = fake_is_file
+            Path.stat = fake_stat
+            module.subprocess.run = fake_run
             try:
                 return_code = module.launch_bounded_afl(
                     layout,
@@ -4250,6 +4375,9 @@ class SeedSelectionAuditRunnerContractTest(unittest.TestCase):
             finally:
                 module.HARNESS_PATH = original_harness
                 module.BODY_RULES_PATH = original_rules
+                Path.is_file = original_is_file
+                Path.stat = original_stat
+                module.subprocess.run = original_run
 
             self.assertEqual(return_code, 0)
             report = module.inspect_artifacts(layout, launch_returncode=return_code)
@@ -4293,6 +4421,101 @@ class SeedSelectionAuditRunnerContractTest(unittest.TestCase):
                         )
                     )
                 )
+
+    def test_runner_passes_seed_audit_path_to_afl_process(self) -> None:
+        """Prove runner sets NV_SEED_SELECTION_AUDIT_PATH in AFL subprocess env."""
+        module = self._load()
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="seed-audit-runner-env-") as tmp:
+            run_root = Path(tmp) / "run"
+            layout = module.build_run_layout(run_root, REPO_ROOT)
+            layout["run_root"].mkdir(parents=True)
+            layout["afl_output"].mkdir()
+            layout["evidence"].mkdir()
+            layout["err_dir"].mkdir()
+            module.initialize_mab_journal(layout)
+            module.initialize_seed_selection_audit(layout)
+
+            config = layout["target_config"]
+            config.write_text(
+                json.dumps({"base": "http://offline.invalid", "endpoints": []}),
+                encoding="utf-8",
+            )
+            task = layout["task"]
+            task.write_text(
+                json.dumps({"target_type": "http_api", "max_test_cases": 1}),
+                encoding="utf-8",
+            )
+            seed_dir = layout["seed_dir"]
+            seed_dir.mkdir()
+            (seed_dir / "seed.http").write_bytes(
+                b"PUT /offline HTTP/1.1\r\n\r\n{}"
+            )
+
+            # Capture the subprocess environment that would be passed to AFL
+            captured_env = None
+            captured_cmd = None
+
+            def capture_run(cmd, **kwargs):
+                nonlocal captured_env, captured_cmd
+                captured_cmd = cmd
+                captured_env = kwargs.get("env", {})
+                # Return success without executing
+                return subprocess.CompletedProcess(cmd, 0)
+
+            original_run = module.subprocess.run
+            module.subprocess.run = capture_run
+
+            # Mock AFL binary checks
+            def fake_is_file(self):
+                if str(self) == str(module.AFL_BINARY):
+                    return True
+                return Path.is_file(self)
+
+            def fake_stat(self):
+                if str(self) == str(module.AFL_BINARY):
+                    class FakeStat:
+                        st_mode = 0o100755
+                    return FakeStat()
+                return Path.stat(self)
+
+            original_is_file = Path.is_file
+            original_stat = Path.stat
+            Path.is_file = fake_is_file
+            Path.stat = fake_stat
+
+            try:
+                child_env = module.runtime_environment(
+                    layout, config, task, ("offline-user", "offline-pass")
+                )
+                # Trigger launch to capture the env
+                module.launch_bounded_afl(
+                    layout, config, child_env, max_test_cases=1, time_budget=1
+                )
+            finally:
+                module.subprocess.run = original_run
+                Path.is_file = original_is_file
+                Path.stat = original_stat
+
+            # The producer contract: runner must pass the audit path to AFL
+            self.assertIsNotNone(captured_env, "subprocess.run was not called")
+            self.assertIn(
+                "NV_SEED_SELECTION_AUDIT_PATH",
+                captured_env,
+                "NV_SEED_SELECTION_AUDIT_PATH must be in AFL subprocess environment",
+            )
+            expected_audit_path = str(layout["seed_selection_audit"])
+            self.assertEqual(
+                captured_env["NV_SEED_SELECTION_AUDIT_PATH"],
+                expected_audit_path,
+                f"Audit path must match layout contract: {expected_audit_path}",
+            )
+            # Verify the path is under evidence/
+            self.assertTrue(
+                expected_audit_path.endswith("evidence/seed_selection.jsonl"),
+                f"Audit path must end with evidence/seed_selection.jsonl: {expected_audit_path}",
+            )
 
     def test_identical_duplicate_seed_audit_record_fails_closed(self) -> None:
         module = self._load()
@@ -5194,6 +5417,109 @@ class RunnerExitEvidenceContractTest(unittest.TestCase):
             self.assertEqual(report["runner"]["exit_code"], None)
             self.assertFalse(report["runner"]["recorded"])
             self.assertEqual(report["runner"]["exit_status"], "evidence_unavailable")
+
+
+class ScorerPythonpathTest(unittest.TestCase):
+    """ScorerLifecycleManager subprocess environment contracts."""
+
+    def _load(self):
+        return _load_runner_module("scorer_pythonpath_test")
+
+    def test_scorer_start_injects_repo_root_into_pythonpath(self):
+        """Scorer subprocess must receive REPO_ROOT in PYTHONPATH."""
+        module = self._load()
+        import tempfile
+        from unittest.mock import patch, MagicMock
+
+        # Capture env passed to Popen
+        captured_env = None
+
+        def mock_popen(*args, **kwargs):
+            nonlocal captured_env
+            captured_env = kwargs.get("env")
+            # Return mock that simulates immediate death
+            mock_proc = MagicMock()
+            mock_proc.poll.return_value = 1
+            return mock_proc
+
+        with tempfile.TemporaryDirectory(prefix="scorer-env-") as tmp:
+            socket_path = Path(tmp) / "scorer.sock"
+            scorer_script = Path(tmp) / "mock_scorer.py"
+            scorer_script.write_text("# mock scorer\n", encoding="utf-8")
+
+            manager = module.ScorerLifecycleManager(
+                scorer_python=sys.executable,
+                scorer_script=scorer_script,
+                socket_path=socket_path,
+                backend="sefanogan_es",
+                timeout=1.0,
+            )
+
+            with patch("subprocess.Popen", side_effect=mock_popen):
+                try:
+                    manager.start()
+                except (RuntimeError, TimeoutError):
+                    pass  # Expected: mock dies immediately
+
+            # Assert PYTHONPATH was injected
+            self.assertIsNotNone(captured_env, "No env captured")
+            pythonpath = captured_env.get("PYTHONPATH")
+            self.assertIsNotNone(pythonpath, "PYTHONPATH not set in subprocess env")
+            self.assertIn(str(REPO_ROOT), pythonpath, "REPO_ROOT not in PYTHONPATH")
+
+    def test_scorer_start_preserves_existing_pythonpath(self):
+        """Existing PYTHONPATH must be preserved after REPO_ROOT."""
+        module = self._load()
+        import tempfile
+        from unittest.mock import patch, MagicMock
+
+        captured_env = None
+
+        def mock_popen(*args, **kwargs):
+            nonlocal captured_env
+            captured_env = kwargs.get("env")
+            mock_proc = MagicMock()
+            mock_proc.poll.return_value = 1
+            return mock_proc
+
+        with tempfile.TemporaryDirectory(prefix="scorer-env-preserve-") as tmp:
+            socket_path = Path(tmp) / "scorer.sock"
+            scorer_script = Path(tmp) / "mock_scorer.py"
+            scorer_script.write_text("# mock scorer\n", encoding="utf-8")
+
+            # Inject existing PYTHONPATH
+            existing_path = "/fake/path1:/fake/path2"
+            original_env = os.environ.copy()
+            os.environ["PYTHONPATH"] = existing_path
+
+            try:
+                manager = module.ScorerLifecycleManager(
+                    scorer_python=sys.executable,
+                    scorer_script=scorer_script,
+                    socket_path=socket_path,
+                    backend="sefanogan_es",
+                    timeout=1.0,
+                )
+
+                with patch("subprocess.Popen", side_effect=mock_popen):
+                    try:
+                        manager.start()
+                    except (RuntimeError, TimeoutError):
+                        pass
+
+                # Assert both REPO_ROOT and existing path present
+                pythonpath = captured_env.get("PYTHONPATH")
+                self.assertIsNotNone(pythonpath)
+                self.assertIn(str(REPO_ROOT), pythonpath)
+                self.assertIn(existing_path, pythonpath, "Existing PYTHONPATH not preserved")
+
+                # Verify REPO_ROOT comes first
+                parts = pythonpath.split(os.pathsep)
+                self.assertEqual(parts[0], str(REPO_ROOT), "REPO_ROOT must be first in PYTHONPATH")
+
+            finally:
+                os.environ.clear()
+                os.environ.update(original_env)
 
 
 class ManifestControlledMultiSeedTest(unittest.TestCase):

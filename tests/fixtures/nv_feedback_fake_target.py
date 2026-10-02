@@ -30,6 +30,7 @@ def main() -> int:
         return 2
 
     validation = body_validate(
+        scenario="offline_feedback",
         endpoint_name="offline_feedback",
         raw_body=body,
         rules_path=os.environ.get("NV_BODY_RULES", ""),

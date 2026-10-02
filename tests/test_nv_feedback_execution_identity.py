@@ -118,6 +118,7 @@ class NvFeedbackExecutionIdentityTest(unittest.TestCase):
 
         self.assertNotEqual(RULES, ALFRESCO_RULES)
         validation = body_validate(
+            scenario="metadata_update",
             endpoint_name=ENDPOINT_NAME,
             raw_body=VALID_FULL_HTTP.split(b"\r\n\r\n", 1)[1],
             rules_path=str(RULES),
@@ -226,11 +227,13 @@ class NvFeedbackExecutionIdentityTest(unittest.TestCase):
 
         offline_body = VALID_FULL_HTTP.split(b"\r\n\r\n", 1)[1]
         rejected = body_validate(
+            scenario="metadata_update",
             endpoint_name="metadata_update",
             raw_body=offline_body,
             rules_path=str(ALFRESCO_RULES),
         )
         accepted = body_validate(
+            scenario="metadata_update",
             endpoint_name="metadata_update",
             raw_body=(
                 b'{"properties":{"cm:title":"seed title",'

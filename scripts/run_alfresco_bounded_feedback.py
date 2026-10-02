@@ -2570,6 +2570,7 @@ def launch_bounded_afl(
     env["PYTHONPATH"] = str(REPO_ROOT) + (":" + existing_pp if existing_pp else "")
 
     # R44B: Propagate credentials to harness via AFL_TARGET_ENV.
+    # R47: Propagate NV runtime paths to harness via AFL_TARGET_ENV.
     # AFL++ does not automatically propagate arbitrary environment variables to
     # the target harness for security isolation. Custom application variables
     # must be explicitly declared via AFL_TARGET_ENV, which extract_and_set_env()
@@ -2584,7 +2585,16 @@ def launch_bounded_afl(
     import shlex
     user_quoted = shlex.quote(env["ALFRESCO_USER"])
     pass_quoted = shlex.quote(env["ALFRESCO_PASS"])
-    env["AFL_TARGET_ENV"] = f"ALFRESCO_USER={user_quoted} ALFRESCO_PASS={pass_quoted}"
+
+    # R47: Add NV runtime paths so harness can write status/probe/state files
+    nv_vars = []
+    for key in ["NV_STATUS_PATH", "NV_PROBE_PATH", "NV_STATE_DB", "NV_STATE_TRACE_PATH",
+                "NV_CTX_PATH", "NV_ERR_DIR", "NV_BODY_VALID_STATS", "NV_MAB_JOURNAL_PATH",
+                "NV_EXECUTION_LEDGER_PATH", "NV_MULTIPART_UPLOADS_PATH"]:
+        if key in env:
+            nv_vars.append(f"{key}={shlex.quote(env[key])}")
+
+    env["AFL_TARGET_ENV"] = f"ALFRESCO_USER={user_quoted} ALFRESCO_PASS={pass_quoted} {' '.join(nv_vars)}"
 
     hard_timeout = time_budget + 60
     try:
