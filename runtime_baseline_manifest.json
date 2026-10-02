@@ -1,13 +1,13 @@
 {
   "version": "1.0",
-  "description": "Runtime baseline with multipart_upload support (bd19b87 scorer, a63a526 runner, 3bbb90d manifest)",
+  "description": "Runtime baseline with multipart_upload AE support (bd19b87 scorer, a63a526+fbacace runner)",
   "checkpoint_commit": "e293205c1fae228354bd55279cc6d319c67a0668",
   "created": "2026-10-02T00:00:00+0000",
-  "updated": "2026-10-02T17:00:00+0000",
+  "updated": "2026-10-02T18:15:00+0000",
   "files": [
     {
       "path": "scripts/run_alfresco_bounded_feedback.py",
-      "sha256": "228fd905e9c59c6bbaa3411d90f0139cfb01cbecda122425bb9b27efaf684428"
+      "sha256": "2d8fb54d3c0fe4f401fbc1ed123d9783b0c9ac81ca98a18aeab848efa3a3bb5b"
     },
     {
       "path": "nv_http_harness.py",
