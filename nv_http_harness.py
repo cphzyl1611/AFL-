@@ -1263,4 +1263,29 @@ def main():
     return 2
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except RuntimeError as e:
+        # Auth credential errors must write status with error code so AFL++
+        # records proper execution identity instead of treating as crash.
+        # This handles missing NV_TOKEN, ALFRESCO_USER, ALFRESCO_PASS, etc.
+        if "must be supplied" in str(e):
+            status_path = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
+            with open(status_path, "w") as f:
+                json.dump({
+                    "exec_seq": 0,
+                    "http_code": -99,  # Special code for auth config error
+                    "method": "",
+                    "path": "",
+                    "timeout": 0,
+                    "recovered": 0,
+                    "latency_ms": 0,
+                    "body_hash16": 0,
+                    "ncov_delta": 0,
+                    "ncov_total": 0,
+                    "nall": 0,
+                    "is_exception": 1,
+                    "recover_ms": 0
+                }, f)
+            sys.exit(2)
+        raise
