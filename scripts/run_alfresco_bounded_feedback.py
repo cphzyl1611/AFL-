@@ -1534,9 +1534,16 @@ def runtime_environment(
         task = json.loads(Path(task_path).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError):
         task = {}
-    if task.get("scenario") == "multipart_upload":
+
+    # R49: Set NV_ENDPOINT_NAME based on actual scenario, not hardcoded constant
+    scenario = task.get("scenario", "metadata_update")
+    if scenario == "multipart_upload":
         child["NV_MULTIPART_MODE"] = "1"
         child["NV_ENDPOINT_NAME"] = "multipart_upload"
+    elif scenario == "content_update":
+        child["NV_ENDPOINT_NAME"] = "content_update"
+    elif scenario == "metadata_update":
+        child["NV_ENDPOINT_NAME"] = "metadata_update"
     return child
 
 
