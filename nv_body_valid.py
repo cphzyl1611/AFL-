@@ -353,6 +353,133 @@ def body_validate(
     score_endpoint: Optional[str] = None,
     score_threshold: Optional[float] = None,
 ) -> Dict[str, Any]:
+    # multipart_upload accepts raw multipart/form-data; skip JSON normalization
+    if scenario == "multipart_upload":
+        # Multipart validation: parse multipart structure and validate required fields
+        if not raw_body:
+            return {
+                "ok": False,
+                "reason": "empty_body",
+                "score": None,
+                "score_rpc_ok": False,
+                "norm_body": None,
+            }
+
+        # Basic multipart structure validation: must contain boundary markers
+        try:
+            body_str = raw_body.decode("utf-8", errors="strict")
+        except UnicodeDecodeError:
+            return {
+                "ok": False,
+                "reason": "invalid_utf8",
+                "score": None,
+                "score_rpc_ok": False,
+                "norm_body": None,
+            }
+
+        # Check for multipart boundary markers (at least one part separator)
+        if "--" not in body_str:
+            return {
+                "ok": False,
+                "reason": "no_multipart_boundary",
+                "score": None,
+                "score_rpc_ok": False,
+                "norm_body": raw_body,
+            }
+
+        # Check for required fields: name, nodeType, filedata
+        required_fields = ["name", "nodeType", "filedata"]
+        for field in required_fields:
+            if f'name="{field}"' not in body_str:
+                return {
+                    "ok": False,
+                    "reason": f"missing_required_field_{field}",
+                    "score": None,
+                    "score_rpc_ok": False,
+                    "norm_body": raw_body,
+                }
+
+        # Apply size limit
+        rules_all = load_validity_rules(rules_path) if rules_path else {}
+        common_rules = get_common_rules(rules_all)
+        max_bytes = int(common_rules.get("max_bytes", 16384))
+
+        if len(raw_body) > max_bytes:
+            return {
+                "ok": False,
+                "reason": "too_large",
+                "score": None,
+                "score_rpc_ok": False,
+                "norm_body": raw_body,
+            }
+
+        # For multipart_upload, norm_body is the raw bytes (no JSON reserialize)
+        norm_body = raw_body
+
+        # Skip JSON-specific validation; proceed to scorer if configured
+        score = None
+        score_rpc_ok = False
+        decision = "pass"
+        decision_meta = {"stage": "rules_only"}
+
+        if score_endpoint:
+            if os.getenv("NV_DEBUG_BODY_VALID") == "1":
+                print(
+                    f"[BODY_VALID_DBG] endpoint={endpoint_name} "
+                    f"score_endpoint={score_endpoint} "
+                    f"threshold={score_threshold}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+            rpc_ok, score = rpc_score_unix(score_endpoint, scenario, endpoint_name, norm_body)
+            score_rpc_ok = bool(rpc_ok and score is not None)
+            decision_config = load_runtime_decision_config(score_threshold)
+
+            if os.getenv("NV_DEBUG_BODY_VALID") == "1":
+                print(
+                    f"[BODY_VALID_DBG] rpc_ok={rpc_ok} score={score} "
+                    f"score_rpc_ok={score_rpc_ok}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+            if score_rpc_ok:
+                if decision_config is not None:
+                    decision_engine = DecisionEngine(decision_config)
+                    decision, meta = decision_engine.decide(score, norm_body)
+                    decision_meta = meta
+                    log_body_decision_debug(
+                        runtime_decision_profile_name(),
+                        score,
+                        decision,
+                        decision_meta,
+                    )
+                elif score_threshold is not None and score >= score_threshold:
+                    decision = "reject"
+                    decision_meta = {"stage": "ae_high", "ae_score": score}
+
+                if decision != "pass":
+                    return {
+                        "ok": False,
+                        "reason": "score_reject",
+                        "score": score,
+                        "score_rpc_ok": True,
+                        "norm_body": norm_body,
+                        "decision": decision,
+                        "decision_meta": decision_meta,
+                    }
+
+        return {
+            "ok": True,
+            "reason": "ok",
+            "score": score,
+            "score_rpc_ok": score_rpc_ok,
+            "norm_body": norm_body,
+            "decision": decision,
+            "decision_meta": decision_meta,
+        }
+
     # content_update accepts raw text/file content; skip JSON normalization
     if scenario == "content_update":
         # Validate raw text contract: must be UTF-8 decodable, non-empty
