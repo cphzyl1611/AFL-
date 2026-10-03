@@ -628,11 +628,15 @@ def materialize_manifest_seed_dir(
     *,
     config_path: Path | None = None,
     scenario: str = "metadata_update",
+    parent_node_id: str | None = None,
 ) -> Path:
     """Copy only manifest-listed regular files into a fresh run-scoped view.
 
     When config_path is provided and scenario is content_update, wraps raw text
     seeds in full HTTP envelopes to satisfy C-side validator requirements (R35 fix).
+
+    When scenario is multipart_upload and parent_node_id is provided, rewrites
+    -my- placeholder in seed paths to the actual parent node ID.
     """
 
     names = load_manifest_seed_names(manifest_path)
@@ -645,6 +649,7 @@ def materialize_manifest_seed_dir(
 
     # R35: Determine if HTTP wrapping is needed for content_update
     wrap_http = False
+    rewrite_multipart_path = False
     method = "PUT"
     path = "/"
     content_type = "application/json"
@@ -653,6 +658,9 @@ def materialize_manifest_seed_dir(
         wrap_http = True
         method, path = seed_request_metadata(config_path)
         content_type = "text/plain; charset=utf-8"
+
+    if scenario == "multipart_upload" and parent_node_id:
+        rewrite_multipart_path = True
 
     destination.mkdir(parents=True)
     try:
@@ -674,15 +682,20 @@ def materialize_manifest_seed_dir(
                     "\r\n"
                 ).encode("ascii")
                 target_path.write_bytes(envelope + body)
+            elif rewrite_multipart_path:
+                # Rewrite -my- placeholder to actual parent_node_id in multipart seeds
+                content = source_path.read_bytes()
+                content = content.replace(b"/-my-/", f"/{parent_node_id}/".encode("ascii"))
+                target_path.write_bytes(content)
             else:
                 # Original behavior: byte-exact copy
                 shutil.copyfile(source_path, target_path, follow_symlinks=False)
 
             if target_path.is_symlink() or not target_path.is_file():
                 raise ValueError("MANIFEST_MATERIALIZED_NOT_REGULAR")
-            if not wrap_http and target_path.read_bytes() != source_path.read_bytes():
+            if not wrap_http and not rewrite_multipart_path and target_path.read_bytes() != source_path.read_bytes():
                 raise ValueError("MANIFEST_SEED_BYTES_CHANGED")
-            if not wrap_http and target_path.stat().st_size != source_stat.st_size:
+            if not wrap_http and not rewrite_multipart_path and target_path.stat().st_size != source_stat.st_size:
                 raise ValueError("MANIFEST_SEED_SIZE_CHANGED")
     except (OSError, ValueError):
         raise
@@ -3588,6 +3601,7 @@ def main(argv: list[str] | None = None) -> int:
                 layout["seed_dir"],
                 config_path=config_path,
                 scenario=args.scenario,
+                parent_node_id=(resolved["folder_id"] if args.scenario == "multipart_upload" else None),
             )
             seed_source = "manifest"
             seed_manifest = Path(args.seed_manifest)
