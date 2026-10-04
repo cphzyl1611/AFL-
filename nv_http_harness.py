@@ -9,6 +9,12 @@ from urllib.parse import urlparse
 from nv_body_valid import body_validate
 from nv_http_body_adapter import HttpBodyAdapterError, extract_http_body
 
+try:
+    from nv_url_query import parse_seed, construct_url
+    _HAS_QUERY_SUPPORT = True
+except ImportError:
+    _HAS_QUERY_SUPPORT = False
+
 # R48: Parse AFL_TARGET_ENV before any getenv() calls.
 # AFL++ sets AFL_TARGET_ENV with space-separated KEY='value' pairs.
 # We need to parse it and set those variables in os.environ so subsequent
@@ -35,8 +41,15 @@ parse_afl_target_env()
 # Module-level os.getenv() happens at import time, before extract_and_set_env()
 # runs in the AFL++ parent. Use lazy getters so variables are read on first use.
 _STATUS_PATH = None
+STATUS_PATH = None  # Exposed for test mocking
+
 def get_status_path():
+    """Return status path, respecting test mocks on STATUS_PATH."""
     global _STATUS_PATH
+    # If tests have mocked STATUS_PATH with a string, use that
+    if isinstance(STATUS_PATH, str):
+        return STATUS_PATH
+    # Otherwise lazy init from environment
     if _STATUS_PATH is None:
         _STATUS_PATH = os.getenv("NV_STATUS_PATH", "/tmp/nv_http_status.json")
     return _STATUS_PATH
@@ -1150,6 +1163,18 @@ def main():
                 bump_body_valid_stat("body_score_rpc_fail")
 
         body = vr["norm_body"]
+
+        # Parse query parameters from body-only seed if query support available
+        query_params = None
+        if _HAS_QUERY_SUPPORT:
+            query_params, body_obj = parse_seed(body if isinstance(body, bytes) else body.encode('utf-8'))
+            if body_obj is not None:
+                # Re-serialize body portion only
+                body = json.dumps(body_obj, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+
+        # Append query string to path if present
+        if query_params and _HAS_QUERY_SUPPORT:
+            path = construct_url(path, query_params)
     else:
         method, path, headers, body = parse_http_seed(data)
 

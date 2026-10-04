@@ -81,7 +81,7 @@ class DirectTransportTest(unittest.TestCase):
             }
             with (
                 mock.patch.dict(harness.os.environ, hostile_env, clear=True),
-                mock.patch.object(harness, "STATUS_PATH", str(tmp / "status.json")),
+                mock.patch.object(harness, "_STATUS_PATH", str(tmp / "status.json")),
                 mock.patch.object(harness.sys, "stdin", stdin),
                 mock.patch.object(harness, "update_state", return_value={}),
                 mock.patch.object(harness.urllib.request, "build_opener") as build_opener,

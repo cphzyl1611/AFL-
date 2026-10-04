@@ -26,6 +26,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from model_stage.alfresco_ae_v1_scorer import AlfrescoAEV1Scorer  # noqa: E402
+from integration import fuzz_api  # noqa: E402
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18081
@@ -327,7 +328,10 @@ class ApiHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         try:
-            status, body = self.route_get(path)
+            result = self.route_get(path)
+            if result is None:  # Binary response already sent
+                return
+            status, body = result
         except Exception as exc:  # defensive JSON error boundary
             status, body = json_error("internal error", 500, detail=str(exc))
         self.send_json(status, body)
@@ -369,6 +373,32 @@ class ApiHandler(BaseHTTPRequestHandler):
             return 200, {"reports": reports}
 
         parts = [p for p in path.split("/") if p]
+
+        # Download route for report artifacts: /api/reports/download/{task_id}/{report_name}
+        if len(parts) == 5 and parts[:3] == ["api", "reports", "download"]:
+            task_id = unquote(parts[3])
+            report_name = unquote(parts[4])
+            content, error = fuzz_api.get_report_file(task_id, report_name)
+            if error is not None:
+                return json_error(error, 404, task_id=task_id, report_name=report_name)
+
+            # Determine content type
+            if report_name.endswith(".json"):
+                content_type = "application/json"
+            elif report_name.endswith(".csv"):
+                content_type = "text/csv"
+            else:
+                content_type = "application/octet-stream"
+
+            # Send binary response
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Content-Disposition", f'attachment; filename="{report_name}"')
+            self.end_headers()
+            self.wfile.write(content)
+            return None  # Signal that response already sent
+
         if len(parts) == 3 and parts[:2] == ["fuzz", "tasks"]:
             task_id = unquote(parts[2])
             with TASK_LOCK:
@@ -409,6 +439,27 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "created_at": task["created_at"],
                 "notes": task.get("notes"),
             }
+
+        # Phase 1 API integration
+        if path == "/api/fuzz/submit":
+            response = fuzz_api.fuzz_test_submit(body_obj)
+            status_code = 200 if response["process_result"] == "success" else 400
+            return status_code, response
+
+        if path == "/api/fuzz/query":
+            response = fuzz_api.fuzz_test_query(body_obj)
+            status_code = 200 if response["process_result"] == "success" else 400
+            return status_code, response
+
+        if path == "/api/fuzz/stop":
+            response = fuzz_api.fuzz_test_stop(body_obj)
+            status_code = 200 if response["process_result"] == "success" else 400
+            return status_code, response
+
+        if path == "/api/fuzz/report_query":
+            response = fuzz_api.fuzz_test_report_query(body_obj)
+            status_code = 200 if response["process_result"] == "success" else 400
+            return status_code, response
 
         parts = [p for p in path.split("/") if p]
         if len(parts) == 4 and parts[:2] == ["fuzz", "tasks"] and parts[3] == "stop":

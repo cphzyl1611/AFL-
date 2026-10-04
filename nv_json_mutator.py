@@ -1,5 +1,10 @@
 # AFL++ Python custom mutator: afl_custom_fuzz()
 import os, json, random, ctypes
+try:
+    from nv_url_query import parse_seed, serialize_seed, mutate_query_value
+    _HAS_QUERY_SUPPORT = True
+except ImportError:
+    _HAS_QUERY_SUPPORT = False
 
 try:
     _LIBC = ctypes.CDLL(None)
@@ -224,24 +229,52 @@ def afl_custom_fuzz(my_state, buf, add_buf, max_size):
 
     if not body.strip():
         body = "{}"
-    try:
-        obj = json.loads(body)
-    except:
-        obj = {"raw": body[:128]}
+
+    # Parse seed for query + body support
+    query, body_obj = None, None
+    if _HAS_QUERY_SUPPORT:
+        query, body_obj = parse_seed(body if isinstance(body, bytes) else body.encode('utf-8'))
+
+    # Fallback: parse as plain JSON body
+    if body_obj is None:
+        try:
+            body_obj = json.loads(body)
+        except:
+            body_obj = {"raw": body[:128] if isinstance(body, bytes) else body.encode('utf-8')[:128]}
 
     arm = _get_arm()
     os.environ["NV_JSON_ARM_USED"] = str(arm)
-    if arm == 0:
-        obj = _mutate_field_value(obj)
-    elif arm == 1:
-        obj = _mutate_boundary(obj)
-    else:
-        obj = _mutate_structure(obj)
 
-    try:
-        new_body = json.dumps(obj, ensure_ascii=False)
-    except:
-        new_body = body
+    # Mutate query or body based on presence
+    if query is not None and _HAS_QUERY_SUPPORT:
+        # Mutate query parameters
+        mutation_type = ['value', 'boundary', 'structure'][arm]
+        query = mutate_query_value(query, mutation_type)
+
+    # Always mutate body if present
+    if body_obj:
+        if arm == 0:
+            body_obj = _mutate_field_value(body_obj)
+        elif arm == 1:
+            body_obj = _mutate_boundary(body_obj)
+        else:
+            body_obj = _mutate_structure(body_obj)
+
+    # Serialize back
+    if query is not None and _HAS_QUERY_SUPPORT:
+        new_body = serialize_seed(query, body_obj).decode('utf-8', errors='ignore')
+    else:
+        obj = body_obj
+
+    # Serialize back
+    if query is not None and _HAS_QUERY_SUPPORT:
+        new_body = serialize_seed(query, body_obj).decode('utf-8', errors='ignore')
+    else:
+        obj = body_obj
+        try:
+            new_body = json.dumps(obj, ensure_ascii=False)
+        except:
+            new_body = body.decode("utf-8", errors="ignore") if isinstance(body, bytes) else body
 
     if body_only:
         out = new_body.encode("utf-8", errors="ignore")

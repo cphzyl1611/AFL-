@@ -3574,6 +3574,10 @@ int main(int argc, char **argv_orig, char **envp) {
 
       perform_dry_run(afl);
 
+      /* Do NOT reset nv_last_exec_seq after dry-run. The exec_seq counter is
+         monotonic across dry-run and fuzzing phases. Fuzzing observations
+         (exec_seq 17+) will naturally be > dry-run's final exec_seq. */
+
     } else {
 
       ACTF("Skipping initial seed calibration due option override!");
