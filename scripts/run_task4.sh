@@ -26,7 +26,7 @@ fi
 
 if [[ ! -x "$ROOT/afl-fuzz" ]]; then
   echo "[1/4] afl-fuzz not found; building..."
-  make -j"${JOBS:-$(nproc 2>/dev/null || echo 4)}"
+  make -j"${JOBS:-$(nproc 2>/dev/null || echo 4)}" afl-fuzz
 else
   echo "[1/4] afl-fuzz already built."
 fi

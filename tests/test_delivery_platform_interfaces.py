@@ -179,12 +179,19 @@ class TestReportOutputContracts(unittest.TestCase):
 
     def test_eval_report_json_structure(self):
         """Verify eval_report.json contains all required fields."""
-        # Find a real eval_report.json from existing test runs
-        candidates = list((REPO_ROOT / "out").rglob("eval_report.json"))
-        if not candidates:
-            self.skipTest("No eval_report.json found in out/")
-
-        report_path = candidates[0]
+        # Validate the canonical Task 4 security-state evidence.
+        # Do not select candidates[0]: out/ also contains historical artifacts
+        # produced before the final security-state output contract existed.
+        report_path = (
+            REPO_ROOT
+            / "out"
+            / "p01_o2oa_cms_doc_list_repro_run1"
+            / "eval_report.json"
+        )
+        self.assertTrue(
+            report_path.is_file(),
+            f"Canonical eval_report.json missing: {report_path}",
+        )
         data = json.loads(report_path.read_text(encoding="utf-8"))
 
         # Task metadata
@@ -239,12 +246,18 @@ class TestReportOutputContracts(unittest.TestCase):
 
     def test_fuzzer_stats_nv_fields(self):
         """Verify fuzzer_stats contains all NV fields."""
-        # Find a real fuzzer_stats from existing test runs
-        candidates = list((REPO_ROOT / "out").rglob("fuzzer_stats"))
-        if not candidates:
-            self.skipTest("No fuzzer_stats found in out/")
-
-        stats_path = candidates[0]
+        # Validate the canonical Task 4 security-state evidence.
+        # Historical out/ directories may use an older stats schema.
+        stats_path = (
+            REPO_ROOT
+            / "out"
+            / "p01_o2oa_cms_doc_list_repro_run1"
+            / "fuzzer_stats"
+        )
+        self.assertTrue(
+            stats_path.is_file(),
+            f"Canonical fuzzer_stats missing: {stats_path}",
+        )
         content = stats_path.read_text(encoding="utf-8")
 
         # Task fields

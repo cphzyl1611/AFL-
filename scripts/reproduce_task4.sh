@@ -56,7 +56,7 @@ record_rc() {
 echo "== Build =="
 (
   set -o pipefail
-  make -j"${JOBS:-$(nproc 2>/dev/null || echo 4)}"
+  make -j"${JOBS:-$(nproc 2>/dev/null || echo 4)}" afl-fuzz
 ) 2>&1 | tee "$OUT/build.log"
 rc=${PIPESTATUS[0]}
 record_rc BUILD "$rc"
