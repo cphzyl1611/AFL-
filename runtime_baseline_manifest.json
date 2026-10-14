@@ -1,13 +1,13 @@
 {
   "version": "1.0",
-  "description": "Runtime baseline aligned with Task 4 delivery HEAD",
-  "checkpoint_commit": "e233c7c022dad45be09d7c285e324e3b1d5c4195",
+  "description": "Runtime baseline aligned with Task 4 clean-room repair",
+  "checkpoint_commit": "e06cb1eea4c0846bbd7180d73293832d810d94fa",
   "created": "2026-10-02T00:00:00+0000",
-  "updated": "2026-10-14T06:57:37+0000",
+  "updated": "2026-10-14T07:52:58+0000",
   "files": [
     {
       "path": "scripts/run_alfresco_bounded_feedback.py",
-      "sha256": "c51479a82e5cd81c5715c95a183cd0a360cd7024493571620408830325565387"
+      "sha256": "2965efb3410a068ec944561d5dcb82d6cd29a69d78e63d7c6485d08d804e6005"
     },
     {
       "path": "nv_http_harness.py",
@@ -28,6 +28,10 @@
     {
       "path": "src/afl-fuzz-run.c",
       "sha256": "3bec3c99c43222cffc00aa6d6ba9006a6704b9fb62e3c14788c2afa65a9d4baa"
+    },
+    {
+      "path": "in/alfresco_afl_metadata_update_smoke/seed_ok_0.json",
+      "sha256": "7bb6f858e9c211c3c30549a39ce95a0727df31aa56d1554ef1cca37efa318189"
     }
   ]
 }
