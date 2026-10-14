@@ -339,6 +339,7 @@ def render_content_update_runtime_config(node_id: str, out_path: Path) -> Path:
             "password_env": "ALFRESCO_PASS",
         },
         "body_only_mode": 1,
+        "content_type": "text/plain; charset=utf-8",
         "target_node_id": node_id,
         "endpoints": [{
             "name": "content_update",
@@ -1103,6 +1104,78 @@ def _readback_result_summary(entry: dict) -> dict[str, object]:
     }
 
 
+def _is_sha256_identity(value: object) -> bool:
+    if not isinstance(value, str) or not value.startswith("sha256:"):
+        return False
+    digest = value.removeprefix("sha256:")
+    return len(digest) == 64 and all(char in "0123456789abcdef" for char in digest)
+
+
+def _validate_content_readback_result(result: dict[str, object]) -> bool:
+    fields = {
+        "expected_content_hash",
+        "expected_content_length",
+        "observed_content_hash",
+        "observed_content_length",
+        "content_hash_match",
+        "content_length_match",
+        "executed_request_status",
+        "executed_request_succeeded",
+        "content_effect_match",
+    }
+    if set(result) != fields:
+        return False
+    expected_hash = result["expected_content_hash"]
+    expected_length = result["expected_content_length"]
+    observed_hash = result["observed_content_hash"]
+    observed_length = result["observed_content_length"]
+    request_status = result["executed_request_status"]
+    if expected_hash is not None and not _is_sha256_identity(expected_hash):
+        return False
+    if expected_length is not None and (
+        isinstance(expected_length, bool)
+        or not isinstance(expected_length, int)
+        or expected_length < 0
+    ):
+        return False
+    if (expected_hash is None) != (expected_length is None):
+        return False
+    if not _is_sha256_identity(observed_hash):
+        return False
+    if (
+        isinstance(observed_length, bool)
+        or not isinstance(observed_length, int)
+        or observed_length < 0
+    ):
+        return False
+    if request_status is not None and (
+        isinstance(request_status, bool) or not isinstance(request_status, int)
+    ):
+        return False
+    for field in (
+        "content_hash_match",
+        "content_length_match",
+        "executed_request_succeeded",
+        "content_effect_match",
+    ):
+        if not isinstance(result[field], bool):
+            return False
+    hash_match = expected_hash is not None and expected_hash == observed_hash
+    length_match = expected_length is not None and expected_length == observed_length
+    request_succeeded = (
+        isinstance(request_status, int)
+        and not isinstance(request_status, bool)
+        and 200 <= request_status < 300
+    )
+    return (
+        result["content_hash_match"] is hash_match
+        and result["content_length_match"] is length_match
+        and result["executed_request_succeeded"] is request_succeeded
+        and result["content_effect_match"]
+        is (hash_match and length_match and request_succeeded)
+    )
+
+
 def validate_readback_artifact(payload: dict[str, object]) -> bool:
     """Validate the exact sanitized read-back schema before publication."""
 
@@ -1146,26 +1219,28 @@ def validate_readback_artifact(payload: dict[str, object]) -> bool:
         return False
     if isinstance(request.get("status"), bool) or not isinstance(request.get("status"), int):
         return False
-    if set(result) != {"metadata_hash", "field_presence", "version_label"}:
+    metadata_fields = {"metadata_hash", "field_presence", "version_label"}
+    if set(result) == metadata_fields:
+        if result["metadata_hash"] is not None and not (
+            isinstance(result["metadata_hash"], str)
+            and result["metadata_hash"].startswith("sha256:")
+        ):
+            return False
+        if not isinstance(result["field_presence"], list) or result["version_label"] is not None:
+            return False
+        for field in result["field_presence"]:
+            if not isinstance(field, dict) or set(field) != {"name", "type"}:
+                return False
+            if not all(isinstance(field[key], str) and field[key] for key in ("name", "type")):
+                return False
+            if field["name"] not in READBACK_METADATA_FIELDS:
+                return False
+            if field["type"] not in {
+                "null", "boolean", "number", "string", "array", "object"
+            }:
+                return False
+    elif not _validate_content_readback_result(result):
         return False
-    if result["metadata_hash"] is not None and not (
-        isinstance(result["metadata_hash"], str)
-        and result["metadata_hash"].startswith("sha256:")
-    ):
-        return False
-    if not isinstance(result["field_presence"], list) or result["version_label"] is not None:
-        return False
-    for field in result["field_presence"]:
-        if not isinstance(field, dict) or set(field) != {"name", "type"}:
-            return False
-        if not all(isinstance(field[key], str) and field[key] for key in ("name", "type")):
-            return False
-        if field["name"] not in READBACK_METADATA_FIELDS:
-            return False
-        if field["type"] not in {
-            "null", "boolean", "number", "string", "array", "object"
-        }:
-            return False
     if set(ordering) != {"run_completed", "timestamp_ms"} or ordering["run_completed"] is not True:
         return False
     if isinstance(ordering["timestamp_ms"], bool) or not isinstance(ordering["timestamp_ms"], int):
@@ -1182,6 +1257,11 @@ def reconcile_readback_artifact(payload: dict[str, object]) -> bool:
         return False
     target = payload["target"]
     result = payload["result"]
+    if "content_effect_match" in result:
+        return bool(
+            result["content_effect_match"]
+            and target["node_identity"].startswith("sha256:node:")
+        )
     allowed_names = set(READBACK_METADATA_FIELDS)
     return all(
         isinstance(field, dict) and field["name"] in allowed_names
@@ -1341,8 +1421,44 @@ def post_execution_readback(
             if event_log is not None:
                 event_log.append("content_readback_get")
             content = read_content_bytes(client, node_id)
-            content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
-            content_length = len(content)
+            observed_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+            observed_length = len(content)
+
+            status_snapshot = snapshot.get("status")
+            if not isinstance(status_snapshot, dict):
+                status_snapshot = {}
+            expected_hash = status_snapshot.get("content_sha256")
+            expected_length = status_snapshot.get("content_length")
+            executed_request_contract_match = bool(
+                status_snapshot.get("method") == "PUT"
+                and str(status_snapshot.get("path", "")).endswith("/content")
+                and status_snapshot.get("validation_reject", 0) == 0
+            )
+            if not executed_request_contract_match or not _is_sha256_identity(expected_hash) or (
+                isinstance(expected_length, bool)
+                or not isinstance(expected_length, int)
+                or expected_length < 0
+            ):
+                expected_hash = None
+                expected_length = None
+            executed_status = status_snapshot.get("http_code")
+            if isinstance(executed_status, bool) or not isinstance(executed_status, int):
+                executed_status = None
+            executed_request_succeeded = bool(
+                isinstance(executed_status, int)
+                and 200 <= executed_status < 300
+            )
+            content_hash_match = bool(
+                expected_hash is not None and expected_hash == observed_hash
+            )
+            content_length_match = bool(
+                expected_length is not None and expected_length == observed_length
+            )
+            content_effect_match = bool(
+                executed_request_succeeded
+                and content_hash_match
+                and content_length_match
+            )
             
             artifact = {
                 "schema_version": READBACK_SCHEMA_VERSION,
@@ -1359,9 +1475,15 @@ def post_execution_readback(
                 },
                 "request": {"method": "GET", "status": 200},
                 "result": {
-                    "metadata_hash": content_hash,
-                    "field_presence": [],
-                    "version_label": None,
+                    "expected_content_hash": expected_hash,
+                    "expected_content_length": expected_length,
+                    "observed_content_hash": observed_hash,
+                    "observed_content_length": observed_length,
+                    "content_hash_match": content_hash_match,
+                    "content_length_match": content_length_match,
+                    "executed_request_status": executed_status,
+                    "executed_request_succeeded": executed_request_succeeded,
+                    "content_effect_match": content_effect_match,
                 },
                 "ordering": {"run_completed": True, "timestamp_ms": int(time.time() * 1000)},
                 "privacy": {
@@ -1373,13 +1495,28 @@ def post_execution_readback(
             base["node_identity"] = artifact["target"]["node_identity"]
             base["parent_identity"] = artifact["target"]["parent_identity"]
             base["target_name"] = artifact["target"]["name"]
-            base["content_hash"] = content_hash
-            base["content_length"] = content_length
+            base["status"] = 200
+            base["expected_content_hash"] = expected_hash
+            base["expected_content_length"] = expected_length
+            base["observed_content_hash"] = observed_hash
+            base["observed_content_length"] = observed_length
+            base["content_hash_match"] = content_hash_match
+            base["content_length_match"] = content_length_match
+            base["executed_request_status"] = executed_status
+            base["executed_request_succeeded"] = executed_request_succeeded
+            base["content_effect_match"] = content_effect_match
             base["last_exec_seq"] = artifact["correlation"]["last_exec_seq"]
             write_readback_artifact(layout, artifact)
             base["present"] = True
-            base["verdict"] = "pass"
-            base["reconciled"] = True
+            if expected_hash is None or expected_length is None:
+                base["verdict"] = "executed_content_identity_unavailable"
+            elif not executed_request_succeeded:
+                base["verdict"] = "executed_content_request_unsuccessful"
+            elif not content_effect_match:
+                base["verdict"] = "content_mismatch"
+            else:
+                base["verdict"] = "pass"
+            base["reconciled"] = reconcile_readback_artifact(artifact)
             base["path"] = str(layout["readback"])
             return base
         except RuntimeError as exc:
@@ -2265,6 +2402,7 @@ def inspect_artifacts(
             expected_node_identity = readback.get("node_identity")
             expected_parent_identity = readback.get("parent_identity")
             expected_name = readback.get("target_name")
+            snapshot_status = None
             if launch_returncode == 0:
                 try:
                     snapshot = parse_final_execution_snapshot(layout)
@@ -2274,6 +2412,32 @@ def inspect_artifacts(
                 else:
                     expected_last_exec_seq = snapshot["last_exec_seq"]
                     expected_valid_count = snapshot["valid_execution_count"]
+                    snapshot_status = snapshot.get("status")
+            artifact_result = artifact["result"]
+            content_result_mismatch = False
+            if "content_effect_match" in artifact_result:
+                for field in (
+                    "expected_content_hash",
+                    "expected_content_length",
+                    "observed_content_hash",
+                    "observed_content_length",
+                    "content_hash_match",
+                    "content_length_match",
+                    "executed_request_status",
+                    "executed_request_succeeded",
+                    "content_effect_match",
+                ):
+                    if field in readback and artifact_result.get(field) != readback[field]:
+                        content_result_mismatch = True
+                if isinstance(snapshot_status, dict) and (
+                    artifact_result.get("expected_content_hash")
+                    != snapshot_status.get("content_sha256")
+                    or artifact_result.get("expected_content_length")
+                    != snapshot_status.get("content_length")
+                    or artifact_result.get("executed_request_status")
+                    != snapshot_status.get("http_code")
+                ):
+                    content_result_mismatch = True
             if (
                 isinstance(expected_last_exec_seq, int)
                 and correlation["last_exec_seq"] != expected_last_exec_seq
@@ -2293,7 +2457,7 @@ def inspect_artifacts(
                 isinstance(readback.get("metadata_hash"), str)
                 and artifact["result"]["metadata_hash"]
                 != readback["metadata_hash"]
-            ):
+            ) or content_result_mismatch:
                 readback_artifact_valid = False
                 readback_artifact_diagnostic = "readback_artifact_invalid"
     readback["artifact_valid"] = readback_artifact_valid

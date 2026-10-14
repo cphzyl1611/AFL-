@@ -346,7 +346,8 @@ def next_exec_seq() -> int:
 
 def write_status(method, path, http_code, timeout=False, recovered=False, latency_ms=0,
                  body_hash16=0, ncov_delta=0, ncov_total=0, nall=0,
-                 is_exception=0, recover_ms=0, validation_reject=0):
+                 is_exception=0, recover_ms=0, validation_reject=0,
+                 content_sha256=None, content_length=None):
     global SEQ
 
     # class
@@ -392,6 +393,17 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
         "recover_ms": int(recover_ms),
         "validation_reject": 1 if validation_reject else 0,
     }
+    if content_sha256 is not None or content_length is not None:
+        if not (
+            isinstance(content_sha256, str)
+            and content_sha256.startswith("sha256:")
+            and isinstance(content_length, int)
+            and not isinstance(content_length, bool)
+            and content_length >= 0
+        ):
+            raise ValueError("invalid content execution identity")
+        st["content_sha256"] = content_sha256
+        st["content_length"] = content_length
 
     # atomic write
     STATUS_PATH = get_status_path()
@@ -1082,7 +1094,9 @@ def main():
             raise RuntimeError("body_only_mode enabled but no NV_ENDPOINT_NAME/default_endpoint provided")
 
         method, path = get_named_endpoint(cfg, endpoint_name)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": str(cfg.get("content_type", "application/json"))
+        }
 
         rules_path = os.getenv(
             "NV_BODY_RULES",
@@ -1259,6 +1273,11 @@ def main():
 
     t0 = time.time()
     body_hash16 = int(zlib.crc32(body) & 0xffff) if body else 0
+    content_sha256 = None
+    content_length = None
+    if cfg.get("scenario") == "content_update" and body is not None:
+        content_sha256 = "sha256:" + hashlib.sha256(body).hexdigest()
+        content_length = len(body)
 
     timeout_flag = False
     code = None
@@ -1361,7 +1380,9 @@ def main():
         ncov_total=ncov_total,
         nall=nall,
         is_exception=1 if is_exception else 0,
-        recover_ms=recover_ms
+        recover_ms=recover_ms,
+        content_sha256=content_sha256,
+        content_length=content_length,
     )
 
     if timeout_flag or int(code) == -2:
