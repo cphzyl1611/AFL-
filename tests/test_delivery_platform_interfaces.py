@@ -6,6 +6,7 @@ interface contracts without requiring live O2OA/Alfresco environment.
 """
 
 from __future__ import annotations
+import hashlib
 import json
 import subprocess
 import sys
@@ -294,6 +295,39 @@ class TestReportOutputContracts(unittest.TestCase):
         # SS scheduler
         self.assertIn("ss_new_bits_any", content)
         self.assertIn("ss_new_bits_kept", content)
+
+
+class TestRuntimeBaselineManifest(unittest.TestCase):
+    """Verify frozen runtime hashes match the delivered runtime sources."""
+
+    def test_runtime_baseline_manifest_matches_sources(self):
+        manifest_path = REPO_ROOT / "runtime_baseline_manifest.json"
+        manifest = json.loads(
+            manifest_path.read_text(encoding="utf-8")
+        )
+
+        self.assertIn("checkpoint_commit", manifest)
+        self.assertIn("files", manifest)
+
+        for entry in manifest["files"]:
+            rel = entry["path"]
+            expected = entry["sha256"]
+            source_path = REPO_ROOT / rel
+
+            self.assertTrue(
+                source_path.is_file(),
+                f"Runtime baseline source missing: {rel}",
+            )
+
+            actual = hashlib.sha256(
+                source_path.read_bytes()
+            ).hexdigest()
+
+            self.assertEqual(
+                actual,
+                expected,
+                f"Runtime baseline hash stale: {rel}",
+            )
 
 
 if __name__ == "__main__":

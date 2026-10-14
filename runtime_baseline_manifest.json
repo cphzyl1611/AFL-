@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "description": "Runtime baseline with multipart validation fix (R161972)",
-  "checkpoint_commit": "ec39a8dfc8b2d1234567890abcdef1234567890a",
+  "description": "Runtime baseline aligned with Task 4 delivery HEAD",
+  "checkpoint_commit": "e233c7c022dad45be09d7c285e324e3b1d5c4195",
   "created": "2026-10-02T00:00:00+0000",
-  "updated": "2026-10-03T08:25:00+0000",
+  "updated": "2026-10-14T06:57:37+0000",
   "files": [
     {
       "path": "scripts/run_alfresco_bounded_feedback.py",
@@ -11,7 +11,7 @@
     },
     {
       "path": "nv_http_harness.py",
-      "sha256": "f6e31e040705cac007e529759d53f4757b294e49aa0ff3deb1ec016e79917d07"
+      "sha256": "0637d85da2dc4f7cee457bd26f0ac0e2becc7489175a4fc1c51ec8b9c876309e"
     },
     {
       "path": "nv_body_valid.py",
