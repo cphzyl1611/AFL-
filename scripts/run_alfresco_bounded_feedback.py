@@ -759,7 +759,10 @@ def build_task_payload(
         "mutation_scope": canonical_scope,
         "max_test_cases": int(max_test_cases),
         "time_budget": int(time_budget),
-        "enable_validity": 1,  # All scenarios now support validity filtering
+        # Multipart framing is validated by the production harness parser.
+        # The C-side gate is the JSON/body validator and cannot parse a
+        # multipart/form-data envelope, so only JSON/body scenarios enable it.
+        "enable_validity": 0 if scenario == "multipart_upload" else 1,
     }
     if scenario == "multipart_upload":
         payload.update({
@@ -801,40 +804,114 @@ def parse_multipart_upload_records(path: Path) -> list[dict]:
     return records
 
 
+def _positive_int(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return value
+    return None
+
+
 def inspect_multipart_artifacts(layout: dict[str, Path], *, launch_returncode: int | None = None) -> dict[str, object]:
-    """Check multipart-specific upload evidence independently of fixed targets."""
+    """Correlate successful uploads with authoritative target executions."""
     try:
         records = parse_multipart_upload_records(layout["multipart_uploads"])
     except (OSError, UnicodeDecodeError, ValueError):
         records = []
-    successful = [
+
+    created_uploads = [
         record for record in records
         if record.get("target_invoked") is True
         and record.get("status_observed") is True
         and int(record.get("http_status", 0)) == 201
         and isinstance(record.get("response_node_id"), str)
         and bool(record["response_node_id"])
-        and isinstance(record.get("exec_seq"), int)
-        and int(record["exec_seq"]) > 0
     ]
     invalid_target_records = [
         record for record in records
         if record.get("target_invoked") is True
-        and not (record.get("status_observed") is True and int(record.get("exec_seq", 0)) > 0)
+        and not (
+            record.get("status_observed") is True
+            and _positive_int(record.get("exec_seq")) is not None
+        )
     ]
+
+    ledger = parse_execution_ledger(
+        execution_ledger_path(layout), include_identities=True
+    )
+    identities = ledger.get("execution_identities", [])
+    if not isinstance(identities, list):
+        identities = []
+    identities_by_seq: dict[int, list[dict]] = {}
+    for identity in identities:
+        if not isinstance(identity, dict):
+            continue
+        seq = _positive_int(identity.get("exec_seq"))
+        if seq is not None:
+            identities_by_seq.setdefault(seq, []).append(identity)
+
+    correlated: list[dict] = []
+    identity_diagnostics: list[str] = []
+    for record in created_uploads:
+        seq = _positive_int(record.get("exec_seq"))
+        if seq is None:
+            identity_diagnostics.append("missing_upload_exec_seq")
+            continue
+        matches = identities_by_seq.get(seq, [])
+        if not matches:
+            identity_diagnostics.append(f"missing_ledger_exec_seq:{seq}")
+            continue
+        if len(matches) != 1:
+            identity_diagnostics.append(f"ambiguous_exec_seq:{seq}")
+            continue
+        identity = matches[0]
+        if not (
+            identity.get("harness_invoked") is True
+            and identity.get("target_invoked") is True
+            and identity.get("body_validated") is True
+            and identity.get("status_observed") is True
+            and identity.get("http_status") == 201
+        ):
+            identity_diagnostics.append(f"ledger_target_not_proved:{seq}")
+            continue
+        correlated.append(record)
+
+    if not ledger.get("valid"):
+        identity_diagnostics.append("execution_ledger_invalid")
+    fatal_identity_error = any(
+        diagnostic == "missing_upload_exec_seq"
+        or diagnostic.startswith("ambiguous_exec_seq:")
+        or diagnostic.startswith("ledger_target_not_proved:")
+        for diagnostic in identity_diagnostics
+    )
+    # Startup/calibration requests can appear in the harness upload journal
+    # without a fuzz-iteration ledger row.  They are retained as diagnostics
+    # but can never supply proof.  At least one successful upload must instead
+    # correlate uniquely to an authoritative campaign execution.
+    execution_identity_proved = (
+        bool(correlated)
+        and bool(ledger.get("valid"))
+        and not fatal_identity_error
+        and not invalid_target_records
+    )
     missing_required: list[str] = []
-    if launch_returncode == 0 and not successful:
+    if launch_returncode == 0 and not created_uploads:
         missing_required.append("multipart_successful_upload")
-    if invalid_target_records:
+    if launch_returncode == 0 and not execution_identity_proved:
+        missing_required.append("multipart_execution_identity")
+    elif invalid_target_records:
         missing_required.append("multipart_execution_identity")
     return {
         "ok": not missing_required,
         "records": len(records),
-        "successful_uploads": len(successful),
+        "created_resource_proved": bool(created_uploads),
+        "successful_upload_candidates": len(created_uploads),
+        "successful_uploads": len(correlated),
+        "multipart_execution_identity_proved": execution_identity_proved,
+        "execution_ledger_valid": bool(ledger.get("valid")),
+        "execution_identity_diagnostics": identity_diagnostics,
         "validation_rejects": sum(1 for record in records if record.get("validation_reject") is True),
         "invalid_target_records": len(invalid_target_records),
         "missing_required": missing_required,
-        "successful_records": successful,
+        "successful_records": correlated,
     }
 
 
@@ -866,6 +943,46 @@ def multipart_readback_is_complete(layout: dict[str, Path], upload_report: dict[
         and result.get("status") == "PASS"
         and int(result.get("verified_count", -1)) == int(upload_report.get("successful_uploads", -2))
         and int(result.get("total_count", -1)) == int(upload_report.get("successful_uploads", -2))
+    )
+
+
+def multipart_real_service_reproduction_proved(
+    campaign_report: dict[str, object],
+    upload_report: dict[str, object],
+    readback_result: dict[str, object],
+    readback_complete: bool,
+) -> bool:
+    """Require campaign, upload identity, and exact created-node readback."""
+
+    successful_uploads = int(upload_report.get("successful_uploads", 0))
+    readback_records = readback_result.get("records", [])
+    records_match = (
+        isinstance(readback_records, list)
+        and len(readback_records) == successful_uploads
+        and successful_uploads > 0
+        and all(
+            isinstance(record, dict)
+            and record.get("status") == "PASS"
+            and record.get("identity_match") is True
+            and record.get("content_size_match") is True
+            and record.get("content_hash_match") is True
+            for record in readback_records
+        )
+    )
+    return bool(
+        campaign_report.get("final_result") == "pass"
+        and campaign_report.get("campaign_execution_proved") is True
+        and campaign_report.get("target_execution_proved") is True
+        and int(campaign_report.get("target_invocation_count", 0)) > 0
+        and not campaign_report.get("missing_required")
+        and upload_report.get("ok") is True
+        and upload_report.get("created_resource_proved") is True
+        and upload_report.get("multipart_execution_identity_proved") is True
+        and readback_complete
+        and readback_result.get("status") == "PASS"
+        and int(readback_result.get("verified_count", -1)) == successful_uploads
+        and int(readback_result.get("total_count", -1)) == successful_uploads
+        and records_match
     )
 
 
@@ -2102,7 +2219,9 @@ def reconcile_mab_journal(parsed: dict[str, object], stats: dict[str, str]) -> d
     return {"reconciled": not diagnostics, "diagnostics": diagnostics}
 
 
-def parse_execution_ledger(path: Path) -> dict[str, object]:
+def parse_execution_ledger(
+    path: Path, *, include_identities: bool = False
+) -> dict[str, object]:
     """Parse append-only execution lifecycle evidence, fail-closed."""
     result: dict[str, object] = {
         "valid": True, "record_count": 0, "counted_execution_count": 0,
@@ -2113,6 +2232,8 @@ def parse_execution_ledger(path: Path) -> dict[str, object]:
         "unobserved_execution_count": 0,
         "validation_reject_count": 0, "diagnostics": [],
     }
+    if include_identities:
+        result["execution_identities"] = []
     diagnostics: list[str] = result["diagnostics"]  # type: ignore[assignment]
     try:
         data = Path(path).read_bytes()
@@ -2174,6 +2295,16 @@ def parse_execution_ledger(path: Path) -> dict[str, object]:
         if outcome == "mab_commit_failed":
             diagnostics.append(f"mab_commit_failed:{line_number}")
             result["valid"] = False
+        if include_identities:
+            identities: list[dict[str, object]] = result["execution_identities"]  # type: ignore[assignment]
+            identities.append({
+                "exec_seq": record.get("exec_seq"),
+                "harness_invoked": record.get("harness_invoked"),
+                "target_invoked": record.get("target_invoked"),
+                "body_validated": record.get("body_validated"),
+                "status_observed": record.get("status_observed"),
+                "http_status": record.get("http_status"),
+            })
     return result
 
 
@@ -3967,14 +4098,23 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 readback_result = {"status": "FAIL", "verified_count": 0, "total_count": 0, "records": []}
             write_multipart_readback_artifact(layout, readback_result)
-            if not multipart_readback_is_complete(layout, upload_report):
+            readback_complete = multipart_readback_is_complete(
+                layout, upload_report
+            )
+            if not readback_complete:
                 upload_report.setdefault("missing_required", []).append("multipart_readback")
                 upload_report["ok"] = False
             report = inspect_artifacts(layout, launch_returncode=int(rc))
             report["multipart"] = upload_report
             report["multipart_readback"] = readback_result
-            if rc == 0 and not upload_report["ok"]:
-                report["missing_required"].append("multipart_contract")
+            report["real_service_reproduction_proved"] = (
+                multipart_real_service_reproduction_proved(
+                    report, upload_report, readback_result, readback_complete
+                )
+            )
+            if rc == 0 and not report["real_service_reproduction_proved"]:
+                if "multipart_contract" not in report["missing_required"]:
+                    report["missing_required"].append("multipart_contract")
                 report["final_result"] = "artifact_contract_failed"
                 report["ok"] = False
             report["target_binding"] = {

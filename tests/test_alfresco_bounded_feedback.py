@@ -1021,9 +1021,29 @@ class MultipartRunnerWiringTest(unittest.TestCase):
                 }) + "\n",
                 encoding="utf-8",
             )
+            module.execution_ledger_path(layout).write_text(
+                json.dumps({
+                    "schema_version": 1,
+                    "event": "execution",
+                    "iteration_id": 1,
+                    "selected_arm": 0,
+                    "actual_used_arm": 0,
+                    "arm_match": True,
+                    "counted_execution": True,
+                    "harness_invoked": True,
+                    "target_invoked": True,
+                    "body_validated": True,
+                    "status_observed": True,
+                    "exec_seq": 1,
+                    "http_status": 201,
+                    "mab_outcome": "target_execution_no_mab",
+                }) + "\n",
+                encoding="utf-8",
+            )
             report = module.inspect_multipart_artifacts(layout, launch_returncode=0)
             self.assertTrue(report["ok"])
             self.assertEqual(report["successful_uploads"], 1)
+            self.assertTrue(report["multipart_execution_identity_proved"])
             self.assertNotIn("body_valid_stats", report["missing_required"])
             task = {"scenario": "multipart_upload"}
             (Path(tmp) / "run" / "task.json").write_text(json.dumps(task), encoding="utf-8")
@@ -2632,6 +2652,25 @@ class BoundedRunnerOrchestrationTest(unittest.TestCase):
                     "file_size": 6,
                     "file_sha256": "sha256:" + hashlib.sha256(b"hello\n").hexdigest(),
                 }) + "\n", encoding="utf-8"
+            )
+            module.execution_ledger_path(layout).write_text(
+                json.dumps({
+                    "schema_version": 1,
+                    "event": "execution",
+                    "iteration_id": 1,
+                    "selected_arm": 0,
+                    "actual_used_arm": 0,
+                    "arm_match": True,
+                    "counted_execution": True,
+                    "harness_invoked": True,
+                    "target_invoked": True,
+                    "body_validated": True,
+                    "status_observed": True,
+                    "exec_seq": 1,
+                    "http_status": 201,
+                    "mab_outcome": "target_execution_no_mab",
+                }) + "\n",
+                encoding="utf-8",
             )
             Path(layout["seed_selection_audit"]).write_text(
                 json.dumps({"queue_id": 0, "depth": 0, "ss_cov_cnt": 1, "ss_selected_cnt": 1, "ss_prob": 1.0}) + "\n"
