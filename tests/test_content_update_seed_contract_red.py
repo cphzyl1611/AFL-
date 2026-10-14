@@ -53,8 +53,9 @@ class TestContentUpdateSeedContract(unittest.TestCase):
         
         # Must be a JSON object (metadata format)
         self.assertIsInstance(payload, dict)
-        # Current format: {"name": "...", "title": "...", "description": "..."}
-        self.assertIn("title", payload)
+        self.assertEqual(set(payload), {"properties"})
+        self.assertIsInstance(payload["properties"], dict)
+        self.assertIn("cm:title", payload["properties"])
 
     def test_json_metadata_payload_violates_content_update_contract(self):
         """RED: Metadata JSON structure violates content_update plain-text contract."""

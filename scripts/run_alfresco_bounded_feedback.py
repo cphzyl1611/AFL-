@@ -1561,15 +1561,15 @@ def runtime_environment(
 
 
 def artifact_contract(layout: dict[str, Path]) -> dict[str, dict[str, Path]]:
-    """Return setup, execution and conditional artifact namespaces.
+    """Return setup, campaign, target-execution and conditional artifacts.
 
     The paths are derived from the current live producers: the Python
-    harness writes status/sequence/body-valid/error artifacts, the state probe
-    writes probe and state DB, the C runner writes the state trace, and AFL++
-    writes ``fuzzer_stats`` under its output directory.  The setup seed marker
-    follows the task's declared authority: a manifest run requires the
-    manifest file and a materialized view, while the legacy mode requires the
-    single generated ``seed.http`` file.
+    harness writes status/sequence/body-valid/error artifacts.  For metadata
+    body-only runs, the state probe writes probe and state DB only after target
+    dispatch.  The C runner writes the state trace, and AFL++ writes
+    ``fuzzer_stats`` under its output directory.  The setup seed marker follows
+    the task's declared authority: a manifest run requires the manifest file
+    and a materialized view, while legacy mode requires one generated seed.
     """
 
     setup_required = {
@@ -1592,8 +1592,6 @@ def artifact_contract(layout: dict[str, Path]) -> dict[str, dict[str, Path]]:
     execution_required = {
         "status": layout["status"],
         "status_seq": layout["status_seq"],
-        "probe": layout["probe"],
-        "state_db": layout["state_db"],
         "state_trace": layout["state_trace"],
         "afl_stats": layout["afl_output"] / "fuzzer_stats",
         "mab_journal": layout["mab_journal"],
@@ -1611,8 +1609,11 @@ def artifact_contract(layout: dict[str, Path]) -> dict[str, dict[str, Path]]:
         "setup_required": setup_required,
         "execution_required": execution_required,
         # Metadata body-only execution does not use the legacy context file.
-        # It remains observable without masking the required contract.
+        # Probe/state paths are promoted to target-execution requirements only
+        # when the execution ledger proves target dispatch.
         "conditional": {
+            "probe": layout["probe"],
+            "state_db": layout["state_db"],
             "ctx": layout["ctx"],
             "readback": layout["readback"],
         },
@@ -2071,15 +2072,19 @@ def inspect_artifacts(
     Execution artifacts become applicable only for a zero launch return code.
     A non-zero launch is reported as a launch failure and preserves the
     original return code; setup artifacts are checked regardless of launch
-    outcome.  ``execution_proved`` is an independent marker based on the
-    producer outputs, not on the return code alone.
+    outcome.  The legacy ``execution_proved`` field is an independent
+    campaign-execution marker based on producer outputs, not on the return
+    code alone.  Target dispatch is proved separately from the reconciled
+    execution ledger.
     """
 
     contract = artifact_contract(layout)
     present: list[str] = []
     missing_setup: list[str] = []
     missing_execution: list[str] = []
+    missing_target_execution: list[str] = []
     missing_conditional: list[str] = []
+    target_execution_names = {"probe", "state_db"}
 
     for level, entries in contract.items():
         for name, path in entries.items():
@@ -2089,6 +2094,8 @@ def inspect_artifacts(
                 missing_setup.append(name)
             elif level == "execution_required":
                 missing_execution.append(name)
+            elif level == "conditional" and name in target_execution_names:
+                missing_target_execution.append(name)
             else:
                 missing_conditional.append(name)
 
@@ -2102,6 +2109,9 @@ def inspect_artifacts(
         _artifact_present(name, execution_markers[name])
         for name in ("status", "status_seq", "afl_stats")
     )
+    target_invocation_count = 0
+    target_execution_proved = False
+    target_execution_artifacts_applicable = False
 
     if launch_returncode is None:
         final_result = "pass" if not missing_required else "artifact_contract_failed"
@@ -2169,6 +2179,23 @@ def inspect_artifacts(
         missing_required.append("execution_ledger")
         final_result = "artifact_contract_failed"
         execution_proved = False
+    if launch_returncode == 0 and ledger_path.is_file():
+        target_invocation_count = int(
+            ledger_summary.get("target_invocation_count", 0)
+        )
+        status_observed_count = int(
+            ledger_summary.get("status_observed_count", 0)
+        )
+        target_execution_artifacts_applicable = target_invocation_count > 0
+        target_execution_proved = bool(
+            ledger_summary.get("valid")
+            and ledger_summary.get("reconciled")
+            and target_invocation_count > 0
+            and status_observed_count >= target_invocation_count
+        )
+        if target_execution_artifacts_applicable and missing_target_execution:
+            missing_required.extend(missing_target_execution)
+            final_result = "artifact_contract_failed"
     seed_audit_summary: dict[str, object] = {
         "enabled": True,
         "path": str(layout["seed_selection_audit"]),
@@ -2287,18 +2314,45 @@ def inspect_artifacts(
             missing_required.append("readback")
         if launch_returncode == 0:
             final_result = "artifact_contract_failed"
+    real_service_reproduction_proved = bool(
+        target_execution_proved
+        and not missing_target_execution
+        and readback.get("applicable")
+        and readback.get("verdict") == "pass"
+        and readback.get("reconciled")
+        and readback.get("artifact_valid")
+        and final_result == "pass"
+    )
     return {
         "ok": final_result == "pass",
         "setup_required": {name: str(path) for name, path in contract["setup_required"].items()},
         "execution_required": {name: str(path) for name, path in contract["execution_required"].items()},
+        "target_execution_required": {
+            name: str(contract["conditional"][name])
+            for name in sorted(target_execution_names)
+        },
         "conditional": {name: str(path) for name, path in contract["conditional"].items()},
         "present": sorted(present),
         "missing_required": sorted(missing_required),
         "missing_setup_required": sorted(missing_setup),
         "missing_execution_required": sorted(missing_execution),
+        "missing_target_execution_required": (
+            sorted(missing_target_execution)
+            if target_execution_artifacts_applicable
+            else []
+        ),
         "missing_conditional": sorted(missing_conditional),
         "execution_applicable": execution_applicable,
+        # Backward-compatible alias: this proves the AFL/campaign execution
+        # evidence only.  It does not prove a business request was dispatched.
         "execution_proved": execution_proved,
+        "campaign_execution_proved": execution_proved,
+        "target_execution_proved": target_execution_proved,
+        "target_invocation_count": target_invocation_count,
+        "target_execution_artifacts_applicable": (
+            target_execution_artifacts_applicable
+        ),
+        "real_service_reproduction_proved": real_service_reproduction_proved,
         "launch_returncode": launch_returncode,
         "final_result": final_result,
         "paths": paths,

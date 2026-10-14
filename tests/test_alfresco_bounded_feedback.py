@@ -3156,7 +3156,12 @@ class CB2RunnerContractTest(unittest.TestCase):
             # The metadata fixture is in/alfresco_afl_metadata_update_smoke/seed_ok_0.json
             self.assertEqual(
                 json.loads(body),
-                {"name": "doc.txt", "title": "Normal Title", "description": "Normal description"},
+                {
+                    "properties": {
+                        "cm:title": "Normal Title",
+                        "cm:description": "Normal description",
+                    }
+                },
             )
             self.assertEqual(module.seed_request_metadata(config), ("PUT", "/alfresco/api/-default-/public/alfresco/versions/1/nodes/node-1"))
 
@@ -3598,6 +3603,12 @@ class CB2RunnerContractTest(unittest.TestCase):
             self.assertEqual(contract["setup_required"]["seed"], layout["seed"])
             self.assertEqual(contract["execution_required"]["status_seq"], layout["status_seq"])
             self.assertEqual(contract["execution_required"]["state_trace"], layout["state_trace"])
+            self.assertEqual(
+                contract["conditional"]["probe"], layout["probe"]
+            )
+            self.assertEqual(
+                contract["conditional"]["state_db"], layout["state_db"]
+            )
             report = module.inspect_artifacts(layout, launch_returncode=0)
             self.assertFalse(report["ok"])
             self.assertIn("target", report["missing_required"])
