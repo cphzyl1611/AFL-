@@ -7,11 +7,11 @@
   "files": [
     {
       "path": "scripts/run_alfresco_bounded_feedback.py",
-      "sha256": "2965efb3410a068ec944561d5dcb82d6cd29a69d78e63d7c6485d08d804e6005"
+      "sha256": "782246aa89aded8a771c2876c6dec6fe092fcc07cc9512889cb8661ddab5b003"
     },
     {
       "path": "nv_http_harness.py",
-      "sha256": "0637d85da2dc4f7cee457bd26f0ac0e2becc7489175a4fc1c51ec8b9c876309e"
+      "sha256": "15f2432e5fe288f8c27657b9b19bd06511704c1a29a6120937d8b444f39ce859"
     },
     {
       "path": "nv_body_valid.py",
