@@ -18,7 +18,7 @@ def test_content_update_manifest_seeds_wrapped_with_http():
     """RED B → GREEN: content_update manifest seeds get HTTP envelope."""
     from scripts.run_alfresco_bounded_feedback import materialize_manifest_seed_dir
 
-    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.json"
+    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.txt"
     source_dir = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -72,7 +72,7 @@ def test_content_update_manifest_without_config_preserves_compatibility():
     """Backward compatibility: no config_path means no wrapping."""
     from scripts.run_alfresco_bounded_feedback import materialize_manifest_seed_dir
 
-    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.json"
+    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.txt"
     source_dir = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
 
     with tempfile.TemporaryDirectory() as tmpdir:

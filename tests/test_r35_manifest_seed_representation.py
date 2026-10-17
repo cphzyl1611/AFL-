@@ -12,11 +12,30 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+MANIFEST_DIR = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
+MANIFEST_PATH = MANIFEST_DIR / "manifest.txt"
+
+
+def test_canonical_manifest_is_ordered_line_oriented_text():
+    """Lock the filename and ordered line-oriented seed-list contract."""
+    from scripts.run_alfresco_bounded_feedback import load_manifest_seed_names
+
+    assert not (MANIFEST_DIR / "manifest.json").exists()
+    assert MANIFEST_PATH.read_text(encoding="utf-8") == (
+        "seed_ok_0.txt\n"
+        "seed_ok_1.txt\n"
+        "seed_border_0.txt\n"
+    )
+    assert load_manifest_seed_names(MANIFEST_PATH) == [
+        "seed_ok_0.txt",
+        "seed_ok_1.txt",
+        "seed_border_0.txt",
+    ]
 
 
 def test_manifest_seed_raw_representation():
     """Confirm manifest source files are raw text without HTTP envelope."""
-    manifest_dir = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
+    manifest_dir = MANIFEST_DIR
     seed_ok_0 = manifest_dir / "seed_ok_0.txt"
 
     assert seed_ok_0.exists()
@@ -68,8 +87,8 @@ def test_materialize_manifest_copies_raw_bytes():
     """Prove materialize_manifest_seed_dir copies files without wrapping."""
     from scripts.run_alfresco_bounded_feedback import materialize_manifest_seed_dir
 
-    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.json"
-    source_dir = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
+    manifest_path = MANIFEST_PATH
+    source_dir = MANIFEST_DIR
 
     with tempfile.TemporaryDirectory() as tmpdir:
         dest_dir = Path(tmpdir) / "materialized"

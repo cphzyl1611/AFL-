@@ -129,7 +129,7 @@ def test_r35_complete_pipeline_offline():
         seed_request_metadata,
     )
 
-    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.json"
+    manifest_path = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke" / "manifest.txt"
     source_dir = REPO_ROOT / "in" / "alfresco_afl_content_update_smoke"
 
     with tempfile.TemporaryDirectory() as tmpdir:
