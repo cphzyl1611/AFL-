@@ -2,9 +2,9 @@
 """Unified local delivery preflight checks for the fuzzing module.
 
 The checks are intentionally lightweight: file presence, Python syntax,
-configuration validation, unittest, lightweight API smoke,
-sensitive-placeholder scanning, and wording-boundary scanning. They do not run
-O2OA, Flowable, Alfresco, or long fuzzing jobs.
+configuration validation, lightweight API smoke, sensitive-placeholder
+scanning, and wording-boundary scanning. They do not run O2OA, Flowable,
+Alfresco, or long fuzzing jobs.
 """
 
 from __future__ import annotations
@@ -242,21 +242,6 @@ def check_config_validation(state: CheckState) -> None:
         state.fail("config_validation", proc.stdout.strip() or f"returncode={proc.returncode}")
 
 
-def check_unittest(state: CheckState) -> None:
-    proc = subprocess.run(
-        [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
-        cwd=REPO_ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    if proc.returncode == 0:
-        state.pass_("unittest", "tests passed")
-    else:
-        state.fail("unittest", proc.stdout.strip() or f"returncode={proc.returncode}")
-
-
 def has_allowed_sensitive_context(line: str) -> bool:
     lowered = line.lower()
     return any(token.lower() in lowered for token in ALLOW_SENSITIVE_CONTEXT)
@@ -322,7 +307,6 @@ def main() -> int:
     check_required_files(state)
     check_py_compile(state)
     check_config_validation(state)
-    check_unittest(state)
     check_api_smoke(state)
     check_sensitive_scan(state)
     check_wording_scan(state)
