@@ -24,6 +24,80 @@
       "path": "/x_processplatform_assemble_surface/jaxrs/review/v2/count"
     },
     {
+      "name": "cms_attachment_download_query",
+      "method": "GET",
+      "path": "/x_cms_assemble_control/jaxrs/fileinfo/download/document/{attachmentId}",
+      "transport": "url_query",
+      "request_body": "none",
+      "runtime_path_parameter": {
+        "placeholder": "{attachmentId}",
+        "env": "NV_O2OA_ATTACHMENT_ID"
+      }
+    },
+    {
+      "name": "file_share_list_my_query",
+      "method": "GET",
+      "path": "/x_file_assemble_control/jaxrs/share/list/my",
+      "transport": "url_query",
+      "request_body": "none"
+    },
+    {
+      "name": "cms_document_create_save",
+      "method": "POST",
+      "path": "/x_cms_assemble_control/jaxrs/document",
+      "mutation_profile": "o2oa_document_create",
+      "capture_document_id": true,
+      "runtime_body_parameter": {
+        "field": "categoryId",
+        "env": "NV_O2OA_CATEGORY_ID",
+        "marker": "__NV_RUNTIME_CATEGORY_ID__"
+      },
+      "runtime_body_path_parameters": [
+        {
+          "path": ["readerList", 0, "permissionObjectCode"],
+          "env": "NV_O2OA_CURRENT_USER_IDENTITY",
+          "marker": "__NV_RUNTIME_CURRENT_USER_IDENTITY__"
+        }
+      ],
+      "hotpicture_zero_check": {
+        "read_only_endpoint": "hotpic_list",
+        "application": "CMS",
+        "before_create_expected_count": 0,
+        "after_create_expected_matching_count": 0,
+        "after_create_context": "documentId"
+      }
+    },
+    {
+      "name": "cms_document_get",
+      "method": "GET",
+      "path": "/x_cms_assemble_control/jaxrs/document/{documentId}",
+      "request_body": "none",
+      "runtime_path_parameter": {
+        "placeholder": "{documentId}",
+        "context": "documentId"
+      }
+    },
+    {
+      "name": "cms_document_data_update",
+      "method": "PUT",
+      "path": "/x_cms_assemble_control/jaxrs/data/document/{documentId}",
+      "mutation_profile": "o2oa_document_data_update",
+      "runtime_path_parameter": {
+        "placeholder": "{documentId}",
+        "context": "documentId"
+      }
+    },
+    {
+      "name": "cms_document_data_get",
+      "method": "GET",
+      "path": "/x_cms_assemble_control/jaxrs/data/document/{documentId}",
+      "request_body": "none",
+      "runtime_path_parameter": {
+        "placeholder": "{documentId}",
+        "context": "documentId"
+      }
+    },
+    {
       "name": "hotpic_list",
       "method": "PUT",
       "path": "/x_hotpic_assemble_control/jaxrs/user/hotpic/filter/list/page/1/count/6"
@@ -47,7 +121,9 @@
     "review_count": {
       "credentialList": []
     },
-    "hotpic_list": {},
+    "hotpic_list": {
+      "application": "CMS"
+    },
     "cms_doc_list": {
       "docStatusList": [],
       "categoryIdList": [],

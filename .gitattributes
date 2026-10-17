@@ -1,0 +1,2 @@
+# Preserve the frozen final guide's intentional Markdown hard-break bytes.
+docs/TASK4_FINAL_TECHNICAL_AUDIT_AND_EXPERIMENT_GUIDE.md whitespace=-blank-at-eol,-blank-at-eof

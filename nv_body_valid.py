@@ -149,6 +149,13 @@ def validate_endpoint_type(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, st
     top_type = ep_rules.get("type")
     if top_type and not check_type(obj, str(top_type)):
         return False, "wrong_top_type"
+    if isinstance(obj, dict) and "minProperties" in ep_rules:
+        try:
+            minimum = int(ep_rules["minProperties"])
+        except Exception:
+            minimum = 0
+        if minimum > 0 and len(obj) < minimum:
+            return False, "too_few_properties"
     return True, "ok"
 
 
@@ -167,6 +174,16 @@ def validate_required_fields(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, 
         if isinstance(k, str) and k not in obj:
             return False, "missing_required"
 
+    return True, "ok"
+
+
+def validate_forbidden_fields(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, str]:
+    forbidden = ep_rules.get("forbidden", [])
+    if not isinstance(obj, dict) or not isinstance(forbidden, list):
+        return True, "ok"
+    for field in forbidden:
+        if isinstance(field, str) and field in obj:
+            return False, "forbidden_field"
     return True, "ok"
 
 
@@ -211,6 +228,11 @@ def validate_properties(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, str]:
             if not check_type(value, typ):
                 return False, "field_type_mismatch"
 
+        types = pr.get("types")
+        if isinstance(types, list) and types:
+            if not any(check_type(value, str(typ)) for typ in types):
+                return False, "field_type_mismatch"
+
         if isinstance(value, str) and "maxLength" in pr:
             try:
                 max_len = int(pr["maxLength"])
@@ -218,6 +240,21 @@ def validate_properties(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, str]:
                 max_len = 0
             if max_len > 0 and len(value) > max_len:
                 return False, "field_too_long"
+
+        if isinstance(value, str) and "minLength" in pr:
+            try:
+                min_len = int(pr["minLength"])
+            except Exception:
+                min_len = 0
+            if min_len > 0 and len(value) < min_len:
+                return False, "field_too_short"
+
+        if isinstance(value, str) and pr.get("nonBlank") and not value.strip():
+            return False, "field_blank"
+
+        enum = pr.get("enum")
+        if isinstance(enum, list) and value not in enum:
+            return False, "field_enum_mismatch"
 
         if isinstance(value, list) and "maxItems" in pr:
             try:
@@ -227,7 +264,111 @@ def validate_properties(obj: Any, ep_rules: Dict[str, Any]) -> Tuple[bool, str]:
             if max_items > 0 and len(value) > max_items:
                 return False, "field_too_many_items"
 
+        if isinstance(value, list) and "minItems" in pr:
+            try:
+                min_items = int(pr["minItems"])
+            except Exception:
+                min_items = 0
+            if min_items > 0 and len(value) < min_items:
+                return False, "field_too_few_items"
+
+        if isinstance(value, list) and isinstance(pr.get("items"), dict):
+            item_rules = pr["items"]
+            for item in value:
+                if "type" in item_rules and not check_type(item, str(item_rules["type"])):
+                    return False, "field_item_type_mismatch"
+                if isinstance(item, str) and "maxLength" in item_rules:
+                    try:
+                        max_len = int(item_rules["maxLength"])
+                    except Exception:
+                        max_len = 0
+                    if max_len > 0 and len(item) > max_len:
+                        return False, "field_item_too_long"
+                if isinstance(item, str) and "minLength" in item_rules:
+                    try:
+                        min_len = int(item_rules["minLength"])
+                    except Exception:
+                        min_len = 0
+                    if min_len > 0 and len(item) < min_len:
+                        return False, "field_item_too_short"
+                if isinstance(item, str) and item_rules.get("nonBlank") and not item.strip():
+                    return False, "field_item_blank"
+                item_enum = item_rules.get("enum")
+                if isinstance(item_enum, list) and item not in item_enum:
+                    return False, "field_item_enum_mismatch"
+                if isinstance(item, dict):
+                    for validator in (
+                        validate_required_fields,
+                        validate_forbidden_fields,
+                        validate_unknown_fields,
+                        validate_properties,
+                    ):
+                        ok, reason = validator(item, item_rules)
+                        if not ok:
+                            return False, reason
+
+        if isinstance(value, dict):
+            for validator in (
+                validate_required_fields,
+                validate_forbidden_fields,
+                validate_unknown_fields,
+                validate_properties,
+            ):
+                ok, reason = validator(value, pr)
+                if not ok:
+                    return False, reason
+
     return True, "ok"
+
+
+def validate_query_envelope(
+    norm: bytes,
+    obj: Any,
+    ep_rules: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Validate the canonical query envelope without applying body rules."""
+
+    def result(ok: bool, reason: str, *, query=None, body=None) -> Dict[str, Any]:
+        return {
+            "ok": ok,
+            "reason": reason,
+            "score": None,
+            "score_rpc_ok": False,
+            "norm_body": norm,
+            "query": query,
+            "body": body,
+            "decision": "pass" if ok else "reject",
+            "decision_meta": {"stage": "query_rules_only"},
+        }
+
+    if not isinstance(obj, dict):
+        return result(False, "wrong_query_envelope_type")
+    if set(obj) - {"query", "body"}:
+        return result(False, "unknown_query_envelope_field")
+    if "query" not in obj or not isinstance(obj.get("query"), dict):
+        return result(False, "wrong_query_type")
+
+    body = obj.get("body")
+    if ep_rules.get("request_body") == "none" and body is not None:
+        return result(False, "body_not_allowed")
+
+    query = obj["query"]
+    query_rules = ep_rules.get("query", {})
+    if not isinstance(query_rules, dict):
+        query_rules = {}
+
+    for validator in (
+        validate_endpoint_type,
+        validate_required_fields,
+        validate_forbidden_fields,
+        validate_unknown_fields,
+        validate_properties,
+    ):
+        ok, reason = validator(query, query_rules)
+        if not ok:
+            return result(False, reason, query=query, body=body)
+
+    return result(True, "ok", query=query, body=body)
 
 
 def rpc_score_unix(endpoint: str, scenario: str, endpoint_name: str, norm_body: bytes) -> Tuple[bool, Optional[float]]:
@@ -620,6 +761,9 @@ def body_validate(
             "norm_body": norm,
         }
 
+    if ep_rules.get("transport") == "url_query":
+        return validate_query_envelope(norm, obj, ep_rules)
+
     ok, reason = validate_endpoint_type(obj, ep_rules)
     if not ok:
         return {
@@ -631,6 +775,16 @@ def body_validate(
         }
 
     ok, reason = validate_required_fields(obj, ep_rules)
+    if not ok:
+        return {
+            "ok": False,
+            "reason": reason,
+            "score": None,
+            "score_rpc_ok": False,
+            "norm_body": norm,
+        }
+
+    ok, reason = validate_forbidden_fields(obj, ep_rules)
     if not ok:
         return {
             "ok": False,

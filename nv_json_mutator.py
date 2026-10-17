@@ -98,6 +98,47 @@ def _mutate_structure(obj):
         del properties[random.choice(removable)]
     return obj
 
+
+def _mutate_o2oa_document_create(obj, arm):
+    """Mutate only draft-document content while preserving create invariants."""
+    if not isinstance(obj, dict) or not isinstance(obj.get("docData"), dict):
+        return obj
+    doc_data = obj["docData"]
+    if arm == 0:
+        current = str(doc_data.get("nvMarker", "create-seed"))
+        doc_data["nvMarker"] = current + random.choice(["-A", "-B", "-中文"])
+    elif arm == 1:
+        doc_data["nvMarker"] = random.choice(["", "A", "A" * 2048])
+    else:
+        doc_data["nvStructure"] = {"level": ["safe"]}
+    return obj
+
+
+def _mutate_o2oa_document_data(obj, arm):
+    """Mutate only fields inside the document business-data object."""
+    if not isinstance(obj, dict) or not obj:
+        return obj
+    if arm == 0:
+        current = str(obj.get("nvMarker", "update-seed"))
+        obj["nvMarker"] = current + random.choice(["-A", "-B", "-中文"])
+    elif arm == 1:
+        obj["nvMarker"] = random.choice(["", "A", "A" * 2048])
+    else:
+        obj["nvStructure"] = {"level": ["safe"]}
+    return obj
+
+
+def _mutate_o2oa_file_share_query(query, arm):
+    """Swap the formal share-list fileType enum on the field-value arm."""
+    if arm != 0 or not isinstance(query, dict):
+        return query
+    file_type = query.get("fileType")
+    if file_type == "attachment":
+        query["fileType"] = "folder"
+    elif file_type == "folder":
+        query["fileType"] = "attachment"
+    return query
+
 def _parse_http(seed_bytes: bytes):
     text = seed_bytes.decode("utf-8", errors="ignore")
     lines = text.splitlines()
@@ -235,8 +276,10 @@ def afl_custom_fuzz(my_state, buf, add_buf, max_size):
     if _HAS_QUERY_SUPPORT:
         query, body_obj = parse_seed(body if isinstance(body, bytes) else body.encode('utf-8'))
 
-    # Fallback: parse as plain JSON body
-    if body_obj is None:
+    # Fallback only when this is not a query envelope.  A query-only seed has
+    # no request body by contract; parsing the whole envelope as a body would
+    # make a nominally bodyless GET transmit JSON bytes.
+    if body_obj is None and query is None:
         try:
             body_obj = json.loads(body)
         except:
@@ -244,27 +287,30 @@ def afl_custom_fuzz(my_state, buf, add_buf, max_size):
 
     arm = _get_arm()
     os.environ["NV_JSON_ARM_USED"] = str(arm)
+    endpoint_name = _live_getenv("NV_ENDPOINT_NAME", "").strip()
 
     # Mutate query or body based on presence
     if query is not None and _HAS_QUERY_SUPPORT:
-        # Mutate query parameters
-        mutation_type = ['value', 'boundary', 'structure'][arm]
-        query = mutate_query_value(query, mutation_type)
+        if endpoint_name == "file_share_list_my_query" and arm == 0:
+            query = _mutate_o2oa_file_share_query(query, arm)
+        else:
+            # Preserve generic query mutation for every other endpoint/profile.
+            mutation_type = ['value', 'boundary', 'structure'][arm]
+            query = mutate_query_value(query, mutation_type)
 
-    # Always mutate body if present
-    if body_obj:
+    # Endpoint-specific profiles keep formal O2OA create/update mutations
+    # inside their authorized business-data envelope.
+    if endpoint_name == "cms_document_create_save":
+        body_obj = _mutate_o2oa_document_create(body_obj, arm)
+    elif endpoint_name == "cms_document_data_update":
+        body_obj = _mutate_o2oa_document_data(body_obj, arm)
+    elif body_obj:
         if arm == 0:
             body_obj = _mutate_field_value(body_obj)
         elif arm == 1:
             body_obj = _mutate_boundary(body_obj)
         else:
             body_obj = _mutate_structure(body_obj)
-
-    # Serialize back
-    if query is not None and _HAS_QUERY_SUPPORT:
-        new_body = serialize_seed(query, body_obj).decode('utf-8', errors='ignore')
-    else:
-        obj = body_obj
 
     # Serialize back
     if query is not None and _HAS_QUERY_SUPPORT:

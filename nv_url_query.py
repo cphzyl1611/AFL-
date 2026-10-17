@@ -76,9 +76,9 @@ def serialize_seed(query: Optional[Dict], body: Optional[Dict]) -> bytes:
 
     # Use extended format if query present
     if query is not None:
-        data = {}
-        if query:
-            data["query"] = query
+        # Preserve an explicitly empty query object.  It is a valid result of
+        # boundary mutation and must not silently become a legacy body seed.
+        data = {"query": query}
         if body:
             data["body"] = body
         return json.dumps(data, separators=(',', ':')).encode('utf-8')

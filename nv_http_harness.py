@@ -5,7 +5,7 @@ import hashlib
 import fcntl
 import shlex
 from nv_state_probe import update_state
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from nv_body_valid import body_validate
 from nv_http_body_adapter import HttpBodyAdapterError, extract_http_body
 
@@ -129,7 +129,9 @@ def load_target_config():
 
     return cfg
 
-def get_named_endpoint(cfg, endpoint_name: str):
+def resolve_named_endpoint(cfg, endpoint_name: str, environ=None, context=None):
+    """Resolve one configured endpoint and its optional single path binding."""
+    runtime_env = os.environ if environ is None else environ
     eps = cfg.get("endpoints", [])
     for ep in eps:
         if not isinstance(ep, dict):
@@ -139,8 +141,114 @@ def get_named_endpoint(cfg, endpoint_name: str):
             path = str(ep.get("path", "/")).strip()
             if not path.startswith("/"):
                 path = "/" + path
-            return method, path
+            binding = ep.get("runtime_path_parameter")
+            if binding is not None:
+                if not isinstance(binding, dict):
+                    raise RuntimeError(f"invalid runtime path binding: {endpoint_name}")
+                placeholder = str(binding.get("placeholder", "")).strip()
+                env_name = str(binding.get("env", "")).strip()
+                context_key = str(binding.get("context", "")).strip()
+                if (
+                    not placeholder
+                    or bool(env_name) == bool(context_key)
+                    or path.count(placeholder) != 1
+                ):
+                    raise RuntimeError(f"invalid runtime path binding: {endpoint_name}")
+                if env_name:
+                    value = runtime_env.get(env_name)
+                    value_name = env_name
+                else:
+                    runtime_context = context
+                    if runtime_context is None:
+                        runtime_context = ctx_load(
+                            require_explicit=True,
+                            environ=runtime_env,
+                        )
+                    value = runtime_context.get(context_key)
+                    value_name = context_key
+                if value is None or not str(value).strip():
+                    raise RuntimeError(
+                        f"{value_name} is required for endpoint {endpoint_name}"
+                    )
+                path = path.replace(
+                    placeholder,
+                    quote(str(value).strip(), safe=""),
+                    1,
+                )
+            return method, path, ep
     raise RuntimeError(f"endpoint not found: {endpoint_name}")
+
+
+def bind_runtime_body_parameter(endpoint_config, raw_body: bytes, environ=None) -> bytes:
+    """Bind configured top-level and nested JSON markers from runtime values."""
+    binding = endpoint_config.get("runtime_body_parameter")
+    path_bindings = endpoint_config.get("runtime_body_path_parameters", [])
+    if binding is None and not path_bindings:
+        return raw_body
+    if binding is not None and not isinstance(binding, dict):
+        raise RuntimeError("invalid runtime body binding")
+    if not isinstance(path_bindings, list) or not all(
+        isinstance(item, dict) for item in path_bindings
+    ):
+        raise RuntimeError("invalid runtime body path bindings")
+
+    try:
+        obj = json.loads(raw_body.decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError("runtime body binding requires a JSON object") from exc
+    if not isinstance(obj, dict):
+        raise RuntimeError("runtime body binding requires a JSON object")
+
+    bindings = []
+    if binding is not None:
+        field = str(binding.get("field", "")).strip()
+        if not field:
+            raise RuntimeError("invalid runtime body binding")
+        bindings.append((binding, [field]))
+    for path_binding in path_bindings:
+        path = path_binding.get("path")
+        if not isinstance(path, list) or not path or not all(
+            isinstance(part, (str, int)) and not isinstance(part, bool)
+            for part in path
+        ):
+            raise RuntimeError("invalid runtime body path binding")
+        bindings.append((path_binding, path))
+
+    runtime_env = os.environ if environ is None else environ
+    for current_binding, path in bindings:
+        env_name = str(current_binding.get("env", "")).strip()
+        marker = current_binding.get("marker")
+        if not env_name or not isinstance(marker, str) or not marker:
+            raise RuntimeError("invalid runtime body binding")
+        value = runtime_env.get(env_name)
+        if value is None or not str(value).strip():
+            raise RuntimeError(f"{env_name} is required for runtime body binding")
+
+        parent = obj
+        for part in path[:-1]:
+            try:
+                parent = parent[part]
+            except (KeyError, IndexError, TypeError):
+                raise RuntimeError(
+                    f"runtime body marker missing for path {path!r}"
+                ) from None
+        leaf = path[-1]
+        try:
+            current = parent[leaf]
+        except (KeyError, IndexError, TypeError):
+            raise RuntimeError(
+                f"runtime body marker missing for path {path!r}"
+            ) from None
+        if current != marker:
+            raise RuntimeError(f"runtime body marker missing for path {path!r}")
+        parent[leaf] = str(value).strip()
+
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def get_named_endpoint(cfg, endpoint_name: str):
+    method, path, _ = resolve_named_endpoint(cfg, endpoint_name)
+    return method, path
 
 AUTH_ALLOWED_KEYS = {
     # "none" assembles no credential at all, so the bearer-shaped keys that
@@ -347,7 +455,8 @@ def next_exec_seq() -> int:
 def write_status(method, path, http_code, timeout=False, recovered=False, latency_ms=0,
                  body_hash16=0, ncov_delta=0, ncov_total=0, nall=0,
                  is_exception=0, recover_ms=0, validation_reject=0,
-                 content_sha256=None, content_length=None):
+                 content_sha256=None, content_length=None,
+                 content_disposition=None):
     global SEQ
 
     # class
@@ -404,6 +513,10 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
             raise ValueError("invalid content execution identity")
         st["content_sha256"] = content_sha256
         st["content_length"] = content_length
+    if content_disposition is not None:
+        if not isinstance(content_disposition, str):
+            raise ValueError("invalid Content-Disposition observation")
+        st["content_disposition"] = content_disposition
 
     # atomic write
     STATUS_PATH = get_status_path()
@@ -413,6 +526,19 @@ def write_status(method, path, http_code, timeout=False, recovered=False, latenc
     os.replace(tmp, STATUS_PATH)
     append_status_record(st)
     return st
+
+
+def observed_header(response, name: str, max_length: int = 2048):
+    """Return a bounded, single-line response header safe for status JSON."""
+    headers = getattr(response, "headers", None)
+    getter = getattr(headers, "get", None)
+    if not callable(getter):
+        return None
+    value = getter(name)
+    if value is None:
+        return None
+    normalized = str(value).replace("\r", " ").replace("\n", " ").strip()
+    return normalized[:max_length]
 
 
 class AlfrescoMultipartClient:
@@ -941,25 +1067,127 @@ def extract_biz_code(resp_body: bytes, http_code: int, cls: str, biz_fields) -> 
     return f"http_{http_code}_{cls}"
 
 _CTX_PATH = None
-def get_ctx_path():
+def get_ctx_path(require_explicit=False, environ=None):
     global _CTX_PATH
+    runtime_env = os.environ if environ is None else environ
+    configured = runtime_env.get("NV_CTX_PATH")
+    if configured is not None and str(configured).strip():
+        return str(configured).strip()
+    if require_explicit:
+        raise RuntimeError("NV_CTX_PATH is required for run-local document context")
     if _CTX_PATH is None:
-        _CTX_PATH = os.getenv("NV_CTX_PATH", "/tmp/nv_ctx.json")
+        _CTX_PATH = "/tmp/nv_ctx.json"
     return _CTX_PATH
 
-def ctx_load() -> dict:
+def ctx_load(require_explicit=False, environ=None) -> dict:
+    path = get_ctx_path(require_explicit=require_explicit, environ=environ)
     try:
-        with open(get_ctx_path(), "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(path, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+            return obj if isinstance(obj, dict) else {}
     except Exception:
         return {}
 
-def ctx_save(d: dict):
-    CTX_PATH = get_ctx_path()
+def ctx_save(d: dict, require_explicit=False, environ=None):
+    CTX_PATH = get_ctx_path(
+        require_explicit=require_explicit,
+        environ=environ,
+    )
     tmp = CTX_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(d, f, ensure_ascii=False)
     os.replace(tmp, CTX_PATH)
+
+
+def _o2oa_action_data(resp_body: bytes):
+    try:
+        obj = json.loads(resp_body.decode("utf-8"))
+    except Exception:
+        return None
+    if not isinstance(obj, dict) or not isinstance(obj.get("data"), dict):
+        return None
+    return obj["data"]
+
+
+def extract_o2oa_document_id(resp_body: bytes):
+    """Extract the native action-result identifier from data.id only."""
+    data = _o2oa_action_data(resp_body)
+    if data is None:
+        return None
+    value = data.get("id")
+    if value is None or not str(value).strip():
+        return None
+    return str(value).strip()
+
+
+def verify_o2oa_document_readback(
+    resp_body: bytes,
+    *,
+    document_id: str,
+    category_id: str,
+    title: str,
+    doc_status: str,
+    reader_identity: str,
+    doc_data: dict,
+) -> bool:
+    data = _o2oa_action_data(resp_body)
+    if data is None or not isinstance(data.get("document"), dict):
+        return False
+    if (
+        not isinstance(reader_identity, str)
+        or not reader_identity.strip()
+        or not isinstance(doc_data, dict)
+        or not doc_data
+    ):
+        return False
+    document = data["document"]
+    creator_person = document.get("creatorPerson")
+    if not isinstance(creator_person, str) or not creator_person.strip():
+        return False
+    return all((
+        document.get("id") == document_id,
+        document.get("categoryId") == category_id,
+        document.get("title") == title,
+        document.get("docStatus") == doc_status,
+        document.get("creatorIdentity") == reader_identity,
+        document.get("readPersonList") == [creator_person],
+        document.get("readUnitList") == [],
+        document.get("readGroupList") == [],
+        document.get("authorPersonList") == [creator_person],
+        document.get("managerList") == [creator_person],
+        "所有人" not in document.get("readPersonList", []),
+        all(data.get(key) == value for key, value in doc_data.items()),
+    ))
+
+
+def verify_o2oa_hotpicture_zero(
+    resp_body: bytes,
+    *,
+    application: str,
+    info_id: str | None = None,
+) -> bool:
+    """Verify a read-only native hot-picture listing has no matching rows."""
+    try:
+        payload = json.loads(resp_body.decode("utf-8"))
+    except Exception:
+        return False
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        return False
+    for row in payload["data"]:
+        if not isinstance(row, dict):
+            return False
+        if row.get("application") != application:
+            continue
+        if info_id is None or row.get("infoId") == info_id:
+            return False
+    return True
+
+
+def verify_o2oa_data_readback(resp_body: bytes, expected: dict) -> bool:
+    data = _o2oa_action_data(resp_body)
+    if data is None or not isinstance(expected, dict) or not expected:
+        return False
+    return all(data.get(key) == value for key, value in expected.items())
 
 def inject_ctx_placeholders(body: bytes, ctx: dict) -> bytes:
     """
@@ -1093,10 +1321,18 @@ def main():
         if not endpoint_name:
             raise RuntimeError("body_only_mode enabled but no NV_ENDPOINT_NAME/default_endpoint provided")
 
-        method, path = get_named_endpoint(cfg, endpoint_name)
-        headers = {
-            "Content-Type": str(cfg.get("content_type", "application/json"))
-        }
+        method, path, endpoint_config = resolve_named_endpoint(cfg, endpoint_name)
+        query_transport = endpoint_config.get("transport") == "url_query"
+        bodyless_transport = endpoint_config.get("request_body") == "none"
+        if endpoint_config.get("capture_document_id") is True:
+            # Formal create/save must never fall back to the process-global
+            # context path; a run-local context is part of its contract.
+            get_ctx_path(require_explicit=True)
+        headers = {}
+        if not bodyless_transport:
+            headers["Content-Type"] = str(
+                cfg.get("content_type", "application/json")
+            )
 
         rules_path = os.getenv(
             "NV_BODY_RULES",
@@ -1131,6 +1367,11 @@ def main():
                     validation_reject=1,
                 )
                 return 0
+
+        validation_body = bind_runtime_body_parameter(
+            endpoint_config,
+            validation_body,
+        )
 
         vr = body_validate(
             scenario=cfg.get("scenario", "metadata_update"),
@@ -1178,17 +1419,39 @@ def main():
 
         body = vr["norm_body"]
 
-        # Parse query parameters from body-only seed if query support available
+        # Query-only validation extracts the envelope before any JSON-body
+        # required-field checks.  Its transport has no request body.
         query_params = None
-        if _HAS_QUERY_SUPPORT:
-            query_params, body_obj = parse_seed(body if isinstance(body, bytes) else body.encode('utf-8'))
+        if query_transport:
+            query_params = vr.get("query")
+            if not isinstance(query_params, dict) or vr.get("body") is not None:
+                bump_body_valid_stat("body_rule_reject")
+                write_status(
+                    method,
+                    path,
+                    0,
+                    body_hash16=int(zlib.crc32(validation_body) & 0xffff),
+                    validation_reject=1,
+                )
+                return 0
+            body = b""
+        elif _HAS_QUERY_SUPPORT:
+            query_params, body_obj = parse_seed(
+                body if isinstance(body, bytes) else body.encode("utf-8")
+            )
             if body_obj is not None:
                 # Re-serialize body portion only
-                body = json.dumps(body_obj, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+                body = json.dumps(
+                    body_obj,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
 
         # Append query string to path if present
         if query_params and _HAS_QUERY_SUPPORT:
             path = construct_url(path, query_params)
+        if bodyless_transport:
+            body = b""
     else:
         method, path, headers, body = parse_http_seed(data)
 
@@ -1282,15 +1545,18 @@ def main():
     timeout_flag = False
     code = None
     resp_body = b""
+    content_disposition = None
 
     try:
         with open_direct(req, timeout=5) as resp:
             code = resp.getcode()
             resp_body = resp.read(4096)
+            content_disposition = observed_header(resp, "Content-Disposition")
 
     except urllib.error.HTTPError as e:
         # HTTP 层返回错误码（4xx/5xx）: 不算连接失败
         code = int(getattr(e, "code", 500) or 500)
+        content_disposition = observed_header(e, "Content-Disposition")
         try:
             resp_body = e.read(4096)
         except Exception:
@@ -1343,6 +1609,18 @@ def main():
         except Exception:
             pass
 
+    if (
+        body_only_mode
+        and endpoint_config.get("capture_document_id") is True
+        and resp_body
+        and 200 <= int(code) < 300
+    ):
+        document_id = extract_o2oa_document_id(resp_body)
+        if document_id is not None:
+            ctx = ctx_load(require_explicit=True)
+            ctx["documentId"] = document_id
+            ctx_save(ctx, require_explicit=True)
+
     try:
         probe = update_state(method, path, cls, biz_code=biz_code)
     except Exception:
@@ -1383,6 +1661,7 @@ def main():
         recover_ms=recover_ms,
         content_sha256=content_sha256,
         content_length=content_length,
+        content_disposition=content_disposition,
     )
 
     if timeout_flag or int(code) == -2:
