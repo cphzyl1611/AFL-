@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Task 4 final O2OA reproducibility entrypoint.
 #
-# This intentionally exposes only the accepted read-only URL-query scenario.
-# It never creates, updates, or deletes O2OA business objects.
+# The default is the read-only URL-query scenario. Writes require an explicit
+# opt-in and the dedicated fixture gates in run_task4_o2oa_write_experiment.py.
 set -euo pipefail
 umask 077
 
@@ -13,6 +13,7 @@ TIME_BUDGET=30
 OUT_DIR=""
 DRY_RUN=0
 RUN_ID=""
+WRITE_SCENARIO=0
 
 usage() {
   printf '%s\n' \
@@ -26,12 +27,13 @@ usage() {
     "  --out-dir DIR           Fresh evidence directory." \
     "  --max-test-cases N      Counted valid fuzz cases (default: 3)." \
     "  --time-budget SEC       AFL task safety budget (default: 30)." \
+    "  --with-write-scenario    Explicit bounded disposable create/update mode." \
     "" \
     "Required environment:" \
     "  NV_TOKEN                Nonblank O2OA raw token (never printed)." \
     "" \
-    "The only scenario is GET /x_file_assemble_control/jaxrs/share/list/my" \
-    "with fileType=attachment|folder. Write scenarios are intentionally absent."
+    "Default: GET /x_file_assemble_control/jaxrs/share/list/my." \
+    "Write mode additionally requires the dedicated category and identity."
 }
 
 die() {
@@ -65,7 +67,8 @@ while (($#)); do
       shift 2
       ;;
     --with-write-scenario)
-      die "write scenarios are intentionally unavailable from the final O2OA entrypoint"
+      WRITE_SCENARIO=1
+      shift
       ;;
     *)
       die "unknown option: $1"
@@ -77,6 +80,12 @@ done
 [[ "$TIME_BUDGET" =~ ^[1-9][0-9]*$ ]] || die "time-budget must be a positive integer"
 [[ -n "${NV_TOKEN:-}" ]] || die "NV_TOKEN must be set and nonblank"
 command -v "$PYTHON_BIN" >/dev/null 2>&1 || die "Python interpreter not found: $PYTHON_BIN"
+if ((WRITE_SCENARIO)); then
+  write_args=(--max-test-cases "$MAX_TEST_CASES" --time-budget "$TIME_BUDGET")
+  if ((DRY_RUN)); then write_args+=(--dry-run); fi
+  if [[ -n "$OUT_DIR" ]]; then write_args+=(--out-dir "$OUT_DIR"); fi
+  exec "$PYTHON_BIN" "$ROOT/scripts/run_task4_o2oa_write_experiment.py" "${write_args[@]}"
+fi
 command -v timeout >/dev/null 2>&1 || die "timeout command not found"
 [[ -x "$ROOT/afl-fuzz" ]] || die "$ROOT/afl-fuzz is missing or not executable; run: make afl-fuzz"
 

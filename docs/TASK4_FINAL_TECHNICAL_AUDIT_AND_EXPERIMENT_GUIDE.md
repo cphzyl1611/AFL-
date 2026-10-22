@@ -691,7 +691,7 @@ secret_scan=PASS
 | `AFL_TARGET_ENV` | Alfresco internal | wrapper actively removes | old redundant serialized child env | **would contain secrets** | AFL launcher | MUST NOT persist |
 | `NO_PROXY`/`no_proxy` | both/local | recommended | bypass local proxy | NO | network stack | `127.0.0.1,localhost` |
 
-最终 O2OA wrapper故意不支持默认 write；传 `--with-write-scenario` 会明确拒绝，避免误以为已授权创建对象。正式 R2/R3 evidence 仍被保留，未来 write rerun 应另行经过 disposable IDs 与明确授权。
+最终 O2OA wrapper默认保持 read-only；只有显式传入 `--with-write-scenario` 才会进入专用 disposable fixture 的 bounded create/update 路径。该路径要求当前测试身份、category 和 creator-only ACL，并在 hard cap、readback、ownership checks 与 cleanup gates 任一失败时 fail-closed。正式 R2/R3 evidence 仍被保留，新的 write evidence 使用独立 timestamped run root。
 
 ## 20. 配置文件与 schema
 
@@ -787,7 +787,7 @@ export no_proxy="$NO_PROXY"
 ./scripts/run_task4_o2oa_final_experiment.sh --dry-run
 ```
 
-支持：`--help`、`--dry-run`、`--out-dir`、`--max-test-cases`、`--time-budget`。默认且唯一执行路径为 formal live URL-query：read-only、bodyless GET、query mutation、rule filter、MAB、state/reward/report。入口明确拒绝 `--with-write-scenario`；这比把未授权写操作暗藏在默认路径更符合已验收安全契约。
+支持：`--help`、`--dry-run`、`--out-dir`、`--max-test-cases`、`--time-budget`、`--with-write-scenario`。默认执行路径仍是 formal live URL-query：read-only、bodyless GET、query mutation、rule filter、MAB、state/reward/report。只有显式 `--with-write-scenario` 才委托给专用 bounded create/update runner；该 runner 只允许 disposable category、当前 creator identity、同一文档 readback/update/readback 和 ownership-checked cleanup。
 
 成功会生成 raw AFL/harness artifacts、`summary.json` 和 `SUMMARY.md`，并打印：
 
@@ -937,8 +937,8 @@ Alfresco 的历史真实验证仍为 PASS；最终脚本实现、`bash -n` 与 d
 | Rec | YES | YES | artifacts | YES | PASS | no attempts→0, not 1 |
 | overall score | YES | YES | new repro | YES | PASS | caller must choose weights |
 | O2OA URL query | YES | YES | frozen + new real | YES | PASS | none |
-| O2OA create | YES | YES | frozen R2 | YES | PASS | intentionally not default rerun |
-| O2OA update | YES | YES | frozen R3 | YES | PASS | title preservation mandatory |
+| O2OA create | YES | YES | frozen R2 + bounded write repro | YES | PASS | explicit opt-in write mode |
+| O2OA update | YES | YES | frozen R3 + bounded write repro | YES | PASS | title preservation mandatory |
 | O2OA cleanup | helpers/evidence | YES | exact reconciliation | YES | PASS | history retained by design |
 | Alfresco metadata | YES | clean-HEAD YES | paired evidence | cross-platform | PASS | current live env unavailable |
 | Alfresco content | YES | clean-HEAD YES | raw persisted | cross-platform | PASS | checksum self-entry defect |
