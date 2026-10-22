@@ -59,11 +59,14 @@ FLOWABLE_REQUIRED_FOR_USER_SCOPE_COMPLETION = NO
 
 审计先核验分支、HEAD、预期脏工作树和 `git diff --check`，再读取源码而非仅仅读旧总结；随后校验 O2OA 冻结包 SHA256，抽查 R1/R2/R3/cleanup 原始证据，搜索 Alfresco 最新代码、测试和证据，现场构建与运行测试，最后新建 post-freeze 复现根。
 
-本任务开始前已存在并被保留的变更包括 `nv_body_valid.py`、`nv_http_harness.py`、`nv_json_mutator.py`、`nv_url_query.py`、O2OA target/rules，以及 O2OA 输入和测试文件。它们是接受的 `DIRTY_EXPECTED` 状态，不是本任务创建。本任务只新增：
+本任务开始前已存在并被保留的变更包括 `nv_body_valid.py`、`nv_http_harness.py`、`nv_json_mutator.py`、`nv_url_query.py`、O2OA target/rules，以及 O2OA 输入和测试文件。它们是接受的 `DIRTY_EXPECTED` 状态，不是本任务创建。本轮闭合新增或对齐：
 
 - `docs/TASK4_FINAL_TECHNICAL_AUDIT_AND_EXPERIMENT_GUIDE.md`
 - `scripts/run_task4_o2oa_final_experiment.sh`
 - `scripts/run_task4_alfresco_final_experiment.sh`
+- `scripts/run_task4_o2oa_write_experiment.py`
+- `tests/test_task4_o2oa_write_runner.py`
+- `runtime_baseline_manifest.json`（对齐当前 Alfresco clean-source checkpoint/hash）
 
 没有改测试，没有 commit/push。
 
@@ -79,7 +82,7 @@ FLOWABLE_REQUIRED_FOR_USER_SCOPE_COMPLETION = NO
 | 真实执行 | 对典型平台发送请求并监控 | 共享 `nv_http_harness.py` | O2OA/Alfresco 实证 | PASS | 非 curl-only 脚本 |
 | 安全状态反馈 | 覆盖、异常、恢复、奖励闭环 | bounded covset、`exec_seq`、reward/MAB/seed credit | stats、state trace、journals | PASS | replay 不重复计数 |
 | 报告与评分 | Cov/Err/Rec/Overall | `eval_report.json`、formal score | 新 O2OA summary | PASS | 权重由调用者显式给出 |
-| O2OA 正式场景 | query/create/update、安全与清理 | 真实原生 API | 冻结包及外部原始 evidence | PASS | R2/R3 写场景不在默认复现中 |
+| O2OA 正式场景 | query/create/update、安全与清理 | 真实原生 API | 冻结包及 bounded write evidence | PASS | 默认仍 read-only；写场景显式 opt-in |
 | Alfresco 跨平台 | metadata/content/multipart | canonical bounded runner | accepted historical evidence、clean-HEAD tests | PASS | 本机 real rerun 被环境阻塞，不是代码失败 |
 | 可重复入口 | 两平台一条命令、独立 evidence | 两个 `run_task4_*_final_experiment.sh` | 两平台 dry-run、新 O2OA real run | PASS | 入口能力通过；当前机器 Alfresco real rerun 为 `BLOCKED_ENVIRONMENT`，写场景会恢复/精确删除 |
 | 技术总文档 | 足够独立部署、运行、审计 | 本文 | 章节 1–27 | PASS | 包含 API、配置、公式、故障排查 |
