@@ -4,11 +4,12 @@
 
 本手册用于指导项目成员从干净 Git clone 开始，完成任务4模糊测试组件的环境准备、代码构建、自包含验收验证、任务配置、平台接口调用、正式评分、复现材料生成和常见问题排查。
 
-当前任务4核心冻结版本：
+当前任务4最终组件交付版本：
 
 ```text
-tag: task4-final-20261005
-commit: 2ca3c6c660ab78f90422abe90a04b33840297ee6
+tag: task4-fuzzing-final-20261017
+commit: 2b15006df14fa6a3fcfba109ca3573f4fbd8190b
+acceptance base: d1a2c5db454b78cb4034f4f8da4778e12c514871
 ```
 
 ## 2. 与项目任务书对应关系
@@ -350,6 +351,8 @@ python3 scripts/compute_formal_security_score.py \
   <beta1> <beta2> <beta3>
 ```
 
+评分器从原始分子与分母计数计算 Err 和 Rec。若没有有效执行或没有 recovery opportunity，该比率为未定义；对应 rate 与 overall score 输出为 `null`。不要把监控字段在空分母时保留的零值解释成一次实际观测。
+
 权重必须由项目配置明确给出，不得自行假设。
 
 ## 11. URL Query 支持
@@ -415,19 +418,14 @@ TASK4_API_PORT=18082 ./scripts/run_task4.sh
 
 ## 13. 版本建议
 
-核心冻结 tag 保留：
+最终组件交付 tag：
 
 ```text
-task4-final-20261005
+task4-fuzzing-final-20261017
 ```
 
-补充 README、操作手册和脚本后，建议另打交付 tag：
-
-```text
-task4-delivery-20261005
-```
-
-这样核心代码冻结点与最终用户可操作交付点可以同时保留。
+该 tag 包含已接受的核心实现、正式文档和复现入口。历史冻结点仍可通过
+Git 历史查询，但不作为当前交付入口。
 
 ## 14. 安全边界
 

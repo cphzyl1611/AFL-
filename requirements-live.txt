@@ -1,0 +1,3 @@
+# Optional live multipart harness dependency. The offline path does not
+# install or import this package.
+requests==2.32.4

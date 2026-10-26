@@ -1,0 +1,4 @@
+# Task 4 offline runtime uses only the Python 3 standard library.
+# Keep this file as the runtime dependency declaration so a clean bootstrap
+# has an explicit, auditable input even though no third-party package is
+# required for the offline component path.

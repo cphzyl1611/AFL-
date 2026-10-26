@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Unified local delivery preflight checks for the fuzzing module.
 
-The checks are intentionally lightweight: file presence, Python syntax,
-configuration validation, lightweight API smoke, sensitive-placeholder
-scanning, and wording-boundary scanning. They do not run O2OA, Flowable,
-Alfresco, or long fuzzing jobs.
+The checks are intentionally lightweight and bounded to explicit repository
+roots: file presence, Python syntax, configuration validation, loopback API
+smoke, sensitive-placeholder scanning, and wording-boundary scanning. They do
+not recursively discover tests, traverse a user's home directory, follow
+symlinks, or run O2OA, Flowable, Alfresco, or long fuzzing jobs.
 """
 
 from __future__ import annotations
@@ -38,6 +39,16 @@ REQUIRED_FILES = [
     "tests/test_api_server_basic.py",
     "tests/test_project_configs.py",
     "tests/test_summary_evidence.py",
+    "requirements.txt",
+    "requirements-dev.txt",
+    "requirements-live.txt",
+    "docs/DEPENDENCIES.md",
+    "docs/DELIVERY_GUIDE.md",
+    "scripts/run_task4_offline.sh",
+    "scripts/run_task4_sample.sh",
+    "scripts/run_task4_sample.py",
+    "scripts/python3-config-wrapper.sh",
+    "tests/test_delivery_hardening.py",
 ]
 
 PY_COMPILE_FILES = [
@@ -46,6 +57,7 @@ PY_COMPILE_FILES = [
     "scripts/compute_security_score.py",
     "scripts/analyze_seed_quality.py",
     "scripts/validate_project_configs.py",
+    "scripts/run_task4_sample.py",
 ]
 
 SCAN_ROOTS = [
@@ -124,6 +136,11 @@ SKIP_DIRS = {
     "venv",
     ".pytest_cache",
     ".mypy_cache",
+    "task4-evidence",
+    "reproduce-results",
+    "out",
+    "fresh-run",
+    "logs",
 }
 
 SKIP_SUFFIXES = {
@@ -177,8 +194,12 @@ def iter_scan_files(roots: list[str]) -> list[Path]:
         if start.is_file():
             files.append(start)
             continue
-        for current_root, dirs, filenames in os.walk(start):
-            dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        for current_root, dirs, filenames in os.walk(start, followlinks=False):
+            dirs[:] = [
+                d for d in dirs
+                if d not in SKIP_DIRS
+                and not (Path(current_root) / d).is_symlink()
+            ]
             for filename in filenames:
                 path = Path(current_root) / filename
                 if filename == "fastresume.bin":
@@ -240,6 +261,38 @@ def check_config_validation(state: CheckState) -> None:
         state.pass_("config_validation", "VALIDATE_PROJECT_CONFIGS_PASS")
     else:
         state.fail("config_validation", proc.stdout.strip() or f"returncode={proc.returncode}")
+
+
+def check_delivery_scope(state: CheckState) -> None:
+    path = REPO_ROOT / "scripts/run_task4_offline.sh"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        state.fail("delivery_scope", str(exc))
+        return
+    forbidden = ["unittest discover", "pytest tests/"]
+    found = [token for token in forbidden if token in text]
+    required = ["-u HTTP_PROXY", "tests/test_delivery_hardening.py", "tests/test_o2oa_create_update_e2e.py"]
+    missing = [token for token in required if token not in text]
+    if found or missing:
+        state.fail("delivery_scope", f"forbidden={found} missing={missing}")
+    else:
+        state.pass_("delivery_scope", "bounded explicit offline test roots")
+
+
+def check_dependency_declarations(state: CheckState) -> None:
+    dev = REPO_ROOT / "requirements-dev.txt"
+    live = REPO_ROOT / "requirements-live.txt"
+    try:
+        dev_text = dev.read_text(encoding="utf-8")
+        live_text = live.read_text(encoding="utf-8")
+    except OSError as exc:
+        state.fail("dependency_declarations", str(exc))
+        return
+    if "pytest==9.1.1" not in dev_text or "requests==2.32.4" not in live_text:
+        state.fail("dependency_declarations", "required pinned declarations missing")
+    else:
+        state.pass_("dependency_declarations", "offline dev and optional live manifests present")
 
 
 def has_allowed_sensitive_context(line: str) -> bool:
@@ -306,6 +359,8 @@ def main() -> int:
     state = CheckState()
     check_required_files(state)
     check_py_compile(state)
+    check_dependency_declarations(state)
+    check_delivery_scope(state)
     check_config_validation(state)
     check_api_smoke(state)
     check_sensitive_scan(state)

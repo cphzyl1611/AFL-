@@ -8,10 +8,11 @@
 2. 高质量种子文件和模糊测试用例生成方法；
 3. 基于模糊测试的内生安全性能测评方法。
 
-当前正式主线为 `main`。任务4核心代码冻结版本：
+当前正式主线为 `main`。任务4最终组件交付版本：
 
-- Tag：`task4-final-20261005`
-- Core freeze commit：`2ca3c6c660ab78f90422abe90a04b33840297ee6`
+- Tag：`task4-fuzzing-final-20261017`
+- Release commit：`2b15006df14fa6a3fcfba109ca3573f4fbd8190b`
+- Acceptance base：`d1a2c5db454b78cb4034f4f8da4778e12c514871`
 
 后续如仅增加 README、操作手册或复现脚本，可继续提交到 `main`；上述 tag 用于固定任务4核心代码版本。
 
@@ -45,6 +46,9 @@ R_rec = nv_rec_success / nv_rec_total
 
 ## 3. 快速开始
 
+陌生环境的完整依赖、构建、离线 acceptance 和 deterministic sample 流程见
+[`docs/DELIVERY_GUIDE.md`](docs/DELIVERY_GUIDE.md)。以下保留简短入口。
+
 ```bash
 git clone https://github.com/cphzyl1611/AFL-.git
 cd AFL-
@@ -55,10 +59,10 @@ chmod +x scripts/run_task4.sh scripts/reproduce_task4.sh
 
 默认的一键脚本只执行自包含验证，不访问真实 O2OA / Alfresco 服务。
 
-如需严格复现任务4核心冻结版本：
+如需严格复现任务4最终组件交付版本：
 
 ```bash
-git checkout task4-final-20261005
+git checkout task4-fuzzing-final-20261017
 ```
 
 ## 4. 一键验证

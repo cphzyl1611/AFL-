@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import random
 import tempfile
 import types
 import unittest
@@ -241,6 +242,10 @@ class O2OAURLQueryHarnessTest(unittest.TestCase):
 
     def test_mock_transport_gets_mutated_query_zero_body_and_observes_response(self) -> None:
         seed = SEED.read_bytes()
+        # The generic query mutator intentionally has several valid mutation
+        # choices, including an empty value. Pin the fixture so this transport
+        # contract does not depend on process-global random state or test order.
+        random.seed(20261026)
         with mock.patch.dict(
             os.environ,
             {"NV_BODY_ONLY_MODE": "1", "NV_CUR_ARM": "0"},
