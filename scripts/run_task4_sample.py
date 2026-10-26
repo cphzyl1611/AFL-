@@ -180,7 +180,10 @@ def main() -> int:
     required = metadata["required_fields"]
     if any(field not in report for field in required):
         raise SystemExit("sample report is missing a required field")
-    if any("/home/cphzy/AFL-" in (OUT / name).read_text(encoding="utf-8", errors="replace") for name in files):
+    # Reject the historical worktree path while allowing the clean extension
+    # worktree whose name shares the same prefix.
+    legacy_worktree = "/home/cphzy/AFL-/"
+    if any(legacy_worktree in (OUT / name).read_text(encoding="utf-8", errors="replace") for name in files):
         raise SystemExit("sample output contains an old absolute worktree path")
     print(json.dumps({"sample_dir": str(OUT), "required_fields": len(required), "valid_exec": report["valid_exec"]}, sort_keys=True))
     return 0

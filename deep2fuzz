@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+"""Deep2Fuzz Phase-1 engineering CLI."""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from integration.platforms.registry import get_adapter, list_adapters  # noqa: E402
+from integration.platforms.smoke import run_smoke  # noqa: E402
+
+
+def _doctor() -> int:
+    checks = {}
+    checks["python"] = sys.version.split()[0]
+    checks["venv"] = sys.prefix != sys.base_prefix
+    checks["pytest"] = bool(shutil.which("pytest") or importlib.util.find_spec("pytest"))
+    for name in ("gcc", "make", "python3-config", "afl-fuzz"):
+        checks[name] = bool(shutil.which(name))
+    if (ROOT / "afl-fuzz").is_file() and os.access(ROOT / "afl-fuzz", os.X_OK):
+        checks["afl-fuzz"] = True
+    try:
+        import zlib  # noqa: F401
+        checks["zlib"] = True
+    except ImportError:
+        checks["zlib"] = False
+    try:
+        import integration.fuzz_adapter  # noqa: F401
+        import nv_body_valid  # noqa: F401
+        checks["imports"] = True
+    except Exception:
+        checks["imports"] = False
+    try:
+        checks["source_identity"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        checks["source_identity"] = "unavailable"
+    try:
+        profile = ROOT / "integration" / "platform_profiles" / "o2oa_default.json"
+        json.loads(profile.read_text(encoding="utf-8"))
+        checks["config_parser"] = True
+    except (OSError, ValueError):
+        checks["config_parser"] = False
+    checks["OFFLINE_READY"] = bool(
+        checks["imports"] and checks["config_parser"] and checks["pytest"]
+        and checks["gcc"] and checks["make"] and checks["python3-config"]
+        and checks["zlib"] and checks["afl-fuzz"]
+    )
+    checks["MOCK_PLATFORM_READY"] = True
+    checks["LIVE_PLATFORM_READY"] = "NOT_CHECKED"
+    checks["MODEL_BACKEND_READY"] = "NOT_CHECKED"
+    print(json.dumps(checks, sort_keys=True))
+    return 0
+
+
+def _init_platform(name: str, output: str | None) -> int:
+    safe = name.replace("-", "_")
+    if not safe or not safe.replace("_", "").isalnum():
+        print("invalid platform name", file=sys.stderr)
+        return 2
+    target = Path(output).resolve() if output else ROOT / "integration" / "platforms" / safe
+    if target.exists():
+        print(f"refusing to overwrite existing path: {target}", file=sys.stderr)
+        return 2
+    target.mkdir(parents=True)
+    (target / "seeds").mkdir()
+    (target / "platform.json").write_text(json.dumps({"name": safe, "base_url": "http://127.0.0.1:8080"}, indent=2) + "\n")
+    (target / "target.json").write_text(json.dumps({"endpoints": []}, indent=2) + "\n")
+    (target / "rules.json").write_text(json.dumps({"common": {}}, indent=2) + "\n")
+    (target / "adapter.py").write_text("# TODO: implement the explicit PlatformAdapter contract.\n")
+    (target / "seeds" / "seed_0.json").write_text("{}\n")
+    (target / "README.md").write_text(f"# {safe}\n\nImplement a local adapter; do not place credentials in config.\n")
+    print(json.dumps({"scaffold": str(target), "status": "CREATED"}))
+    return 0
+
+
+def _delivery_sample() -> int:
+    evidence_parent = Path("/home/cphzy/task4-evidence")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    output = evidence_parent / f"DEEP2FUZZ_DELIVERY_SAMPLE-{stamp}"
+    suffix = 1
+    while output.exists():
+        output = evidence_parent / f"DEEP2FUZZ_DELIVERY_SAMPLE-{stamp}-{suffix}"
+        suffix += 1
+    env = os.environ.copy()
+    env.update({
+        "ROOT": str(ROOT),
+        "OUT_DIR": str(output),
+        "PYTHON_BIN": sys.executable,
+        "MAX_TEST_CASES": "8",
+        "TIME_BUDGET": "5",
+        "HARD_TIMEOUT": "20",
+        "AFL_RAND_SEED": "20261026",
+    })
+    for name in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "all_proxy"):
+        env.pop(name, None)
+    return subprocess.call(
+        [sys.executable, str(ROOT / "scripts" / "run_task4_sample.py")],
+        cwd=ROOT,
+        env=env,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="deep2fuzz")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("doctor")
+    test = sub.add_parser("test")
+    test.add_argument("--pytest-args", nargs=argparse.REMAINDER)
+    sub.add_parser("sample")
+    platform = sub.add_parser("platform")
+    platform_sub = platform.add_subparsers(dest="platform_command", required=True)
+    platform_sub.add_parser("list")
+    validate = platform_sub.add_parser("validate")
+    validate.add_argument("name")
+    smoke = platform_sub.add_parser("smoke")
+    smoke.add_argument("name")
+    smoke.add_argument("--evidence-root")
+    init = platform_sub.add_parser("init")
+    init.add_argument("name")
+    init.add_argument("--output")
+    platform_sub.add_parser("run")
+    args = parser.parse_args(argv)
+    if args.command == "doctor":
+        return _doctor()
+    if args.command == "test":
+        if shutil.which("pytest"):
+            command = [sys.executable, "-m", "pytest", "tests/test_deep2fuzz_platform_adapter.py", "-q"]
+        else:
+            command = [sys.executable, "-m", "unittest", "tests.test_deep2fuzz_platform_adapter", "-v"]
+        if args.pytest_args:
+            command.extend(args.pytest_args)
+        return subprocess.call(command, cwd=ROOT)
+    if args.command == "sample":
+        return _delivery_sample()
+    if args.platform_command == "list":
+        print("\n".join(list_adapters()))
+        return 0
+    if args.platform_command == "validate":
+        try:
+            get_adapter(args.name, {"base_url": "http://127.0.0.1:1"})
+        except Exception as exc:
+            print(f"INVALID: {exc}", file=sys.stderr)
+            return 2
+        print(f"VALID: {args.name}")
+        return 0
+    if args.platform_command == "smoke":
+        if args.name != "mock_rest":
+            print("SMOKE_UNSUPPORTED: only mock_rest is enabled in Phase 1", file=sys.stderr)
+            return 2
+        try:
+            print(json.dumps(run_smoke(args.evidence_root), sort_keys=True))
+            return 0
+        except (OSError, ValueError) as exc:
+            print(f"SMOKE_FAILED: {exc}", file=sys.stderr)
+            return 2
+    if args.platform_command == "init":
+        return _init_platform(args.name, args.output)
+    print("NOT_IN_PHASE1: platform run", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
