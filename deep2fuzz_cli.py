@@ -147,6 +147,11 @@ def main(argv: list[str] | None = None) -> int:
     test = sub.add_parser("test")
     test.add_argument("--pytest-args", nargs=argparse.REMAINDER)
     sub.add_parser("sample")
+    config_parser = sub.add_parser("config")
+    config_sub = config_parser.add_subparsers(dest="config_command", required=True)
+    config_validate = config_sub.add_parser("validate")
+    config_validate.add_argument("config_file")
+    config_validate.add_argument("--json", action="store_true", dest="json_output")
     platform = sub.add_parser("platform")
     platform_sub = platform.add_subparsers(dest="platform_command", required=True)
     platform_sub.add_parser("list")
@@ -162,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
     run = platform_sub.add_parser("run")
     run.add_argument("name", nargs="?")
     run.add_argument("--evidence-root")
+    run.add_argument("--config", dest="config_file")
     run.add_argument("--scenario", choices=("success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"), default="success")
     evidence = sub.add_parser("evidence")
     evidence_sub = evidence.add_subparsers(dest="evidence_command", required=True)
@@ -175,6 +181,23 @@ def main(argv: list[str] | None = None) -> int:
         if args.require_extra:
             return _check_extra(args.require_extra)
         return _doctor()
+    if args.command == "config":
+        from deep2fuzz_config.validator import validate_config
+
+        result = validate_config(args.config_file)
+        payload = result.to_dict()
+        if args.json_output:
+            print(json.dumps(payload, sort_keys=True))
+        else:
+            print("Deep2Fuzz Config Validation")
+            print(f"File: {result.source.name}")
+            print(f"Result: {result.verdict}")
+            for finding in result.errors:
+                print(f"[FAIL] {finding.path}: {finding.code}")
+                print(f"       {finding.message}")
+        if result.input_error:
+            return 2
+        return 0 if result.verdict == "PASS" else 1
     if args.command == "evidence":
         from deep2fuzz_evidence.verifier import EvidenceInputError, verify_evidence
 
@@ -252,8 +275,41 @@ def main(argv: list[str] | None = None) -> int:
             print(f"UNKNOWN_ADAPTER: {args.name}; use `deep2fuzz platform list`", file=sys.stderr)
             return 2
         try:
+            run_config = None
+            evidence_root = args.evidence_root
+            if args.config_file:
+                from deep2fuzz_config.validator import validate_config
+
+                validated = validate_config(args.config_file)
+                if validated.input_error:
+                    print("INVALID_CONFIG_INPUT: configuration file cannot be read", file=sys.stderr)
+                    return 2
+                if validated.verdict != "PASS":
+                    for finding in validated.errors:
+                        print(f"INVALID_CONFIG: {finding.path}: {finding.code}: {finding.message}", file=sys.stderr)
+                    return 1
+                if validated.normalized.get("platform") != args.name:
+                    print("INVALID_CONFIG: platform must match the requested mock_rest runner", file=sys.stderr)
+                    return 2
+                if args.evidence_root:
+                    print("INVALID_CONFIG: use output.evidence_root when --config is supplied", file=sys.stderr)
+                    return 2
+                values = validated.normalized
+                block = values["platform_config"]["mock_rest"]
+                run_config = {
+                    "max_test_cases": values["run"]["max_test_cases"],
+                    "time_budget_seconds": values["run"]["time_budget_seconds"],
+                    "timeout_seconds": values["run"]["timeout_seconds"],
+                    "validity_enabled": values["validity"]["enabled"],
+                    "seed_path": str(validated.resolved_paths.get("inputs.seed_file")
+                                      or validated.resolved_paths.get("inputs.seed_dir")),
+                    "seed_kind": "file" if "seed_file" in values["inputs"] else "dir",
+                    "evidence_root": str(validated.resolved_paths["output.evidence_root"]),
+                    "adapter_timeout_sec": block.get("timeout_sec", 2.0),
+                }
+                evidence_root = run_config["evidence_root"]
             from integration.platforms.core_runner import run_core_mock
-            result = run_core_mock(args.evidence_root, scenario=args.scenario)
+            result = run_core_mock(evidence_root, scenario=args.scenario, run_config=run_config)
             print(json.dumps(result, sort_keys=True))
             return 0 if result.get("passed") is True else 2
         except (OSError, ValueError, RuntimeError) as exc:

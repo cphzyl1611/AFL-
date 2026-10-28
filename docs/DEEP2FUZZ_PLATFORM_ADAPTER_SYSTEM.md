@@ -211,14 +211,13 @@ These items are recorded for later work and are not part of this hardening
 scope:
 
 * P1.1 evidence validator: implemented as `deep2fuzz evidence verify`.
-* P1.2 config schema validation, P1.3 version/report provenance, P1.4 CLI
-  consistency polish: open.
+* P1.2 config schema validation: implemented as `deep2fuzz config validate`.
+  P1.3 version/report provenance and P1.4 CLI consistency polish: open.
 * P2: logging UX, config discoverability, mock/dev tooling, test
   speed/determinism.
 * P3: portable setup, cross-platform paths, Windows/WSL ergonomics.
 
 ## Phase 2 P1.1 evidence verification
-
 Run the offline, read-only validator against an existing evidence directory:
 
 ```text
@@ -264,7 +263,42 @@ using that recorded convention without changing those roots.
 The verifier checks recorded classifications and arithmetic relationships. It
 does not reclassify HTTP/business responses, reproduce the MAB or seed-scheduler
 algorithms, infer missing execution facts, or establish evidence provenance.
-Unsupported or ambiguous roots fail closed. P1.1 is implemented; P1.2
-config/schema validation, P1.3 version/report provenance, and P1.4 CLI
-consistency remain open. P2 speed/determinism work and the intermittent mock
-supervisor timeout remain backlog items.
+Unsupported or ambiguous roots fail closed. P1.1 and P1.2 are implemented;
+P1.3 version/report provenance and P1.4 CLI consistency remain open. P2
+speed/determinism work and the intermittent mock supervisor timeout remain
+backlog items.
+
+## Phase 2 P1.2 configuration validation
+
+Run configuration is one versioned JSON document. The authoritative schema is
+`schema_version: "1"` with `platform`, `run`, `inputs`, `output`, `validity`,
+and `platform_config` blocks. `run` requires positive integer
+`max_test_cases` plus positive numeric `time_budget_seconds` and
+`timeout_seconds`; case/budget values remain in the exact integer range of the
+existing cJSON runtime. AFL consumes the validated budget in whole seconds;
+sub-second budgets fail because the native integer conversion would disable
+the time bound. `inputs` requires exactly one existing `seed_file` or
+`seed_dir`; and `output` requires a new evidence root outside the source
+repository. The bounded mock runner's `seed_dir` form must contain exactly one
+regular seed file because the existing reconciliation contract assigns one
+seed identity. Relative paths resolve from the configuration file directory
+and cannot escape it, including through symlinks. Validation does not create
+paths or modify the configuration.
+
+The selected platform block is strict and platform-aware. `mock_rest` accepts
+an optional positive `timeout_sec` and requires `cleanup.required: true` for
+its object-producing contract. O2OA accepts `o2oa_default` plus a credential
+environment-variable name, and Alfresco accepts the existing profile names
+plus username/password environment-variable names. These references are
+validated for syntax only; values are never read or printed. O2OA and Alfresco
+validation is structural and does not contact either service.
+
+Use `deep2fuzz config validate <config>` for human output or add `--json` for
+machine-readable output. Exit code 0 means valid, 1 means a deterministic
+schema/path failure, and 2 means the input could not be read. Unknown fields,
+unknown schema versions, invalid types, non-finite numbers, path escapes, and
+cross-field violations fail closed. `deep2fuzz platform run mock_rest
+--config <config>` validates before importing or running the core; a valid
+configuration supplies the existing run limits, validity flag, seed, mock
+timeout, and evidence root to the existing offline core path. This is not a
+live O2OA or Alfresco execution interface.

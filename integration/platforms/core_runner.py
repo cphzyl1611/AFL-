@@ -125,7 +125,11 @@ def _run_afl_supervised(command: list[str], env: dict[str, str], cwd: Path, outp
         process = subprocess.Popen(command, cwd=cwd, env=env, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         env["DEEP2FUZZ_SUPERVISOR_PID"] = str(os.getpid())
-        deadline = time.monotonic() + 15.0
+        try:
+            supervisor_timeout = float(env.get("DEEP2FUZZ_SUPERVISOR_TIMEOUT_SECONDS", "15"))
+        except ValueError:
+            supervisor_timeout = 15.0
+        deadline = time.monotonic() + supervisor_timeout
         terminal: dict[str, object] | None = None
         while process.poll() is None:
             marker = read_abort_marker(abort_path)
@@ -174,9 +178,36 @@ def _run_afl_supervised(command: list[str], env: dict[str, str], cwd: Path, outp
     return int(process.returncode), terminal
 
 
-def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "success") -> dict[str, object]:
+def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "success",
+                  run_config: dict[str, object] | None = None) -> dict[str, object]:
     if scenario not in {"success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"}:
         raise ValueError(f"unsupported offline mock scenario: {scenario}")
+    settings = dict(run_config or {})
+    max_test_cases = int(settings.get("max_test_cases", 2))
+    time_budget_value = settings.get("time_budget_seconds", 2)
+    if isinstance(time_budget_value, bool) or not isinstance(time_budget_value, (int, float)) or time_budget_value <= 0:
+        raise ValueError("time budget must be a positive number of seconds")
+    # The existing AFL/task contract consumes whole seconds. Preserve its
+    # truncation behavior after the config layer accepts a finite number.
+    time_budget_seconds = max(1, int(float(time_budget_value)))
+    timeout_seconds = float(settings.get("timeout_seconds", 15))
+    validity_enabled = bool(settings.get("validity_enabled", True))
+    adapter_timeout_sec = float(settings.get("adapter_timeout_sec", 2.0))
+    configured_seed: bytes | None = None
+    seed_path = settings.get("seed_path")
+    if seed_path:
+        source = Path(str(seed_path)).resolve(strict=True)
+        if settings.get("seed_kind") == "dir":
+            candidates = sorted(source.iterdir(), key=lambda item: item.name)
+            candidates = [item for item in candidates if item.is_file()]
+            if not candidates:
+                raise ValueError("configured seed directory contains no regular files")
+            source = candidates[0].resolve(strict=True)
+            if not source.is_relative_to(Path(str(seed_path)).resolve(strict=True)):
+                raise ValueError("configured seed file escapes the seed directory")
+        if not source.is_file():
+            raise ValueError("configured seed input is not a file")
+        configured_seed = source.read_bytes()
     root = _new_root(evidence_root)
     repo = Path(__file__).resolve().parents[2]
     afl = repo / "afl-fuzz"
@@ -187,13 +218,16 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
     request_path = "/not-allowed" if scenario == "validity_rejection" else "/api/items"
     task_id = "phase1-1-mock"
     seed_path = seed_dir / "seed_0.http"
-    seed_path.write_text(
-        f"POST {request_path} HTTP/1.1\nContent-Type: application/json\n\n"
-        + json.dumps({"title": "phase1.1", "value": 1}, separators=(",", ":")) + "\n", encoding="utf-8")
+    if configured_seed is None:
+        seed_path.write_text(
+            f"POST {request_path} HTTP/1.1\nContent-Type: application/json\n\n"
+            + json.dumps({"title": "phase1.1", "value": 1}, separators=(",", ":")) + "\n", encoding="utf-8")
+    else:
+        seed_path.write_bytes(configured_seed)
     seed_id = "seed-" + hashlib.sha256(seed_path.read_bytes()).hexdigest()[:12]
     task = root / "task.json"
     config = root / "target.json"
-    _write_json(task, {"target_type": "http_api", "target_endpoint": "mock_rest", "seed_source": "seed_file", "seed_location": str(seed_dir), "mutation_scope": ["boundary"], "max_test_cases": 2, "time_budget": 2, "enable_validity": 1})
+    _write_json(task, {"target_type": "http_api", "target_endpoint": "mock_rest", "seed_source": "seed_file", "seed_location": str(seed_dir), "mutation_scope": ["boundary"], "max_test_cases": max_test_cases, "time_budget": time_budget_seconds, "enable_validity": int(validity_enabled)})
     _write_json(config, {"endpoints": [{"method": "POST", "path": "/api/items"}, {"method": "PUT", "path": "/api/items/*"}]})
     env = os.environ.copy()
     for key in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "all_proxy"):
@@ -213,6 +247,8 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
         "DEEP2FUZZ_TASK_ID": task_id, "DEEP2FUZZ_RUN_ID": root.name,
         "DEEP2FUZZ_SEED_ID": seed_id,
         "DEEP2FUZZ_ADAPTER_EVENTS": str(root / "evidence" / "adapter_events.jsonl"),
+        "DEEP2FUZZ_SUPERVISOR_TIMEOUT_SECONDS": str(timeout_seconds),
+        "DEEP2FUZZ_MOCK_TIMEOUT_SEC": str(adapter_timeout_sec),
     })
     abort_path = root / "control" / "abort.json"
     env["DEEP2FUZZ_ABORT_MARKER"] = str(abort_path)
@@ -220,7 +256,7 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
     # Python target startup plus the loopback lifecycle can exceed AFL++'s
     # implicit 1s dry-run timeout under a busy CI/WSL host.  Keep this bounded
     # and explicit without changing campaign or accounting semantics.
-    command = [str(afl), "-n", "-m", "none", "-d", "-V", "2", "-t", "2000", "-i", str(seed_dir), "-o", str(root), "--", sys.executable, str(repo / "integration/platforms/mock_rest/target.py"), "@@"]
+    command = [str(afl), "-n", "-m", "none", "-d", "-V", str(time_budget_seconds), "-t", "2000", "-i", str(seed_dir), "-o", str(root), "--", sys.executable, str(repo / "integration/platforms/mock_rest/target.py"), "@@"]
     with MockRestService(scenario=scenario) as service:
         env["DEEP2FUZZ_MOCK_URL"] = service.base_url
         returncode, terminal = _run_afl_supervised(command, env, repo, root / "afl_console.log", abort_path, service)

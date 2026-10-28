@@ -115,7 +115,10 @@ def main() -> int:
     if prior_abort is not None:
         _notify_supervisor()
         return 0
-    adapter = MockRestAdapter({"base_url": os.environ["DEEP2FUZZ_MOCK_URL"]})
+    adapter = MockRestAdapter({
+        "base_url": os.environ["DEEP2FUZZ_MOCK_URL"],
+        "timeout_sec": float(os.getenv("DEEP2FUZZ_MOCK_TIMEOUT_SEC", "2.0")),
+    })
     operations: list[dict] = []
     created_object_id = None
     cleanup_object_id = None
