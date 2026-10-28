@@ -210,8 +210,61 @@ new Phase 1.1 model implementation.
 These items are recorded for later work and are not part of this hardening
 scope:
 
-* P1: evidence validator, config schema validation, CLI consistency polish,
-  version/report provenance.
+* P1.1 evidence validator: implemented as `deep2fuzz evidence verify`.
+* P1.2 config schema validation, P1.3 version/report provenance, P1.4 CLI
+  consistency polish: open.
 * P2: logging UX, config discoverability, mock/dev tooling, test
   speed/determinism.
 * P3: portable setup, cross-platform paths, Windows/WSL ergonomics.
+
+## Phase 2 P1.1 evidence verification
+
+Run the offline, read-only validator against an existing evidence directory:
+
+```text
+deep2fuzz evidence verify <run-root>
+deep2fuzz evidence verify <run-root> --json
+```
+
+Supported profiles are `platform-run` (the Phase 1.1 generic mock runner),
+`delivery-sample`, and `audit-evidence` roots containing
+`FINAL_STATUS.json` plus `EVIDENCE_PATHS.json`. Unknown profiles fail closed.
+The validator parses JSON/JSONL, verifies an optional `SHA256SUMS.txt`, checks
+profile-specific identities and accounting, recomputes overall score only by
+calling the existing `scripts/compute_formal_security_score.py` module, checks
+cleanup/abort evidence, and scans supported text artifacts for credential-like
+values. Audit roots are checked against their path manifest rather than being
+treated as campaign runs.
+
+Exit codes are stable: 0 means all applicable required checks pass, 1 means
+evidence validation failed, and 2 means the invocation/root input is invalid.
+`--json` writes one JSON result to stdout. Both modes are offline and do not
+write to the selected root, repair evidence, rerun a campaign, or follow a
+symlink outside the root. It reports file count, byte count, and elapsed time.
+The secret scan is heuristic and limited to common text evidence formats; it
+does not inspect arbitrary binary payloads, prove the absence of every secret,
+or authenticate evidence provenance. Findings contain only an artifact path,
+category, and short digest fingerprint, never the matched value. The validator
+does not inspect paths outside the selected root and stops profile-specific
+reads if a discovered symlink escapes that root.
+
+The common checks cover filesystem/path safety, JSON/JSONL parseability, an
+optional SHA-256 manifest, and the bounded text secret scan. `platform-run`
+also validates contract JSON shape, execution/status/state identity, validity
+candidate accounting, MAB journal/pull attribution, seed credit, Cov/Err/Rec,
+the existing formal scorer, report/stat consistency, cleanup, and terminal
+cleanup-abort evidence. `delivery-sample` checks its sample report, counters,
+summary CSV, recovery-null policy, and score against the existing scorer;
+platform cleanup and abort checks are not applicable to that profile.
+`audit-evidence` checks final status, SHA-256, and evidence path integrity; it
+does not apply campaign accounting rules. Historical manifests that include
+`EVIDENCE_PATHS.json` in their file list and pre-manifest count are interpreted
+using that recorded convention without changing those roots.
+
+The verifier checks recorded classifications and arithmetic relationships. It
+does not reclassify HTTP/business responses, reproduce the MAB or seed-scheduler
+algorithms, infer missing execution facts, or establish evidence provenance.
+Unsupported or ambiguous roots fail closed. P1.1 is implemented; P1.2
+config/schema validation, P1.3 version/report provenance, and P1.4 CLI
+consistency remain open. P2 speed/determinism work and the intermittent mock
+supervisor timeout remain backlog items.

@@ -25,4 +25,4 @@ version = {attr = "deep2fuzz_version.__version__"}
 py-modules = ["deep2fuzz_cli", "deep2fuzz_version"]
 
 [tool.setuptools.packages.find]
-include = ["integration*", "model_stage*"]
+include = ["integration*", "model_stage*", "deep2fuzz_evidence*"]

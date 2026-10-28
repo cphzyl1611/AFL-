@@ -163,6 +163,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("name", nargs="?")
     run.add_argument("--evidence-root")
     run.add_argument("--scenario", choices=("success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"), default="success")
+    evidence = sub.add_parser("evidence")
+    evidence_sub = evidence.add_subparsers(dest="evidence_command", required=True)
+    verify = evidence_sub.add_parser("verify")
+    verify.add_argument("run_root")
+    verify.add_argument("--json", action="store_true", dest="json_output")
     doctor = sub.choices["doctor"]
     doctor.add_argument("--require-extra", choices=sorted(EXTRA_MODULES))
     args = parser.parse_args(argv)
@@ -170,6 +175,36 @@ def main(argv: list[str] | None = None) -> int:
         if args.require_extra:
             return _check_extra(args.require_extra)
         return _doctor()
+    if args.command == "evidence":
+        from deep2fuzz_evidence.verifier import EvidenceInputError, verify_evidence
+
+        try:
+            result = verify_evidence(args.run_root)
+        except EvidenceInputError as exc:
+            if args.json_output:
+                print(json.dumps({
+                    "schema_version": "1", "verdict": "FAIL", "profile": "unknown",
+                    "checks": [{"name": "INPUT", "status": "FAIL", "message": str(exc)}],
+                    "summary": {"passed": 0, "failed": 1, "not_applicable": 0,
+                                "warnings": 0, "files_checked": 0, "bytes_checked": 0,
+                                "duration_ms": 0},
+                }, sort_keys=True))
+            else:
+                print(f"EVIDENCE_INPUT_ERROR: {exc}", file=sys.stderr)
+            return 2
+        if args.json_output:
+            print(json.dumps(result.to_dict(), sort_keys=True))
+        else:
+            data = result.to_dict()
+            print("Deep2Fuzz Evidence Verification")
+            print(f"Profile: {data['profile']}")
+            print(f"Result: {data['verdict']}")
+            for check in data["checks"]:
+                status = check["status"]
+                label = {"PASS": "PASS", "FAIL": "FAIL", "NOT_APPLICABLE": "N/A", "WARN": "WARN"}[status]
+                message = f" - {check['message']}" if check.get("message") else ""
+                print(f"[{label}] {check['name']}{message}")
+        return 0 if result.verdict == "PASS" else 1
     if args.command == "test":
         command = ([sys.executable, "-m", "pytest", "tests/test_deep2fuzz_platform_adapter.py", "-q"]
                    if shutil.which("pytest") else
