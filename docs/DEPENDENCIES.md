@@ -1,11 +1,17 @@
 # Task 4 Dependencies
 
-The supported delivery smoke is an offline Python 3.12 path. Its project
-runtime uses the Python standard library; `requirements.txt` is intentionally
-empty apart from its declaration comment. Test tooling and its direct wheel
-dependencies are pinned in `requirements-dev.txt` (`pytest==9.1.1`). Optional live multipart execution
-uses `requirements-live.txt` (`requests==2.32.4`) and is never installed or
-started by the offline command.
+`pyproject.toml` is the authoritative Python dependency contract for
+Deep2Fuzz-ES. The core package has no third-party runtime dependencies. Install
+the CLI with `python -m pip install -e .`; add only the needed extras with
+`deep2fuzz-es[dev]`, `[live]`, `[model]`, or `[analysis]`. The extras declare
+pytest, requests, the NumPy/pandas/PyTorch model stack, and the pandas/matplotlib
+analysis stack, respectively.
+
+`requirements.txt`, `requirements-dev.txt`, and `requirements-live.txt` remain
+compatibility installer exports for older project workflows. They are not
+authoritative dependency declarations. The offline core path remains
+standard-library-only; live and model extras are not installed or imported by
+default.
 
 On Ubuntu 24.04/WSL2, the native AFL++ smoke requires these system packages:
 

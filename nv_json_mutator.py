@@ -329,6 +329,19 @@ def afl_custom_fuzz(my_state, buf, add_buf, max_size):
         has_ct = any(line.lower().startswith("content-type:") for line in headers_lines)
         if not has_ct:
             headers_lines = headers_lines + ["Content-Type: application/json"]
+        if _live_getenv("DEEP2FUZZ_CORE_ADAPTER_BRIDGE", "0") == "1":
+            headers_lines = [
+                line for line in headers_lines
+                if not line.lower().startswith(("x-deep2fuzz-seed-id:", "x-deep2fuzz-mutation-arm:"))
+            ]
+            seed_id = _live_getenv("DEEP2FUZZ_SEED_ID", "")
+            if seed_id.startswith("seed-") and len(seed_id) == 17 and all(
+                char in "0123456789abcdef" for char in seed_id[5:]
+            ):
+                headers_lines.extend([
+                    "X-Deep2Fuzz-Seed-ID: " + seed_id,
+                    "X-Deep2Fuzz-Mutation-Arm: arm-" + str(arm),
+                ])
         out = _emit_http(first, headers_lines, new_body)
     if not out:
         out = buf

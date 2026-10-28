@@ -106,7 +106,7 @@ def compute_coverage_ratio(
 def compute_recovery_rate(
     recovery_success: int,
     recovery_total: int
-) -> float:
+) -> Optional[float]:
     """
     Compute recovery rate from actual post-anomaly recovery events.
 
@@ -124,7 +124,7 @@ def compute_recovery_rate(
         Recovery rate in [0, 1]
     """
     if recovery_total == 0:
-        return 0.0
+        return None
 
     return min(1.0, recovery_success / recovery_total)
 
@@ -133,8 +133,8 @@ def compute_formal_score(
     config: FormalScoreConfig,
     cov: float,
     err: float,
-    r_rec: float
-) -> float:
+    r_rec: Optional[float]
+) -> Optional[float]:
     """
     Compute formal security score using authoritative formula.
 
@@ -149,7 +149,10 @@ def compute_formal_score(
     Returns:
         Composite security score P_sec
     """
-    # Apply authoritative formula
+    if r_rec is None:
+        return None
+
+    # Apply the unchanged authoritative formula when all components are defined.
     err_term = 1.0 / (1.0 + err)
     p_sec = config.beta1 * cov + config.beta2 * err_term + config.beta3 * r_rec
 
@@ -194,10 +197,20 @@ def extract_metrics_from_stats(stats_path: Path) -> Optional[Dict]:
                         metrics[key] = int(value)
                 except ValueError:
                     continue
+            elif key in {'recovery_opportunity_count', 'recovery_success_count'}:
+                try:
+                    metrics[key] = int(value)
+                except ValueError:
+                    continue
 
     # Check all required metrics present
     if not all(k in metrics for k in required):
         return None
+
+    # Generic adapters may provide the documented four-observation recovery
+    # opportunity count explicitly. Legacy runs retain their raw AFL counters.
+    metrics.setdefault('recovery_opportunity_count', metrics['nv_rec_total'])
+    metrics.setdefault('recovery_success_count', metrics['nv_rec_success'])
 
     return metrics
 
@@ -234,15 +247,16 @@ def compute_from_stats(
     err = metrics['nv_err_rate']
 
     r_rec = compute_recovery_rate(
-        recovery_success=metrics['nv_rec_success'],
-        recovery_total=metrics['nv_rec_total']
+        recovery_success=metrics['recovery_success_count'],
+        recovery_total=metrics['recovery_opportunity_count']
     )
 
     # Compute score
     p_sec = compute_formal_score(config, cov, err, r_rec)
 
     provenance = {
-        'status': 'computed',
+        'status': 'computed' if p_sec is not None else 'undefined',
+        **({'reason': 'no_recovery_opportunity'} if r_rec is None else {}),
         'formula': 'P_sec = β1 * Cov + β2 * (1/(1+Err)) + β3 * R_rec',
         'weights': config.to_dict(),
         'raw_metrics': metrics,
@@ -259,10 +273,12 @@ def compute_from_stats(
             'denominator_value': metrics['security_state_capacity']
         },
         'recovery_source': {
-            'numerator': 'nv_rec_success',
-            'denominator': 'nv_rec_total',
-            'numerator_value': metrics['nv_rec_success'],
-            'denominator_value': metrics['nv_rec_total']
+            'numerator': 'recovery_success_count',
+            'denominator': 'recovery_opportunity_count',
+            'numerator_value': metrics['recovery_success_count'],
+            'denominator_value': metrics['recovery_opportunity_count'],
+            'raw_nv_rec_total': metrics['nv_rec_total'],
+            'raw_nv_rec_success': metrics['nv_rec_success'],
         },
         'error_source': {
             'field': 'nv_err_rate',
@@ -304,7 +320,7 @@ def main():
 
     print(json.dumps(result, indent=2))
 
-    if score is None:
+    if score is None and provenance.get('status') != 'undefined':
         sys.exit(1)
 
 

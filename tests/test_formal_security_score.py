@@ -87,9 +87,9 @@ class TestMetricNormalization(unittest.TestCase):
         self.assertEqual(cov, 1.0)
 
     def test_compute_recovery_rate_zero_total(self):
-        """Recovery is 0 when no recovery attempts."""
+        """Recovery is undefined when there was no recovery opportunity."""
         r_rec = compute_recovery_rate(0, 0)
-        self.assertEqual(r_rec, 0.0)
+        self.assertIsNone(r_rec)
 
     def test_compute_recovery_rate_fraction(self):
         """Recovery rate as successful/total."""

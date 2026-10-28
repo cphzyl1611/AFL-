@@ -43,6 +43,16 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/items/"):
             item_id = self.path.rsplit("/", 1)[-1]
             item = self.state["items"].get(item_id)
+            if item is not None and (
+                item.get("force_readback_mismatch")
+                or self.state.get("scenario") == "semantic_failure"
+                and not item.get("semantic_mismatch_triggered")
+            ):
+                item = dict(item)
+                item["force_readback_mismatch"] = False
+                item["semantic_mismatch_triggered"] = True
+                self.state["items"][item_id] = item
+                item = {**item, "id": "mismatch-" + item_id}
             self._send(200 if item is not None else 404, item if item is not None else {"error": "not_found"})
             return
         self._send(404, {"error": "not_found"})
@@ -56,11 +66,12 @@ class _Handler(BaseHTTPRequestHandler):
         if body is None:
             self._send(400, {"error": "malformed_json"})
             return
-        if body.get("reject") or body.get("reject_before_target"):
+        if self.state.get("scenario") == "expected_rejection" or body.get("reject") or body.get("reject_before_target"):
             self._send(422, {"error": "validation_rejection"})
             return
         item_id = f"item-{self.state['next_id']}"
         self.state["next_id"] += 1
+        self.state["object_creation_count"] += 1
         item = {"id": item_id, **body}
         self.state["items"][item_id] = item
         self._send(201, item)
@@ -93,6 +104,9 @@ class _Handler(BaseHTTPRequestHandler):
         if item_id not in self.state["items"]:
             self._send(404, {"error": "not_found"})
             return
+        if self.state.get("scenario") == "cleanup_failure" and self.state["object_creation_count"] >= 9:
+            self._send(503, {"error": "cleanup_unavailable"})
+            return
         del self.state["items"][item_id]
         self._send(204, {})
 
@@ -100,9 +114,11 @@ class _Handler(BaseHTTPRequestHandler):
 class MockRestService:
     """Context manager for an in-memory loopback service."""
 
-    def __init__(self) -> None:
+    def __init__(self, scenario: str = "success") -> None:
+        if scenario not in {"success", "expected_rejection", "semantic_failure", "validity_rejection", "cleanup_failure"}:
+            raise ValueError(f"unsupported mock service scenario: {scenario}")
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
-        self._server.state = {"items": {}, "next_id": 1, "request_count": 0}  # type: ignore[attr-defined]
+        self._server.state = {"items": {}, "next_id": 1, "request_count": 0, "object_creation_count": 0, "scenario": scenario}  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
     @property
@@ -113,6 +129,10 @@ class MockRestService:
     @property
     def request_count(self) -> int:
         return int(self._server.state["request_count"])  # type: ignore[attr-defined]
+
+    @property
+    def object_creation_count(self) -> int:
+        return int(self._server.state["object_creation_count"])  # type: ignore[attr-defined]
 
     def __enter__(self) -> "MockRestService":
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)

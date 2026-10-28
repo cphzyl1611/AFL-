@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deep2fuzz-es"
+dynamic = ["version"]
+description = "Deep2Fuzz-ES platform adapter system"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+live = ["requests==2.32.4"]
+model = ["numpy>=1.24", "pandas>=2.0", "torch>=2.0"]
+analysis = ["pandas>=2.0", "matplotlib>=3.7"]
+
+[project.scripts]
+deep2fuzz = "deep2fuzz_cli:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "deep2fuzz_version.__version__"}
+
+[tool.setuptools]
+py-modules = ["deep2fuzz_cli", "deep2fuzz_version"]
+
+[tool.setuptools.packages.find]
+include = ["integration*", "model_stage*"]

@@ -108,15 +108,36 @@ def main() -> int:
     if not stats_path.is_file() or not eval_path.is_file() or not summary_path.is_file():
         raise SystemExit("sample did not produce the required raw artifacts")
     values = stats(stats_path)
+    # This delivery target does not collect the four observations required to
+    # establish a recovery opportunity; raw AFL recovery counters are not a
+    # substitute for that denominator.
+    score_stats_path = OUT / "formal_score_stats.txt"
+    score_stats_path.write_text(
+        stats_path.read_text(encoding="utf-8")
+        + "\nrecovery_opportunity_count: 0\nrecovery_success_count: 0\n",
+        encoding="utf-8",
+    )
     score = subprocess.run(
         [str(PYTHON), str(ROOT / "scripts/compute_formal_security_score.py"),
-         str(stats_path), "0.3333333333333333", "0.3333333333333333", "0.3333333333333334"],
+         str(score_stats_path), "0.3333333333333333", "0.3333333333333333", "0.3333333333333334"],
         text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
     )
     if score.returncode != 0:
         raise SystemExit("formal score computation failed")
     score_json = json.loads(score.stdout)
     raw_eval = json.loads(eval_path.read_text(encoding="utf-8"))
+    if not isinstance(raw_eval.get("rec"), dict):
+        raise SystemExit("sample eval report is missing its rec object")
+    raw_eval["rec"].update({
+        "recovery_opportunity_count": score_json["provenance"]["raw_metrics"]["recovery_opportunity_count"],
+        "recovery_success_count": score_json["provenance"]["raw_metrics"]["recovery_success_count"],
+        "rec_rate": score_json["provenance"]["normalized_metrics"]["R_rec"],
+    })
+    raw_eval["formal_security_score"] = score_json["formal_security_score"]
+    raw_eval["formal_score_provenance"] = {
+        k: v for k, v in score_json["provenance"].items() if k != "stats_path"
+    }
+    eval_path.write_text(json.dumps(raw_eval, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     summary_row = next(csv.DictReader(summary_path.open(encoding="utf-8", newline="")))
 
     report = {
@@ -131,6 +152,8 @@ def main() -> int:
         "validity": raw_eval.get("validity"),
         "coverage_rate": score_json["provenance"]["normalized_metrics"]["Cov"],
         "anomaly_rate": score_json["provenance"]["normalized_metrics"]["Err"],
+        "recovery_opportunity_count": score_json["provenance"]["raw_metrics"]["recovery_opportunity_count"],
+        "recovery_success_count": score_json["provenance"]["raw_metrics"]["recovery_success_count"],
         "recovery_rate": score_json["provenance"]["normalized_metrics"]["R_rec"],
         "overall_score": score_json["formal_security_score"],
         "security_state_total": required_int(values, "security_state_total"),
@@ -161,8 +184,8 @@ def main() -> int:
         f"- valid_exec: `{report['valid_exec']}`\n"
         f"- Cov proxy: `{report['coverage_rate']}`\n"
         f"- Err: `{report['anomaly_rate']}`\n"
-        f"- Rec: `{report['recovery_rate']}`\n"
-        f"- overall score: `{report['overall_score']}`\n\n"
+        f"- Rec: `{json.dumps(report['recovery_rate'])}`\n"
+        f"- overall score: `{json.dumps(report['overall_score'])}`\n\n"
         "Cov is the bounded security-state proxy, not theoretical total-system coverage.\n",
         encoding="utf-8",
     )

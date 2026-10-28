@@ -199,7 +199,8 @@ class PlatformAdapterContractTests(unittest.TestCase):
         doctor = subprocess.run([str(cli), "doctor"], text=True, capture_output=True, check=False)
         self.assertEqual(doctor.returncode, 0)
         doctor_json = json.loads(doctor.stdout)
-        self.assertEqual(doctor_json["LIVE_PLATFORM_READY"], "NOT_CHECKED")
+        self.assertFalse(doctor_json["LIVE_PLATFORM_READY"])
+        self.assertFalse(doctor_json["LIVE_PLATFORM_PROBED"])
         self.assertIn("zlib", doctor_json)
         self.assertIn("venv", doctor_json)
         with tempfile.TemporaryDirectory() as directory:
