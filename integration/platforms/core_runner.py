@@ -193,6 +193,9 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
     timeout_seconds = float(settings.get("timeout_seconds", 15))
     validity_enabled = bool(settings.get("validity_enabled", True))
     adapter_timeout_sec = float(settings.get("adapter_timeout_sec", 2.0))
+    provenance_config = settings.get("provenance_config")
+    if not isinstance(provenance_config, dict):
+        provenance_config = None
     configured_seed: bytes | None = None
     seed_path = settings.get("seed_path")
     if seed_path:
@@ -229,6 +232,31 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
     config = root / "target.json"
     _write_json(task, {"target_type": "http_api", "target_endpoint": "mock_rest", "seed_source": "seed_file", "seed_location": str(seed_dir), "mutation_scope": ["boundary"], "max_test_cases": max_test_cases, "time_budget": time_budget_seconds, "enable_validity": int(validity_enabled)})
     _write_json(config, {"endpoints": [{"method": "POST", "path": "/api/items"}, {"method": "PUT", "path": "/api/items/*"}]})
+    provenance_config_path = root / "provenance_config.json"
+    if provenance_config is None:
+        generated_config = {
+            "schema_version": "1",
+            "platform": "mock_rest",
+            "run": {
+                "max_test_cases": max_test_cases,
+                "time_budget_seconds": time_budget_value,
+                "timeout_seconds": timeout_seconds,
+            },
+            "inputs": {"seed_file": "seeds/seed_0.http"},
+            "output": {"evidence_root": "provenance-evidence-placeholder"},
+            "validity": {"enabled": validity_enabled},
+            "cleanup": {"required": True},
+            "platform_config": {"mock_rest": {"timeout_sec": adapter_timeout_sec}},
+        }
+        _write_json(provenance_config_path, generated_config)
+        from deep2fuzz_config.validator import validate_config
+
+        validation = validate_config(provenance_config_path)
+        if validation.verdict != "PASS":
+            raise ValueError("generated provenance config does not satisfy the P1.2 schema")
+        provenance_config = validation.normalized
+    else:
+        _write_json(provenance_config_path, provenance_config)
     env = os.environ.copy()
     for key in ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "all_proxy"):
         env.pop(key, None)
@@ -320,6 +348,16 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
     })
     report["formal_security_score"] = overall.get("formal_security_score")
     report["formal_score_provenance"] = overall.get("provenance")
+    report["platform_adapter"] = "mock_rest"
+    from deep2fuzz_provenance import build_provenance
+
+    provenance = build_provenance(
+        repo, config_snapshot=provenance_config, adapter="mock_rest",
+        run_id=root.name, task_id=task_id, evidence_profile="platform-run",
+    )
+    report["provenance_required"] = True
+    report["provenance"] = provenance
+    _write_json(root / "provenance.json", provenance)
     _write_json(eval_report, report)
     report_seq = int(report_cov.get("security_state_reward_src_seq", 0) or 0)
     report_status = status_by_seq.get(report_seq, {})

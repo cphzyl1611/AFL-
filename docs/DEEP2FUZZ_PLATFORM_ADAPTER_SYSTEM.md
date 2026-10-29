@@ -212,7 +212,8 @@ scope:
 
 * P1.1 evidence validator: implemented as `deep2fuzz evidence verify`.
 * P1.2 config schema validation: implemented as `deep2fuzz config validate`.
-  P1.3 version/report provenance and P1.4 CLI consistency polish: open.
+  P1.3 version/report provenance is implemented below; P1.4 CLI consistency
+  polish remains open.
 * P2: logging UX, config discoverability, mock/dev tooling, test
   speed/determinism.
 * P3: portable setup, cross-platform paths, Windows/WSL ergonomics.
@@ -262,11 +263,56 @@ using that recorded convention without changing those roots.
 
 The verifier checks recorded classifications and arithmetic relationships. It
 does not reclassify HTTP/business responses, reproduce the MAB or seed-scheduler
-algorithms, infer missing execution facts, or establish evidence provenance.
-Unsupported or ambiguous roots fail closed. P1.1 and P1.2 are implemented;
-P1.3 version/report provenance and P1.4 CLI consistency remain open. P2
+algorithms, or infer missing execution facts. Unsupported or ambiguous roots
+fail closed. P1.1, P1.2, and P1.3 are implemented; P1.4 CLI consistency remains
+open. P2
 speed/determinism work and the intermittent mock supervisor timeout remain
 backlog items.
+
+## Phase 2 P1.3 version and report provenance
+
+New platform-run and delivery-sample roots embed a machine-readable
+`provenance` object in the report and write the same object to
+`provenance.json`. The object uses `provenance_schema_version: "1"` and
+records the single-source product version, full local Git commit and tree,
+relevant source dirty state, the P1.2 canonical semantic configuration
+fingerprint, adapter name/contract version, formal scorer contract ID and
+fingerprint, run/task identity, evidence profile/schema, and a UTC timezone-aware
+`generated_at` timestamp. `provenance_config.json` is the exact semantic input
+used for the config fingerprint; whitespace and object key order do not affect
+the fingerprint.
+
+The relevant dirty-source policy excludes editable-install metadata
+(`deep2fuzz_es.egg-info`), caches, virtual environments, build/dist output,
+logs, runtime output roots, and evidence roots. Git status is read locally
+with untracked files expanded and rename detection disabled. Tracked changes,
+deletions, symlink target changes, and relevant untracked source files set
+`dirty: true` and receive a deterministic fingerprint. Collection is bounded
+to 100,000 relevant paths and 64 MiB per changed file. A source tree without
+`.git` metadata fails clearly rather than fabricating a commit or tree.
+
+The formal scorer contract ID is `formal-security-score-v1`; its fingerprint
+covers only `scripts/compute_formal_security_score.py`, which contains the
+formal score and null-recovery policy. Adapter name and contract version are
+declared against the supported adapter registry and verified at the
+`DECLARED_ONLY` level; the verifier does not claim to hash or independently
+reconstruct adapter semantics. Provenance checks label their level in JSON:
+`STRUCTURAL` checks validate shape/format, `RECOMPUTABLE` checks independently
+recalculate a value from local evidence/source, and `DECLARED_ONLY` checks
+validate a recorded value against the declared contract registry.
+
+`deep2fuzz evidence verify` recomputes source, config, and scorer identities
+when their local inputs are available. It distinguishes structural,
+recomputable, and declared identity checks and fails closed for missing new
+provenance, unsupported schema, source/config/scorer/adapter mismatches,
+invalid timestamps, and report/provenance disagreement. New audit evidence
+bundles carry the object in `FINAL_STATUS.json` and repeat it in
+`provenance.json`; the verifier requires these copies to agree. Historical
+P1.1/P1.2 and frozen roots without `provenance_required` retain the legacy
+validation contract and report provenance as not applicable. Provenance
+collection and verification are offline and read-only; they do not prove
+platform availability or security, and they do not duplicate the formal
+scorer or scientific metric semantics.
 
 ## Phase 2 P1.2 configuration validation
 

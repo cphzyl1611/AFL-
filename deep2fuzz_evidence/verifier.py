@@ -9,6 +9,7 @@ import math
 import os
 import re
 import stat
+import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
@@ -50,6 +51,7 @@ class Check:
     status: str
     message: str = ""
     artifact: str | None = None
+    verification_level: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         value: dict[str, Any] = {"name": self.name, "status": self.status}
@@ -57,6 +59,8 @@ class Check:
             value["message"] = self.message
         if self.artifact:
             value["artifact"] = self.artifact
+        if self.verification_level:
+            value["verification_level"] = self.verification_level
         return value
 
 
@@ -72,9 +76,10 @@ class VerificationResult:
     def verdict(self) -> str:
         return "FAIL" if any(check.status == "FAIL" for check in self.checks) else "PASS"
 
-    def add(self, name: str, passed: bool | None, message: str = "", artifact: str | None = None) -> None:
+    def add(self, name: str, passed: bool | None, message: str = "", artifact: str | None = None,
+            verification_level: str | None = None) -> None:
         status = "NOT_APPLICABLE" if passed is None else "PASS" if passed else "FAIL"
-        self.checks.append(Check(name, status, message, artifact))
+        self.checks.append(Check(name, status, message, artifact, verification_level))
 
     def to_dict(self) -> dict[str, Any]:
         counts = {name.lower(): sum(check.status == name for check in self.checks)
@@ -948,6 +953,7 @@ def _verify_platform(root: Path, result: VerificationResult, parsed: dict[str, A
     _platform_overall(result, root, parsed)
     _platform_reporting(result, parsed, stats)
     _platform_cleanup_abort(result, root, parsed, rows, stats)
+    _verify_provenance(root, result, parsed.get("eval_report.json", {}), "platform-run", parsed)
 
 
 def _verify_sample(root: Path, result: VerificationResult, files: list[Path]) -> None:
@@ -1108,6 +1114,173 @@ def _verify_sample(root: Path, result: VerificationResult, files: list[Path]) ->
                "delivery summary.csv exposes the same raw counters as fuzzer_stats")
     result.add("CLEANUP_RECONCILIATION", None, "delivery sample does not create platform objects")
     result.add("FAIL_CLOSED_RECONCILIATION", None, "delivery sample has no platform cleanup abort contract")
+    _verify_provenance(root, result, sample, "delivery-sample", {"eval_report.json": report})
+
+
+def _verify_provenance(root: Path, result: VerificationResult, report: dict[str, Any],
+                       expected_profile: str, parsed: dict[str, Any]) -> None:
+    from deep2fuzz_provenance import (
+        ADAPTER_CONTRACT_VERSIONS,
+        EVIDENCE_SCHEMA_VERSION,
+        PRODUCT_NAME,
+        PROVENANCE_SCHEMA_VERSION,
+        SCORER_CONTRACT_FILES,
+        SCORER_CONTRACT_ID,
+        config_fingerprint_sha256,
+        is_timezone_aware_iso8601,
+        scorer_contract_fingerprint,
+        source_identity,
+    )
+    from deep2fuzz_version import __version__
+
+    provenance = report.get("provenance") if isinstance(report, dict) else None
+    required = ((isinstance(report, dict) and report.get("provenance_required") is True)
+                or (root / "provenance.json").is_file())
+    if not isinstance(provenance, dict):
+        result.add("PROVENANCE_MISSING", False if required else None,
+                   "required provenance object is missing" if required else "legacy evidence has no provenance",
+                   verification_level="STRUCTURAL")
+        return
+
+    result.add("PROVENANCE_MISSING", True, "machine-readable provenance object is present",
+               verification_level="STRUCTURAL")
+    schema_ok = provenance.get("provenance_schema_version") == PROVENANCE_SCHEMA_VERSION
+    result.add("PROVENANCE_SCHEMA_UNSUPPORTED", schema_ok,
+               "provenance schema version is supported" if schema_ok else "provenance schema is missing or unsupported",
+               verification_level="STRUCTURAL")
+
+    product = provenance.get("product") if isinstance(provenance.get("product"), dict) else {}
+    result.add("PRODUCT_VERSION_MISMATCH",
+               product.get("name") == PRODUCT_NAME and product.get("version") == __version__,
+               "product name/version match the installed single source of truth",
+               verification_level="RECOMPUTABLE")
+
+    source = provenance.get("source") if isinstance(provenance.get("source"), dict) else {}
+    commit = source.get("git_commit")
+    tree = source.get("git_tree")
+    commit_format = isinstance(commit, str) and re.fullmatch(r"[0-9a-f]{40}", commit) is not None
+    tree_format = isinstance(tree, str) and re.fullmatch(r"[0-9a-f]{40}", tree) is not None
+    try:
+        actual_source = source_identity(Path(__file__).resolve().parents[1])
+    except (OSError, RuntimeError, subprocess.SubprocessError):
+        actual_source = None
+    result.add("SOURCE_COMMIT_MISMATCH", bool(commit_format and actual_source and commit == actual_source["git_commit"]),
+               "full commit SHA matches the current local source identity",
+               verification_level="RECOMPUTABLE")
+    result.add("SOURCE_TREE_MISMATCH", bool(tree_format and actual_source and tree == actual_source["git_tree"]),
+               "full tree SHA matches the current local source identity",
+               verification_level="RECOMPUTABLE")
+    dirty = source.get("dirty")
+    fingerprint = source.get("dirty_fingerprint_sha256")
+    dirty_shape = (isinstance(dirty, bool)
+                   and ((dirty and isinstance(fingerprint, str) and re.fullmatch(r"[0-9a-f]{64}", fingerprint))
+                        or (not dirty and fingerprint is None)))
+    dirty_match = bool(dirty_shape and actual_source
+                       and dirty == actual_source["dirty"]
+                       and fingerprint == actual_source["dirty_fingerprint_sha256"])
+    result.add("SOURCE_DIRTY_FINGERPRINT_MISMATCH", dirty_match,
+               "relevant dirty-source state/fingerprint matches the current local source",
+               verification_level="RECOMPUTABLE")
+
+    config = provenance.get("config") if isinstance(provenance.get("config"), dict) else {}
+    config_path = root / "provenance_config.json"
+    config_ok = False
+    try:
+        snapshot = _json_load(config_path)
+        config_ok = bool(
+            isinstance(snapshot, dict)
+            and config.get("schema_version") == snapshot.get("schema_version")
+            and isinstance(config.get("fingerprint_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", config["fingerprint_sha256"])
+            and config_fingerprint_sha256(snapshot) == config["fingerprint_sha256"]
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+        snapshot = None
+    result.add("CONFIG_FINGERPRINT_MISMATCH", config_ok,
+               "P1.2 canonical config fingerprint matches the evidence config snapshot",
+               verification_level="RECOMPUTABLE")
+
+    platform = provenance.get("platform") if isinstance(provenance.get("platform"), dict) else {}
+    if expected_profile == "delivery-sample":
+        expected_adapter = report.get("platform_adapter", report.get("platform"))
+    else:
+        expected_adapter = report.get("platform_adapter", "mock_rest")
+    adapter = platform.get("adapter")
+    adapter_ok = bool(
+        isinstance(adapter, str)
+        and adapter in ADAPTER_CONTRACT_VERSIONS
+        and adapter == expected_adapter
+        and platform.get("adapter_contract_version") == ADAPTER_CONTRACT_VERSIONS.get(adapter)
+    )
+    result.add("ADAPTER_IDENTITY_MISMATCH", adapter_ok,
+               "adapter name and contract version match the report profile; adapter identity is declared, not source-audited",
+               verification_level="DECLARED_ONLY")
+
+    scoring = provenance.get("scoring") if isinstance(provenance.get("scoring"), dict) else {}
+    try:
+        scorer_ok = bool(
+            scoring.get("contract_id") == SCORER_CONTRACT_ID
+            and scoring.get("contract_files") == list(SCORER_CONTRACT_FILES)
+            and isinstance(scoring.get("contract_fingerprint_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", scoring["contract_fingerprint_sha256"])
+            and scorer_contract_fingerprint(Path(__file__).resolve().parents[1])
+                == scoring["contract_fingerprint_sha256"]
+        )
+    except (OSError, RuntimeError):
+        scorer_ok = False
+    result.add("SCORER_FINGERPRINT_MISMATCH", scorer_ok,
+               "formal scorer contract ID/files/fingerprint recompute successfully",
+               verification_level="RECOMPUTABLE")
+
+    run = provenance.get("run") if isinstance(provenance.get("run"), dict) else {}
+    reported_task = report.get("task_id") if expected_profile in {"delivery-sample", "audit-evidence"} else None
+    if reported_task is None and isinstance(parsed.get("identity_reconciliation.json"), dict):
+        identity = parsed["identity_reconciliation.json"].get("identity")
+        if isinstance(identity, dict):
+            reported_task = identity.get("task_id")
+        elif expected_profile == "platform-run":
+            reported_task = "phase1-1-mock"
+    reported_run = report.get("run_id") if expected_profile == "audit-evidence" else None
+    run_ok = bool(
+        isinstance(run.get("run_id"), str) and run.get("run_id") == root.name
+        and (reported_run is None or reported_run == run.get("run_id"))
+        and isinstance(run.get("task_id"), str) and run.get("task_id")
+        and (reported_task is None or run.get("task_id") == reported_task)
+    )
+    result.add("RUN_IDENTITY_INVALID", run_ok, "run/task identity is present and consistent",
+               verification_level="STRUCTURAL")
+
+    evidence = provenance.get("evidence") if isinstance(provenance.get("evidence"), dict) else {}
+    profile_ok = evidence.get("profile") == expected_profile
+    result.add("EVIDENCE_PROFILE_MISMATCH", profile_ok,
+               "evidence profile matches the independently detected profile",
+               verification_level="RECOMPUTABLE")
+    evidence_schema_ok = evidence.get("schema_version") == EVIDENCE_SCHEMA_VERSION
+    result.add("EVIDENCE_SCHEMA_VERSION_MISMATCH", evidence_schema_ok,
+               "evidence schema version is supported", verification_level="STRUCTURAL")
+
+    timestamp_ok = is_timezone_aware_iso8601(run.get("generated_at"))
+    result.add("TIMESTAMP_INVALID", timestamp_ok,
+               "generated_at is timezone-aware ISO 8601", verification_level="STRUCTURAL")
+
+    artifact = root / "provenance.json"
+    artifact_matches = False
+    artifact_provenance = None
+    try:
+        artifact_provenance = _json_load(artifact)
+        artifact_matches = artifact_provenance == provenance
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError):
+        pass
+    result.add("PROVENANCE_ARTIFACT_MISMATCH", artifact_matches,
+               "standalone evidence provenance matches the report object",
+               verification_level="RECOMPUTABLE")
+    embedded_report = parsed.get("eval_report.json") if isinstance(parsed, dict) else None
+    report_matches = (isinstance(embedded_report, dict)
+                      and embedded_report.get("provenance") == artifact_provenance
+                      if isinstance(embedded_report, dict) else expected_profile != "delivery-sample")
+    result.add("REPORT_PROVENANCE_MISMATCH", report_matches,
+               "core and delivery report provenance objects agree",
+               verification_level="RECOMPUTABLE")
 
 
 def _verify_audit(root: Path, result: VerificationResult, files: list[Path]) -> None:
@@ -1174,6 +1347,7 @@ def _verify_audit(root: Path, result: VerificationResult, files: list[Path]) -> 
                  "REC_NULL_POLICY", "OVERALL_SCORE_RECONCILIATION", "REPORT_STATS_RECONCILIATION",
                  "CLEANUP_RECONCILIATION", "FAIL_CLOSED_RECONCILIATION"):
         result.add(name, None, "not applicable to audit evidence")
+    _verify_provenance(root, result, status if isinstance(status, dict) else {}, "audit-evidence", {})
 
 
 def verify_evidence(run_root: str | os.PathLike[str]) -> VerificationResult:

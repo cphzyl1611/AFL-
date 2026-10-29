@@ -306,6 +306,7 @@ def main(argv: list[str] | None = None) -> int:
                     "seed_kind": "file" if "seed_file" in values["inputs"] else "dir",
                     "evidence_root": str(validated.resolved_paths["output.evidence_root"]),
                     "adapter_timeout_sec": block.get("timeout_sec", 2.0),
+                    "provenance_config": values,
                 }
                 evidence_root = run_config["evidence_root"]
             from integration.platforms.core_runner import run_core_mock

@@ -82,6 +82,21 @@ class ConfigValidationResult:
         return payload
 
 
+def canonical_config_bytes(normalized: Mapping[str, Any]) -> bytes:
+    """Serialize the already validated P1.2 representation deterministically."""
+    return json.dumps(
+        normalized, ensure_ascii=True, sort_keys=True, separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def config_fingerprint_sha256(normalized: Mapping[str, Any]) -> str:
+    """Return the P1.2 canonical semantic configuration fingerprint."""
+    import hashlib
+
+    return hashlib.sha256(canonical_config_bytes(normalized)).hexdigest()
+
+
 def _finding(errors: list[ConfigFinding], path: str, code: str, message: str) -> None:
     errors.append(ConfigFinding(path, code, message))
 

@@ -7,13 +7,17 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-
 
 ROOT = Path(os.environ.get("ROOT", Path(__file__).resolve().parents[1])).resolve()
 OUT = Path(os.environ.get("OUT_DIR", "")).resolve()
 PYTHON = Path(os.environ.get("PYTHON_BIN", sys.executable)).resolve()
+sys.path.insert(0, str(ROOT))
+
+from deep2fuzz_provenance import build_provenance
+from deep2fuzz_config.validator import validate_config
 
 
 def stats(path: Path) -> dict[str, str]:
@@ -33,7 +37,7 @@ def required_int(values: dict[str, str], key: str) -> int:
 
 
 def main() -> int:
-    if not OUT or OUT == ROOT or OUT.exists():
+    if OUT == ROOT or OUT.is_relative_to(ROOT) or OUT.exists():
         raise SystemExit("OUT_DIR must be a new directory outside the source tree")
     if not (ROOT / "afl-fuzz").is_file():
         raise SystemExit("afl-fuzz is missing; run make -j2 afl-fuzz first")
@@ -41,6 +45,30 @@ def main() -> int:
     source_seeds = ROOT / "in/p0_o2oa_cms_doc_list"
     if not source_seeds.is_dir():
         raise SystemExit(f"missing sample seeds: {source_seeds}")
+
+    raw_provenance_config = {
+        "schema_version": "1",
+        "platform": "o2oa",
+        "run": {
+            "max_test_cases": int(os.environ.get("MAX_TEST_CASES", "8")),
+            "time_budget_seconds": int(os.environ.get("TIME_BUDGET", "5")),
+            "timeout_seconds": int(os.environ.get("HARD_TIMEOUT", "20")),
+        },
+        "inputs": {"seed_dir": str(source_seeds.resolve())},
+        "output": {"evidence_root": str(OUT)},
+        "validity": {"enabled": True},
+        "platform_config": {
+            "o2oa": {"profile": "o2oa_default", "token_env": "NV_TOKEN"},
+        },
+    }
+    with tempfile.TemporaryDirectory(prefix="deep2fuzz-p1-3-config-") as temp_dir:
+        config_path = Path(temp_dir) / "provenance_config.json"
+        config_path.write_text(json.dumps(raw_provenance_config), encoding="utf-8")
+        config_validation = validate_config(config_path)
+        if config_validation.verdict != "PASS":
+            raise SystemExit("delivery sample provenance config failed P1.2 validation")
+        provenance_config = config_validation.normalized
+
     OUT.mkdir(parents=True)
     task = OUT / "task.json"
     target = OUT / "target.json"
@@ -137,7 +165,22 @@ def main() -> int:
     raw_eval["formal_score_provenance"] = {
         k: v for k, v in score_json["provenance"].items() if k != "stats_path"
     }
+    provenance = build_provenance(
+        ROOT, config_snapshot=provenance_config,
+        adapter="o2oa-shaped-local-deterministic-target",
+        run_id=OUT.name, task_id="offline-p0-mab-validity",
+        evidence_profile="delivery-sample",
+    )
+    raw_eval["provenance_required"] = True
+    raw_eval["provenance"] = provenance
+    raw_eval["platform_adapter"] = "o2oa-shaped-local-deterministic-target"
     eval_path.write_text(json.dumps(raw_eval, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (OUT / "provenance_config.json").write_text(
+        json.dumps(provenance_config, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (OUT / "provenance.json").write_text(
+        json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     summary_row = next(csv.DictReader(summary_path.open(encoding="utf-8", newline="")))
 
     report = {
@@ -171,9 +214,12 @@ def main() -> int:
         "delivery_smoke_only": True,
         "not_for_performance_claim": True,
         "evidence_boundary": "DELIVERY_SMOKE_ONLY; NOT_FOR_PERFORMANCE_CLAIM; no real platform or network",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": provenance["run"]["generated_at"],
+        "provenance_required": True,
+        "provenance": provenance,
+        "platform_adapter": "o2oa-shaped-local-deterministic-target",
     }
-    files = ["sample_eval_report.json", "sample_fuzzer_stats.txt", "sample_summary.md", "sample_metadata.json"]
+    files = ["sample_eval_report.json", "sample_fuzzer_stats.txt", "sample_summary.md", "sample_metadata.json", "provenance.json", "provenance_config.json"]
     (OUT / "sample_eval_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (OUT / "sample_fuzzer_stats.txt").write_text(stats_path.read_text(encoding="utf-8"), encoding="utf-8")
     (OUT / "sample_summary.md").write_text(
