@@ -212,8 +212,8 @@ scope:
 
 * P1.1 evidence validator: implemented as `deep2fuzz evidence verify`.
 * P1.2 config schema validation: implemented as `deep2fuzz config validate`.
-  P1.3 version/report provenance is implemented below; P1.4 CLI consistency
-  polish remains open.
+  P1.3 version/report provenance and P1.4 CLI consistency are implemented
+  below.
 * P2: logging UX, config discoverability, mock/dev tooling, test
   speed/determinism.
 * P3: portable setup, cross-platform paths, Windows/WSL ergonomics.
@@ -264,8 +264,7 @@ using that recorded convention without changing those roots.
 The verifier checks recorded classifications and arithmetic relationships. It
 does not reclassify HTTP/business responses, reproduce the MAB or seed-scheduler
 algorithms, or infer missing execution facts. Unsupported or ambiguous roots
-fail closed. P1.1, P1.2, and P1.3 are implemented; P1.4 CLI consistency remains
-open. P2
+fail closed. P1.1 through P1.4 are implemented. P2
 speed/determinism work and the intermittent mock supervisor timeout remain
 backlog items.
 
@@ -348,3 +347,36 @@ cross-field violations fail closed. `deep2fuzz platform run mock_rest
 configuration supplies the existing run limits, validity flag, seed, mock
 timeout, and evidence root to the existing offline core path. This is not a
 live O2OA or Alfresco execution interface.
+
+## Phase 2 P1.4 CLI consistency
+
+The supported command tree is `doctor`, `test`, `sample`, `platform` (`list`,
+`validate`, `smoke`, `init`, `run`), `config validate`, and `evidence verify`.
+Existing invocations and the single version source in `deep2fuzz_version.py`
+remain unchanged. Command names are lowercase and options use hyphenated
+names. Help and version requests only parse and render CLI metadata.
+
+Exit codes are stable: 0 means success, 1 means a configuration/evidence
+validation failure or platform runtime failure, 2 means invalid invocation or
+unreadable input, and 3 means an unexpected internal error. Expected errors do
+not show tracebacks. Unexpected error output is concise and omits exception
+details that could contain secret values. Domain error codes and the P1.1/P1.2
+machine result structures are preserved.
+
+Human results go to stdout. Parser/input diagnostics go to stderr. A failed
+schema check against a readable configuration and a failed evidence check
+against a readable root are domain results, so they remain on stdout with exit
+code 1. An unreadable or missing input is an invocation error on stderr with
+exit code 2. `config validate --json` and `evidence verify --json` each emit one
+JSON value to stdout and no human banner; their existing machine result shapes
+are retained. `doctor`, `platform smoke`, and `platform run` continue to emit
+their established machine-readable output; `platform list` and
+`platform validate` use human text output.
+
+`doctor` performs local/offline capability checks only. It does not probe
+O2OA, Alfresco, or public services. The CLI layer only parses and dispatches,
+validates invocation details, renders existing results, and selects an exit
+code. Config schema validation, evidence verification, adapter execution,
+provenance, and scientific/accounting logic remain in their existing modules.
+The CLI adds no runtime dependencies. It does not provide a `--json` mode for
+commands that have no existing machine-result contract.

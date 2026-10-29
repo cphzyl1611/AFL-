@@ -26,6 +26,17 @@ EXTRA_MODULES = {
 }
 
 
+class _SafeArgumentParser(argparse.ArgumentParser):
+    """Keep argparse diagnostics useful without echoing rejected argv values."""
+
+    def error(self, message: str) -> None:
+        if "required" in message:
+            detail = "a required command or argument is missing"
+        else:
+            detail = "an option or value is invalid"
+        self.exit(2, f"{self.prog}: error: USAGE_ERROR: {detail}; see --help\n")
+
+
 def _discover_repo_root() -> Path | None:
     for start in (ROOT, Path.cwd()):
         for candidate in (start, *start.parents):
@@ -139,43 +150,76 @@ def _delivery_sample() -> int:
     return subprocess.call([sys.executable, str(ROOT / "scripts" / "run_task4_sample.py")], cwd=ROOT, env=env)
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="deep2fuzz")
+def _render_config_human(result) -> None:
+    """Render the validator's existing findings without changing their schema."""
+    print("Command: config validate")
+    print(f"File: {result.source.name}")
+    print(f"Result: {result.verdict}")
+    for finding in result.errors:
+        print(f"Error: {finding.code}: {finding.message} (path: {finding.path})")
+
+
+def _render_evidence_human(result) -> None:
+    """Render verifier checks in the common human CLI shape."""
+    data = result.to_dict()
+    print("Command: evidence verify")
+    print(f"Profile: {data['profile']}")
+    print(f"Result: {data['verdict']}")
+    for check in data["checks"]:
+        status = check["status"]
+        label = {"PASS": "PASS", "FAIL": "FAIL", "NOT_APPLICABLE": "N/A", "WARN": "WARN"}[status]
+        message = f": {check['message']}" if check.get("message") else ""
+        print(f"{label} {check['name']}{message}")
+
+
+def _render_cli_error(command: str, code: str, message: str, *, stream=None) -> None:
+    """Use one concise, secret-safe human error form for invocation failures."""
+    output = stream or sys.stderr
+    print(f"Command: {command}", file=output)
+    print("Result: FAIL", file=output)
+    print(f"Error: {code}: {message}", file=output)
+
+
+def _main(argv: list[str] | None = None) -> int:
+    parser = _SafeArgumentParser(
+        prog="deep2fuzz",
+        description="Offline Deep2Fuzz platform and evidence command line interface.",
+    )
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("doctor")
-    test = sub.add_parser("test")
+    sub.add_parser("doctor", help="check local runtime readiness")
+    test = sub.add_parser("test", help="run the offline adapter contract tests")
     test.add_argument("--pytest-args", nargs=argparse.REMAINDER)
-    sub.add_parser("sample")
-    config_parser = sub.add_parser("config")
+    sub.add_parser("sample", help="run the bounded offline delivery sample")
+    config_parser = sub.add_parser("config", help="validate run configuration")
     config_sub = config_parser.add_subparsers(dest="config_command", required=True)
-    config_validate = config_sub.add_parser("validate")
-    config_validate.add_argument("config_file")
-    config_validate.add_argument("--json", action="store_true", dest="json_output")
-    platform = sub.add_parser("platform")
+    config_validate = config_sub.add_parser("validate", help="validate one JSON run configuration")
+    config_validate.add_argument("config_file", metavar="CONFIG_FILE", help="path to the JSON configuration")
+    config_validate.add_argument("--json", action="store_true", dest="json_output", help="write one JSON result to stdout")
+    platform = sub.add_parser("platform", help="inspect and run registered adapters")
     platform_sub = platform.add_subparsers(dest="platform_command", required=True)
-    platform_sub.add_parser("list")
-    validate = platform_sub.add_parser("validate")
-    validate.add_argument("name")
-    validate.add_argument("--config")
-    smoke = platform_sub.add_parser("smoke")
-    smoke.add_argument("name")
-    smoke.add_argument("--evidence-root")
-    init = platform_sub.add_parser("init")
-    init.add_argument("name")
-    init.add_argument("--output")
-    run = platform_sub.add_parser("run")
-    run.add_argument("name", nargs="?")
-    run.add_argument("--evidence-root")
-    run.add_argument("--config", dest="config_file")
-    run.add_argument("--scenario", choices=("success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"), default="success")
-    evidence = sub.add_parser("evidence")
+    platform_sub.add_parser("list", help="list registered adapters")
+    validate = platform_sub.add_parser("validate", help="validate an adapter configuration")
+    validate.add_argument("name", metavar="ADAPTER")
+    validate.add_argument("--config", metavar="CONFIG_FILE", help="optional adapter configuration JSON")
+    smoke = platform_sub.add_parser("smoke", help="run the loopback adapter smoke")
+    smoke.add_argument("name", metavar="ADAPTER")
+    smoke.add_argument("--evidence-root", metavar="PATH")
+    init = platform_sub.add_parser("init", help="create a source-tree adapter scaffold")
+    init.add_argument("name", metavar="NAME")
+    init.add_argument("--output", metavar="PATH")
+    run = platform_sub.add_parser("run", help="run the bounded offline adapter contract")
+    run.add_argument("name", nargs="?", metavar="ADAPTER")
+    run.add_argument("--evidence-root", metavar="PATH")
+    run.add_argument("--config", dest="config_file", metavar="CONFIG_FILE", help="validated run configuration")
+    run.add_argument("--scenario", choices=("success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"), default="success", help="offline contract scenario")
+    evidence = sub.add_parser("evidence", help="verify an evidence root")
     evidence_sub = evidence.add_subparsers(dest="evidence_command", required=True)
-    verify = evidence_sub.add_parser("verify")
-    verify.add_argument("run_root")
-    verify.add_argument("--json", action="store_true", dest="json_output")
+    verify = evidence_sub.add_parser("verify", help="verify one evidence root")
+    verify.add_argument("run_root", metavar="RUN_ROOT", help="path to the evidence root")
+    verify.add_argument("--json", action="store_true", dest="json_output", help="write one JSON result to stdout")
     doctor = sub.choices["doctor"]
-    doctor.add_argument("--require-extra", choices=sorted(EXTRA_MODULES))
+    doctor.add_argument("--require-extra", choices=sorted(EXTRA_MODULES), help="require one optional dependency extra")
     args = parser.parse_args(argv)
     if args.command == "doctor":
         if args.require_extra:
@@ -189,12 +233,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.json_output:
             print(json.dumps(payload, sort_keys=True))
         else:
-            print("Deep2Fuzz Config Validation")
-            print(f"File: {result.source.name}")
-            print(f"Result: {result.verdict}")
-            for finding in result.errors:
-                print(f"[FAIL] {finding.path}: {finding.code}")
-                print(f"       {finding.message}")
+            if result.input_error:
+                finding = result.errors[0]
+                _render_cli_error("config validate", finding.code, finding.message)
+            else:
+                _render_config_human(result)
         if result.input_error:
             return 2
         return 0 if result.verdict == "PASS" else 1
@@ -213,20 +256,12 @@ def main(argv: list[str] | None = None) -> int:
                                 "duration_ms": 0},
                 }, sort_keys=True))
             else:
-                print(f"EVIDENCE_INPUT_ERROR: {exc}", file=sys.stderr)
+                _render_cli_error("evidence verify", "INPUT_ERROR", str(exc))
             return 2
         if args.json_output:
             print(json.dumps(result.to_dict(), sort_keys=True))
         else:
-            data = result.to_dict()
-            print("Deep2Fuzz Evidence Verification")
-            print(f"Profile: {data['profile']}")
-            print(f"Result: {data['verdict']}")
-            for check in data["checks"]:
-                status = check["status"]
-                label = {"PASS": "PASS", "FAIL": "FAIL", "NOT_APPLICABLE": "N/A", "WARN": "WARN"}[status]
-                message = f" - {check['message']}" if check.get("message") else ""
-                print(f"[{label}] {check['name']}{message}")
+            _render_evidence_human(result)
         return 0 if result.verdict == "PASS" else 1
     if args.command == "test":
         command = ([sys.executable, "-m", "pytest", "tests/test_deep2fuzz_platform_adapter.py", "-q"]
@@ -251,11 +286,14 @@ def main(argv: list[str] | None = None) -> int:
             get_adapter(args.name, config)
         except Exception as exc:
             if "unknown adapter" in str(exc).lower():
-                print(f"UNKNOWN_ADAPTER: {exc}; run `deep2fuzz platform list`", file=sys.stderr)
+                _render_cli_error("platform validate", "UNKNOWN_ADAPTER", "adapter is not registered")
             else:
-                print(f"INVALID_ADAPTER_CONFIG: {exc}; valid fields are base_url, timeout_sec, and credential environment-variable names", file=sys.stderr)
+                _render_cli_error(
+                    "platform validate", "INVALID_ADAPTER_CONFIG",
+                    "adapter configuration is invalid; check base_url, timeout_sec, and credential environment-variable names",
+                )
             return 2
-        print(f"VALID: {args.name}")
+        print(f"Command: platform validate\nResult: PASS\nVALID: {args.name}")
         return 0
     if args.platform_command == "smoke":
         if args.name != "mock_rest":
@@ -265,14 +303,14 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(run_smoke(args.evidence_root), sort_keys=True))
             return 0
         except (OSError, ValueError, FileExistsError) as exc:
-            print(f"SMOKE_FAILED: {exc}", file=sys.stderr)
-            return 2
+            _render_cli_error("platform smoke", "RUNTIME_FAILURE", "offline adapter smoke failed")
+            return 1
     if args.platform_command == "run":
         if not args.name:
-            print("NOT_IN_PHASE1: platform run requires an explicit adapter", file=sys.stderr)
+            _render_cli_error("platform run", "INPUT_ERROR", "NOT_IN_PHASE1: an explicit adapter name is required")
             return 2
         if args.name != "mock_rest":
-            print(f"UNKNOWN_ADAPTER: {args.name}; use `deep2fuzz platform list`", file=sys.stderr)
+            _render_cli_error("platform run", "UNKNOWN_ADAPTER", "adapter is not registered")
             return 2
         try:
             run_config = None
@@ -282,17 +320,19 @@ def main(argv: list[str] | None = None) -> int:
 
                 validated = validate_config(args.config_file)
                 if validated.input_error:
-                    print("INVALID_CONFIG_INPUT: configuration file cannot be read", file=sys.stderr)
+                    _render_cli_error("platform run", "INPUT_ERROR", "configuration file cannot be read")
                     return 2
                 if validated.verdict != "PASS":
+                    print("Command: platform run")
+                    print("Result: FAIL")
                     for finding in validated.errors:
-                        print(f"INVALID_CONFIG: {finding.path}: {finding.code}: {finding.message}", file=sys.stderr)
+                        print(f"Error: {finding.code}: {finding.message} (path: {finding.path})")
                     return 1
                 if validated.normalized.get("platform") != args.name:
-                    print("INVALID_CONFIG: platform must match the requested mock_rest runner", file=sys.stderr)
+                    _render_cli_error("platform run", "INPUT_ERROR", "platform must match the requested adapter")
                     return 2
                 if args.evidence_root:
-                    print("INVALID_CONFIG: use output.evidence_root when --config is supplied", file=sys.stderr)
+                    _render_cli_error("platform run", "INPUT_ERROR", "use output.evidence_root when --config is supplied")
                     return 2
                 values = validated.normalized
                 block = values["platform_config"]["mock_rest"]
@@ -312,13 +352,39 @@ def main(argv: list[str] | None = None) -> int:
             from integration.platforms.core_runner import run_core_mock
             result = run_core_mock(evidence_root, scenario=args.scenario, run_config=run_config)
             print(json.dumps(result, sort_keys=True))
-            return 0 if result.get("passed") is True else 2
+            return 0 if result.get("passed") is True else 1
         except (OSError, ValueError, RuntimeError) as exc:
-            print(f"PLATFORM_RUN_FAILED: {exc}", file=sys.stderr)
-            return 2
+            _render_cli_error("platform run", "RUNTIME_FAILURE", "offline platform execution failed")
+            return 1
     if args.platform_command == "init":
         return _init_platform(args.name, args.output)
     return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entrypoint with concise handling for unexpected implementation errors."""
+    try:
+        return _main(argv)
+    except KeyboardInterrupt:
+        _render_cli_error("deep2fuzz", "INPUT_ERROR", "operation interrupted")
+        return 2
+    except Exception:
+        # Do not expose exception reprs: they can contain paths or secret-like
+        # values from a platform adapter.  Detailed diagnostics remain a
+        # developer concern rather than part of the stable CLI contract.
+        supplied = list(sys.argv[1:] if argv is None else argv)
+        top_level = {"doctor", "test", "sample", "config", "platform", "evidence"}
+        context = next((item for item in supplied if item in top_level), "deep2fuzz")
+        subcommands = {
+            "config": {"validate"},
+            "evidence": {"verify"},
+            "platform": {"list", "validate", "smoke", "init", "run"},
+        }
+        subcommand = next((item for item in supplied if item in subcommands.get(context, set())), None)
+        if subcommand:
+            context = f"{context} {subcommand}"
+        _render_cli_error(context, "INTERNAL_ERROR", "command failed unexpectedly")
+        return 3
 
 
 if __name__ == "__main__":
