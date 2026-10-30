@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from deep2fuzz_version import __version__
+from deep2fuzz_portability import default_evidence_parent, discover_repo_root, stable_environment
 from integration.platforms.registry import get_adapter, list_adapters
 from integration.platforms.smoke import run_smoke
 
@@ -39,9 +40,10 @@ class _SafeArgumentParser(argparse.ArgumentParser):
 
 def _discover_repo_root() -> Path | None:
     for start in (ROOT, Path.cwd()):
-        for candidate in (start, *start.parents):
-            if all((candidate / item).exists() for item in ("src", "scripts", "targets", "validity", "integration")):
-                return candidate.resolve()
+        try:
+            return discover_repo_root(start)
+        except Exception:
+            continue
     return None
 
 
@@ -57,7 +59,10 @@ def _check_extra(name: str, find_spec=importlib.util.find_spec) -> int:
 
 
 def _doctor() -> int:
-    repo_root = _discover_repo_root()
+    try:
+        repo_root = discover_repo_root(ROOT)
+    except Exception:
+        repo_root = None
     native_assets = bool(repo_root and (repo_root / "afl-fuzz").is_file() and os.access(repo_root / "afl-fuzz", os.X_OK))
     core_imports = all(importlib.util.find_spec(name) is not None for name in (
         "integration.platforms.registry", "integration.platforms.mock_rest.adapter"))
@@ -123,25 +128,41 @@ def _init_platform(name: str, output: str | None) -> int:
         return 2
     target.mkdir(parents=True)
     (target / "seeds").mkdir()
-    (target / "platform.json").write_text(json.dumps({"name": safe, "base_url": "http://127.0.0.1:8080"}, indent=2) + "\n")
-    (target / "target.json").write_text(json.dumps({"endpoints": []}, indent=2) + "\n")
-    (target / "rules.json").write_text(json.dumps({"common": {}}, indent=2) + "\n")
-    (target / "adapter.py").write_text("# TODO: implement the explicit PlatformAdapter contract.\n")
-    (target / "seeds" / "seed_0.json").write_text("{}\n")
-    (target / "README.md").write_text(f"# {safe}\n\nImplement a local adapter; do not place credentials in config.\n")
+    (target / "platform.json").write_text(
+        json.dumps({"name": safe, "base_url": "http://127.0.0.1:8080"}, indent=2) + "\n", encoding="utf-8"
+    )
+    (target / "target.json").write_text(json.dumps({"endpoints": []}, indent=2) + "\n", encoding="utf-8")
+    (target / "rules.json").write_text(json.dumps({"common": {}}, indent=2) + "\n", encoding="utf-8")
+    (target / "adapter.py").write_text(
+        "# TODO: implement the explicit PlatformAdapter contract.\n", encoding="utf-8"
+    )
+    (target / "seeds" / "seed_0.json").write_text("{}\n", encoding="utf-8")
+    (target / "README.md").write_text(
+        f"# {safe}\n\nImplement a local adapter; do not place credentials in config.\n",
+        encoding="utf-8",
+    )
     print(json.dumps({"scaffold": str(target), "status": "CREATED"}))
     return 0
 
 
 def _delivery_sample() -> int:
-    evidence_parent = Path("/home/cphzy/task4-evidence")
+    evidence_parent = default_evidence_parent()
+    evidence_parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = evidence_parent / f"DEEP2FUZZ_DELIVERY_SAMPLE-{stamp}"
     suffix = 1
     while output.exists():
         output = evidence_parent / f"DEEP2FUZZ_DELIVERY_SAMPLE-{stamp}-{suffix}"
         suffix += 1
-    env = os.environ.copy()
+    try:
+        repo_root = discover_repo_root(ROOT)
+    except Exception:
+        repo_root = None
+    if repo_root is None:
+        from deep2fuzz_runtime import run_delivery_sample
+
+        return run_delivery_sample(output)
+    env = stable_environment()
     env.update({"ROOT": str(ROOT), "OUT_DIR": str(output), "PYTHON_BIN": sys.executable,
                 "MAX_TEST_CASES": "8", "TIME_BUDGET": "5", "HARD_TIMEOUT": "20",
                 "AFL_RAND_SEED": "20261026"})
@@ -243,6 +264,11 @@ def _main(argv: list[str] | None = None) -> int:
         return 0 if result.verdict == "PASS" else 1
     if args.command == "evidence":
         from deep2fuzz_evidence.verifier import EvidenceInputError, verify_evidence
+
+        if not (Path(__file__).resolve().parent / ".git").exists():
+            from deep2fuzz_runtime.distribution import verify_distribution_evidence
+
+            verify_evidence = verify_distribution_evidence
 
         try:
             result = verify_evidence(args.run_root)

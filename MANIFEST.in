@@ -1,9 +1,14 @@
 include pyproject.toml
+include deep2fuzz_build_backend.py
 include deep2fuzz_cli.py deep2fuzz_version.py
 recursive-include integration *.py
 recursive-include deep2fuzz_evidence *.py
+recursive-include deep2fuzz_runtime *.py
+recursive-include deep2fuzz_runtime/assets *
 global-exclude *.py[cod] *.so *.o *.a *.env *.token
 prune .git
+prune deep2fuzz_es.egg-info
+prune tests
 prune .venv
 prune venv
 prune evidence

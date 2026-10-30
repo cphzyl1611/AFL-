@@ -130,6 +130,9 @@ deep2fuzz --help
 deep2fuzz --version
 deep2fuzz platform list
 deep2fuzz doctor
+deep2fuzz config validate <config.json>
+deep2fuzz evidence verify <evidence-root>
+deep2fuzz sample
 ```
 
 `pyproject.toml` is the authoritative dependency contract. Core remains
@@ -139,13 +142,37 @@ From a source checkout, install extras with `python -m pip install -e '.[dev]'`
 and the corresponding extra name. The historical `requirements*.txt` files
 are compatibility installer exports.
 
-The supported install mode is
-`SUPPORTED_INSTALL_MODE = EDITABLE_SOURCE_TREE`: the Python package exposes
-the CLI and adapters, while AFL++ native binaries and repository assets remain
-in the source tree. `doctor` reports Python, package, native tools, core
-imports, registry status, and optional backend availability without contacting
-O2OA, Alfresco, or any network service. Missing optional dependencies and
-native tools produce an install/next-action message.
+The supported source-development install remains an editable source tree. A
+wheel also provides the installed CLI, configuration and evidence validators,
+registry, and a bounded offline delivery sample. The wheel carries only the
+small deterministic sample runtime (AFL binary, target, seeds, and existing
+report utilities); it does not package the full native repository, live
+platform profiles, credentials, or historical experiment outputs. `sample`
+materializes those assets into a fresh temporary directory and uses the
+existing bounded delivery runner. The package therefore supports this defined
+offline workflow without claiming to be a standalone distribution of all
+Deep2Fuzz native and research assets.
+
+The package verifies every required sample asset and the AFL executable bit
+before starting the runner. A missing asset fails closed before creating the
+sample output root. For wheel installation, install the built wheel with
+`python -m pip install --no-index --no-deps <wheel>` when its dependencies are
+already satisfied; the current core has no runtime Python dependency.
+
+The installed evidence verifier preserves the P1.3 provenance schema. In a
+Git checkout it recomputes commit/tree/dirty identity. From a wheel, those Git
+identifiers are explicitly null and the corresponding checks are declared-only
+or not applicable; the verifier never invents a commit for a distribution.
+Scorer identity continues to be recomputed from the packaged authoritative
+scorer utility. Direct `source_identity()` calls against an ordinary non-Git
+tree still fail closed.
+
+`doctor` reports Python, package, native tools, core imports, registry status,
+and optional backend availability without contacting O2OA, Alfresco, or any
+network service. In a wheel it reports the native repository runtime as
+unavailable; the package's bounded sample is separately available from its
+packaged runtime assets. Missing optional dependencies and native tools
+produce an install/next-action message.
 
 `deep2fuzz platform run mock_rest` is the bounded offline full-core contract.
 It feeds one identified HTTP seed through AFL++ validity, the existing

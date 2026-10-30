@@ -1,6 +1,7 @@
 [build-system]
 requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+build-backend = "deep2fuzz_build_backend"
+backend-path = ["."]
 
 [project]
 name = "deep2fuzz-es"
@@ -22,7 +23,20 @@ deep2fuzz = "deep2fuzz_cli:main"
 version = {attr = "deep2fuzz_version.__version__"}
 
 [tool.setuptools]
-py-modules = ["deep2fuzz_cli", "deep2fuzz_version", "deep2fuzz_provenance"]
+py-modules = [
+  "deep2fuzz_cli",
+  "deep2fuzz_version",
+  "deep2fuzz_provenance",
+  "deep2fuzz_portability",
+  "nv_json_mutator",
+  "nv_url_query",
+]
 
 [tool.setuptools.packages.find]
-include = ["integration*", "model_stage*", "deep2fuzz_evidence*", "deep2fuzz_config*"]
+include = ["integration*", "model_stage*", "deep2fuzz_evidence*", "deep2fuzz_config*", "deep2fuzz_runtime*"]
+
+[tool.setuptools.package-data]
+deep2fuzz_runtime = ["assets/**/*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__/*", "*.py[cod]"]
