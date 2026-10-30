@@ -11,13 +11,14 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from deep2fuzz_portability import default_evidence_parent, terminate_process, termination_plan
 from .abort import read_abort_marker
 from .mock_rest.service import MockRestService
 
 
 def _new_root(value: str | Path | None) -> Path:
     if value is None:
-        parent = Path("/home/cphzy/task4-evidence")
+        parent = default_evidence_parent()
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         root = parent / f"DEEP2FUZZ_PHASE1_1_RUNTIME_DISTRIBUTION-{stamp}"
         suffix = 1
@@ -82,20 +83,7 @@ def _utc_now() -> str:
 
 def _terminate_process_group(process: subprocess.Popen, grace_seconds: float = 2.0) -> tuple[str, str, bool]:
     requested_at = _utc_now()
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        pass
-    escalation = False
-    try:
-        process.wait(timeout=grace_seconds)
-    except subprocess.TimeoutExpired:
-        escalation = True
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        process.wait()
+    escalation = terminate_process(process, grace_seconds=grace_seconds)
     return requested_at, _utc_now(), escalation
 
 
@@ -112,13 +100,18 @@ def process_terminated_before_budget(terminal: dict[str, object] | None, stats: 
 def _run_afl_supervised(command: list[str], env: dict[str, str], cwd: Path, output_path: Path,
                         abort_path: Path, service: MockRestService) -> tuple[int, dict[str, object] | None]:
     wakeup = False
-    previous_handler = signal.getsignal(signal.SIGUSR1)
+    wake_signal = getattr(signal, "SIGUSR1", None)
+    previous_handler = signal.getsignal(wake_signal) if wake_signal is not None else None
 
     def notify(_signum, _frame):
         nonlocal wakeup
         wakeup = True
 
-    signal.signal(signal.SIGUSR1, notify)
+    if wake_signal is not None:
+        try:
+            signal.signal(wake_signal, notify)
+        except (AttributeError, OSError, ValueError):
+            wake_signal = None
     env["DEEP2FUZZ_SUPERVISOR_PID"] = str(os.getpid())
     env["DEEP2FUZZ_ABORT_MARKER"] = str(abort_path)
     with output_path.open("w", encoding="utf-8") as output:
@@ -174,7 +167,8 @@ def _run_afl_supervised(command: list[str], env: dict[str, str], cwd: Path, outp
         if process.poll() is None:
             process.wait()
         output.flush()
-    signal.signal(signal.SIGUSR1, previous_handler)
+    if wake_signal is not None and previous_handler is not None:
+        signal.signal(wake_signal, previous_handler)
     return int(process.returncode), terminal
 
 
@@ -182,6 +176,7 @@ def run_core_mock(evidence_root: str | Path | None = None, scenario: str = "succ
                   run_config: dict[str, object] | None = None) -> dict[str, object]:
     if scenario not in {"success", "validity_rejection", "expected_rejection", "semantic_failure", "cleanup_failure"}:
         raise ValueError(f"unsupported offline mock scenario: {scenario}")
+    termination_plan()
     settings = dict(run_config or {})
     max_test_cases = int(settings.get("max_test_cases", 2))
     time_budget_value = settings.get("time_budget_seconds", 2)

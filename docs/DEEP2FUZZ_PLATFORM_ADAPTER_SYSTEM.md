@@ -418,3 +418,45 @@ reward, seed accounting, execution identity, configuration/provenance schemas,
 or the public CLI contract. It measures and diagnoses timing and
 repeatability; it is not a platform availability check and does not contact
 O2OA, Alfresco, or external services.
+
+## Phase 2 P3 portability and cross-platform boundary
+
+P3 hardens the supported Python/CLI/mock-adapter surface for the current host
+and tests foreign path semantics offline. `deep2fuzz_portability.py` is the
+small shared boundary for repository-root discovery, `sys.executable` and
+virtual-environment layout discovery, `shutil.which` executable lookup,
+shell-free argv execution, temporary roots, UTF-8 text, environment defaults,
+and capability-aware process termination. Local filesystem paths use
+`pathlib.Path`; Windows and POSIX examples use `PureWindowsPath` and
+`PurePosixPath` and are never resolved as if they belonged to the current host.
+Opaque external path values are serialized without separator rewriting.
+
+The `p3` group in `tests/test_groups.json` contains 83 portability and
+termination-contract tests. It is separate from the frozen 227-test compatibility gate and does not
+change formal gate membership or scientific/accounting behavior. Git and other
+required executables fail closed when unavailable. Managed termination requires
+an owned child started with `start_new_session=True`. On Linux/WSL, it snapshots
+PID/start-time identities, descendants and their owned process groups/sessions
+before signalling, including AFL forkservers that create their own session.
+SIGTERM applies to the managed groups, followed by bounded monotonic polling;
+resistant groups receive SIGKILL. Returning success requires no live managed
+process and a reaped leader, including when the leader exits before its children.
+Zombies are non-running and only their parent can reap them; isolated behavior
+fixtures adopt and reap their own descendants and verify PID absence in finally.
+The 2-second graceful window is unchanged; inspection and forced verification
+each have a 2-second bound. This is not a containment mechanism for adversarial
+daemonization that escapes ancestry between observations. Unreadable process
+information or missing signals/group control fails closed. Native Windows and
+other hosts without the implemented Linux `/proc` verification fail before a
+mock campaign starts; there is no parent-only termination fallback.
+The supported mock/core and CLI paths use user-home or
+environment-configured evidence parents rather than a host-specific absolute
+path.
+
+Current-host Linux/WSL execution and simulated Windows path/process contracts
+are covered. Native Windows execution, cross-host VM reproduction, and legacy
+POSIX-only research helpers that explicitly invoke shell tools remain
+unverified; this release does not claim full Windows verification. P3 adds no
+runtime or test dependency and does not alter config schema, provenance schema,
+CLI exit contracts, validity, Cov/Err/Rec/overall, MAB, reward, seed
+accounting, cleanup, or execution identity.
