@@ -264,9 +264,12 @@ using that recorded convention without changing those roots.
 The verifier checks recorded classifications and arithmetic relationships. It
 does not reclassify HTTP/business responses, reproduce the MAB or seed-scheduler
 algorithms, or infer missing execution facts. Unsupported or ambiguous roots
-fail closed. P1.1 through P1.4 are implemented. P2
-speed/determinism work and the intermittent mock supervisor timeout remain
-backlog items.
+fail closed. P1.1 through P1.4 and the P2 test speed/determinism infrastructure
+are implemented. P2 records speed as neutral rather than claiming a significant
+speedup. An early P1.1B sweep recorded 18/20 with two failures; later
+independent first-attempt studies passed, but the historical attempt-level
+details were not retained, so the root cause remains unresolved and is a
+documented limitation. Later passes do not erase that observation.
 
 ## Phase 2 P1.3 version and report provenance
 
@@ -380,3 +383,38 @@ code. Config schema validation, evidence verification, adapter execution,
 provenance, and scientific/accounting logic remain in their existing modules.
 The CLI adds no runtime dependencies. It does not provide a `--json` mode for
 commands that have no existing machine-result contract.
+
+## Phase 2 P2 test speed and determinism
+
+P2 adds test infrastructure only. `tests/test_groups.json` is the explicit
+selection manifest for the Phase 1, P1.1-P1.4, required-74, combined-227,
+frozen-offline, delivery-sample, and P2 groups. Formal pytest groups contain
+sorted, exact node IDs; the runner validates syntax, uniqueness, collection,
+and collection drift before execution. Counts are descriptive metadata and do
+not authorize gate membership. The frozen offline group retains its existing
+file selection and `-k` expression.
+
+`scripts/run_deep2fuzz_tests.py --group <name> [--repeat N] --json` is a
+small wrapper around pytest. It fixes hash seed, locale, timezone, offline
+mode, and proxy handling for the subprocess, records wall time and the pytest
+slowest list, and emits sanitized timeout diagnostics. `--repeat` performs
+independent executions; the first run is the acceptance verdict and any
+failing repeated run makes the repeat command nonzero. It is not a retry or
+failure masker, and diagnostic reruns are disabled. Results and mutable run output are never cached. The
+developer `p2` group is not an acceptance authority and cannot replace the
+required-74, combined-227, frozen-offline, or delivery-sample gates.
+
+Tests use isolated temporary roots, sorted filesystem enumeration, explicit
+random seeds where randomness is needed, UTC formatting, monotonic deadlines,
+bounded polling, OS-assigned ephemeral ports, and deterministic subprocess
+cleanup. New parallel execution is not enabled: shared repository state,
+evidence roots, global environment, and process lifecycle make the formal
+groups serial by default. Timeout diagnostics include test/group identity,
+elapsed and deadline values, process state, and a bounded sanitized stderr
+excerpt; they never include credential values or authorization material.
+
+This infrastructure does not alter validity, Cov/Err/Rec/overall, MAB,
+reward, seed accounting, execution identity, configuration/provenance schemas,
+or the public CLI contract. It measures and diagnoses timing and
+repeatability; it is not a platform availability check and does not contact
+O2OA, Alfresco, or external services.
