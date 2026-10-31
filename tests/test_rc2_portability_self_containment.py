@@ -1,6 +1,7 @@
 """RC2 clean-source portability regressions for the smoke evidence parent."""
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -102,11 +103,13 @@ def test_t07_target_dirty_diff_is_not_part_of_smoke_resolution(tmp_path: Path) -
     checkout = _clean_checkout(tmp_path)
     smoke = checkout / "integration" / "platforms" / "smoke.py"
     target = checkout / "integration" / "platforms" / "mock_rest" / "target.py"
-    committed_target = subprocess.check_output(
-        ["git", "show", "HEAD:integration/platforms/mock_rest/target.py"], cwd=ROOT
-    )
     assert "default_evidence_parent" in smoke.read_text(encoding="utf-8")
-    assert target.read_bytes() == committed_target
+    # Keep this clean-checkout regression independent of Git metadata. The
+    # expected digest is the target.py content at the RC2 baseline and proves
+    # the unrelated dirty target edit was not copied into the candidate.
+    assert hashlib.sha256(target.read_bytes()).hexdigest() == (
+        "d05001186a9a9fdcf8a39376dec7ed500c193cd0998bfce0f76f1dca76762179"
+    )
 
 
 def test_t08_exact_clean_checkout_passes_t22(tmp_path: Path) -> None:
