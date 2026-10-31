@@ -7,6 +7,8 @@ backend-path = ["."]
 name = "deep2fuzz-es"
 dynamic = ["version"]
 description = "Deep2Fuzz-ES platform adapter system"
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = []
 

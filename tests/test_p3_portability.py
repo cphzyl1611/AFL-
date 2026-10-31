@@ -319,7 +319,7 @@ def test_t49_provenance_schema_invariance() -> None:
 
 
 def test_t50_cli_contract_invariance() -> None:
-    assert _cli("--version").stdout.strip() == "1.1.0.dev0"
+    assert _cli("--version").stdout.strip() == "1.1.0rc1"
     assert _cli("platform", "list").stdout.strip() == "mock_rest"
 
 

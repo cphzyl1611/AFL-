@@ -62,7 +62,7 @@ class CliConsistencyTests(unittest.TestCase):
     def test_t02_version(self):
         result = run_cli("--version")
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "1.1.0.dev0")
+        self.assertEqual(result.stdout.strip(), "1.1.0rc1")
         self.assertEqual(result.stderr, "")
 
     def test_t03_unknown_top_level_is_usage_error(self):
@@ -279,7 +279,7 @@ class CliConsistencyTests(unittest.TestCase):
             summary = json.loads(result.stdout)
             report = json.loads((output / "eval_report.json").read_text(encoding="utf-8"))
             self.assertTrue(summary["passed"])
-            self.assertEqual(report["provenance"]["product"]["version"], "1.1.0.dev0")
+            self.assertEqual(report["provenance"]["product"]["version"], "1.1.0rc1")
             self.assertEqual(summary["REPORT_ACCOUNTING_RECONCILIATION"], "PASS")
 
     def test_unexpected_exception_is_internal_error_not_domain_failure(self):

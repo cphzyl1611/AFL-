@@ -1,194 +1,133 @@
-# 广义功能安全模糊测试组件（任务4）
+# Deep2Fuzz-ES
 
-## 1. 项目说明
+Deep2Fuzz-ES is an offline-first platform adapter system built on the AFL++
+fuzzing core. It connects seed selection, semantic mutation, validity
+filtering, bounded platform execution, readback, cleanup, state feedback and
+machine-readable evidence while keeping the existing Cov, Err, Rec, reward,
+MAB and seed-accounting contracts in the core.
 
-本仓库面向“任务4：广义鲁棒控制构造内生安全性测试评估研究”，实现三项任务：
+## Scope and intended use
 
-1. 基于模糊测试的内生安全性能评估模型；
-2. 高质量种子文件和模糊测试用例生成方法；
-3. 基于模糊测试的内生安全性能测评方法。
+The package is intended for local development, controlled test fixtures and
+authorized disposable platform environments. The default workflows are
+offline and do not contact O2OA, Alfresco or the public network. Live platform
+credentials are supplied at runtime through existing environment-variable or
+0600-file conventions; they are never stored in configuration, evidence or
+package artifacts.
 
-当前正式主线为 `main`。任务4最终组件交付版本：
+This repository contains the Python CLI and adapter boundary together with
+the native AFL++ source tree. A wheel or sdist provides the Python interface
+and a bounded offline delivery sample. It is not a standalone distribution of
+every native, live-platform or research asset in the source tree.
 
-- Tag：`task4-fuzzing-final-20261017`
-- Release commit：`2b15006df14fa6a3fcfba109ca3573f4fbd8190b`
-- Acceptance base：`d1a2c5db454b78cb4034f4f8da4778e12c514871`
+## Capabilities
 
-后续如仅增加 README、操作手册或复现脚本，可继续提交到 `main`；上述 tag 用于固定任务4核心代码版本。
+- explicit platform adapter registry with fail-closed unknown-adapter handling;
+- bounded `mock_rest` full-core execution for offline contract checks;
+- semantic JSON, URL-query and platform-specific request preparation;
+- validity decisions before target execution;
+- authenticated readback and exact-ID cleanup contracts;
+- existing core ownership of execution identity, status, state feedback,
+  Cov/Err/Rec, reward, MAB, seed credit and reports;
+- deterministic config and evidence validation with provenance;
+- wheel/sdist installation and a packaged offline sample.
 
-## 2. 项目要求与代码对应
+## Installation and quick start
 
-| 项目要求 | 主要实现文件 |
-|---|---|
-| 内生安全性能评估模型 | `scripts/compute_formal_security_score.py`、`src/afl-fuzz-run.c`、`src/afl-fuzz-stats.c` |
-| 高质量种子与测试用例生成 | `nv_json_mutator.py`、`nv_url_query.py`、`src/afl-fuzz-one.c`、`src/afl-fuzz-queue.c`、`include/afl-fuzz.h` |
-| 有效性验证与执行反馈 | `nv_body_valid.py`、`nv_http_harness.py`、`nv_state_probe.py` |
-| 平台任务接口 | `integration/fuzz_api.py`、`integration/api_server.py` |
-| 任务配置 | `task_configs/`、`task_calendar_filter_bounded.json`、`targets/` |
-| 验收测试 | `tests/test_formal_security_score.py`、`tests/test_api_formal_schema_compliance.py`、`tests/test_delivery_platform_interfaces.py`、`tests/test_fuzz_api.py`、`tests/test_url_query.py`、`tests/test_query_integration.py` |
-
-正式安全评分公式：
-
-```text
-P_sec = β1 × Cov + β2 × (1 / (1 + Err)) + β3 × R_rec
-```
-
-其中：
-
-```text
-Cov   = security_state_new_total / security_state_capacity
-Err   = nv_err_exec / nv_total_valid_exec
-R_rec = nv_rec_success / nv_rec_total
-β1 + β2 + β3 = 1
-```
-
-权重必须显式提供，不在程序中虚构默认项目权重。
-
-## 3. 快速开始
-
-陌生环境的完整依赖、构建、离线 acceptance 和 deterministic sample 流程见
-[`docs/DELIVERY_GUIDE.md`](docs/DELIVERY_GUIDE.md)。以下保留简短入口。
+From a source checkout, the supported development mode is:
 
 ```bash
-git clone https://github.com/cphzyl1611/AFL-.git
-cd AFL-
-git switch main
-chmod +x scripts/run_task4.sh scripts/reproduce_task4.sh
-./scripts/run_task4.sh
+python -m pip install -e .
+deep2fuzz --version
+deep2fuzz --help
+deep2fuzz doctor
+deep2fuzz platform list
+deep2fuzz platform run mock_rest
 ```
 
-默认的一键脚本只执行自包含验证，不访问真实 O2OA / Alfresco 服务。
-
-如需严格复现任务4最终组件交付版本：
+For a built distribution, install a freshly built wheel or sdist into an
+isolated environment. The core package has no third-party runtime dependency;
+optional dependency groups are `dev`, `live`, `model` and `analysis`.
 
 ```bash
-git checkout task4-fuzzing-final-20261017
+python -m pip install 'deep2fuzz-es[dev]'
+deep2fuzz sample
 ```
 
-## 4. 一键验证
+`deep2fuzz sample` uses only packaged local assets and writes a fresh evidence
+root. `deep2fuzz config validate CONFIG` validates a configuration without
+creating output paths. `deep2fuzz evidence verify EVIDENCE_ROOT` performs the
+read-only evidence and provenance checks.
 
-```bash
-./scripts/run_task4.sh
-```
+## Platform Adapter System
 
-默认执行：
+The core creates the task, run, execution sequence, seed and mutation-arm
+identity. An adapter prepares a request, executes its platform-specific
+operation, interprets the response, performs readback and exact cleanup, and
+may report health. It cannot replace the execution sequence or fabricate core
+feedback. The loopback `mock_rest` adapter is the offline contract fixture;
+O2OA and Alfresco historical runners remain separate compatibility paths.
 
-1. 环境检查；
-2. 必要时构建 `afl-fuzz`；
-3. 任务4 focused acceptance tests；
-4. URL-query 集成测试；
-5. 本地 API smoke；
-6. 输出最终 PASS/FAIL。
+## Evidence and configuration
 
-## 5. 生成复现记录
+The authoritative configuration format is versioned and rejects unknown
+fields, implicit type coercion, unsafe paths, unsupported platforms and invalid
+cross-field combinations. Validation is offline, deterministic and
+fail-closed. Evidence includes execution identity, state, feedback,
+accounting, reports and source/config/scorer provenance where the profile
+requires it.
 
-```bash
-./scripts/reproduce_task4.sh
-```
+## Scientific claim boundary
 
-复现结果写入：
+The reported metrics are bounded engineering measures:
 
-```text
-reproduce-results/task4-<timestamp>/
-```
+- `Cov` is a bounded observable security-state coverage proxy;
+- `Err` is a bounded anomaly proxy;
+- `Rec` is an external platform availability recovery proxy;
+- `overall` is a bounded engineering evaluation index.
 
-完整历史回归为诊断模式：
+These metrics are not universal security scores, absolute security-state
+coverage, AFL edge coverage, or proof of production security. SE-fAnoGAN-ES
+is retained as an optional research backend and project reference realization;
+exact external equivalence and universal superiority over AE are not claimed.
 
-```bash
-./scripts/reproduce_task4.sh --full
-```
+## Platform and distribution boundaries
 
-历史完整测试集包含已知的前置/历史测试债，因此正式任务4复核优先看 focused acceptance gate。
+POSIX native execution, offline wheel/sdist builds, fresh isolated installs and
+repo-independent installed execution are validated. Windows path semantics
+and unsupported-capability fail-closed behavior are covered by the portability
+tests, but native Windows execution, native Windows clean install and Windows
+process-tree termination are not validated. No production deployment,
+cross-host VM reproduction, PyPI publication, signed package, SBOM
+certification or byte-identical archive reproducibility is claimed.
 
-## 6. 平台接口
+## Known limitations
 
-`integration/fuzz_api.py` 提供：
+- KL01: the historical P1.1B first sweep was 18/20; its root cause remains
+  unresolved and later passes do not erase that observation;
+- KL02: native Windows execution is not validated;
+- KL03: Windows process-tree termination is unsupported and fails closed;
+- KL04: native Windows clean install is unverified;
+- KL05: byte-reproducible archives are not claimed;
+- KL06: cross-host VM reproduction was not performed;
+- KL07: the approved frozen 32D model artifact is missing for fresh exact
+  reproduction;
+- KL08: exact external SE-fAnoGAN-ES equivalence is not claimed;
+- KL09: SE effectiveness is scenario-dependent;
+- KL10: Cov, Err, Rec and overall remain bounded engineering proxies;
+- KL11: Task 4 papers, patents, research report, component delivery and team
+  archives are formal project requirements whose completion is separately
+  unverified by current technical acceptance evidence.
 
-- `fuzz_test_submit`
-- `fuzz_test_query`
-- `fuzz_test_stop`
-- `fuzz_test_report_query`
+## Version and release status
 
-正式 submit 字段：
+This tree prepares `1.1.0rc1` as a release candidate. The candidate tag
+`deep2fuzz-es-v1.1.0-rc.1` has not been created. Release decision, signing,
+publication and production certification require a separate review.
 
-```text
-target_type
-target_endpoint
-seed_source
-seed_location
-mutation_scope
-max_test_cases
-time_budget
-task_name (optional)
-```
+## License
 
-正式枚举：
-
-```text
-target_type:    http_api | file_upload | protocol_message
-seed_source:    captured_traffic | seed_file | manual
-mutation_scope: field_value | boundary | structure
-```
-
-“schema 可接受”和“当前 runtime 可实际调度”是两个概念，具体能力状态以 `integration/fuzz_api.py` 中 capability table 为准。
-
-## 7. 本地集成 API
-
-```bash
-python3 integration/api_server.py --host 127.0.0.1 --port 18081
-```
-
-常用入口：
-
-```text
-GET  /health
-GET  /capabilities
-GET  /reports
-POST /score/alfresco_ae_v1
-POST /fuzz/submit
-```
-
-该 API 用于本地/集成验证，不等同于完整生产网关。
-
-## 8. 真实 O2OA 运行
-
-真实 O2OA 场景需要：
-
-- O2OA 服务已启动；
-- `targets/o2oa_query.json` 中目标地址可达；
-- 运行时提供 `NV_TOKEN`；
-- 不在配置文件或脚本中硬编码 token。
-
-示例：
-
-```bash
-export NV_TOKEN='<runtime-token>'
-export NV_TARGET_CONFIG="$PWD/targets/o2oa_query.json"
-export NV_ENDPOINT_NAME=calendar_filter
-```
-
-默认一键脚本不会自动访问真实业务服务。
-
-## 9. 正式评分
-
-已有 `fuzzer_stats` 后：
-
-```bash
-python3 scripts/compute_formal_security_score.py \
-  out/<run>/fuzzer_stats \
-  <beta1> <beta2> <beta3>
-```
-
-三个权重必须位于 `[0,1]` 且总和约等于 `1.0`。
-
-## 10. 操作手册
-
-完整说明见：
-
-```text
-docs/TASK4_操作手册.md
-```
-
-## 11. 交付边界
-
-README、操作手册和复现工具用于降低交付、复核和后续集成成本，不重新定义任务4算法口径。真实平台运行受外部服务、凭据、网络和部署状态影响；真实服务测试应在已授权环境中执行，并通过环境变量提供凭据。
+The repository license authority is the root `LICENSE` file, Apache License
+2.0. Package metadata points to that file. Third-party components retain any
+additional notices present with those components; this README does not grant
+or invent terms for them.

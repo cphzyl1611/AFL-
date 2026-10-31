@@ -1,4 +1,6 @@
 include pyproject.toml
+include CHANGELOG.md
+recursive-include docs/releases *.md
 include deep2fuzz_build_backend.py
 include deep2fuzz_cli.py deep2fuzz_version.py
 recursive-include integration *.py
