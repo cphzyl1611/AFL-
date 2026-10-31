@@ -121,9 +121,10 @@ certification or byte-identical archive reproducibility is claimed.
 
 ## Version and release status
 
-This tree prepares `1.1.0rc1` as a release candidate. The candidate tag
-`deep2fuzz-es-v1.1.0-rc.1` has not been created. Release decision, signing,
-publication and production certification require a separate review.
+Version `1.1.0rc2` is a Release Candidate. Stable version `1.1.0` has not yet
+been released. RC2 corrects the release-status documentation carried by the
+RC1 package. Stable release readiness, signing, publication and production
+certification require a separate review.
 
 ## License
 

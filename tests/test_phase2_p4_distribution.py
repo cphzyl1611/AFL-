@@ -160,7 +160,7 @@ def test_distribution_asset_copy_is_exact_and_executable(
     for name in ("command_1", "command_2"):
         command = distribution_artifacts[name]
         result = _run([str(command), "--version"], cwd=external_cwd)
-        assert result.stdout.strip() == "1.1.0rc1"
+        assert result.stdout.strip() == "1.1.0rc2"
     import_check = _run(
         [str(distribution_artifacts["venv_2"] / "bin" / "python"), "-c",
          "import deep2fuzz_cli,deep2fuzz_config.validator,deep2fuzz_evidence.verifier,deep2fuzz_provenance,deep2fuzz_portability, integration.platforms.registry; print(deep2fuzz_cli.__file__)"] ,
@@ -215,7 +215,7 @@ def test_sdist_backend_excludes_generated_egg_info(
         [str(distribution_artifacts["command_sdist"]), "--version"],
         cwd=tmp_path,
     )
-    assert sdist_smoke.stdout.strip() == "1.1.0rc1"
+    assert sdist_smoke.stdout.strip() == "1.1.0rc2"
 
 
 def test_distribution_provenance_has_no_fabricated_git_identity(

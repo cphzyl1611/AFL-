@@ -1,5 +1,12 @@
 # Deep2Fuzz-ES Changelog
 
+## 1.1.0rc2 - Release Status Documentation Correction
+
+This release candidate corrects the false RC1 release-status statement in the
+product README and package long description. Runtime and scientific behavior
+are unchanged, all previously documented limitations remain, and the RC1
+prerelease remains an immutable historical release.
+
 ## 1.1.0rc1 - Release Candidate Preparation
 
 This release candidate is prepared from the committed P4 distribution

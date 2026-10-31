@@ -121,7 +121,7 @@ The frozen offline delivery set remains a separate 235/235 baseline claim.
 
 ## Phase 1.1 runtime and distribution hardening
 
-The package version is defined once in `deep2fuzz_version.py` (`1.1.0rc1`).
+The package version is defined once in `deep2fuzz_version.py` (`1.1.0rc2`).
 Install the Python interface with:
 
 ```text

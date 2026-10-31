@@ -36,7 +36,7 @@ def test_version_is_single_source_and_help_is_available() -> None:
     assert help_result.returncode == 0, help_result.stderr
     assert "deep2fuzz" in help_result.stdout
     assert version_result.returncode == 0, version_result.stderr
-    assert version_result.stdout.strip() == "1.1.0rc1"
+    assert version_result.stdout.strip() == "1.1.0rc2"
 
 
 def test_fresh_editable_install_and_installed_cli(tmp_path: Path) -> None:
@@ -57,7 +57,7 @@ def test_fresh_editable_install_and_installed_cli(tmp_path: Path) -> None:
     # packages from the host test runner cannot leak into the fresh venv.
     clean_env = env.copy()
     clean_env["PYTHONPATH"] = ""
-    for args, expected in ((["--help"], "usage: deep2fuzz"), (["--version"], "1.1.0rc1"), (["platform", "list"], "mock_rest")):
+    for args, expected in ((["--help"], "usage: deep2fuzz"), (["--version"], "1.1.0rc2"), (["platform", "list"], "mock_rest")):
         result = subprocess.run([str(command), *args], env=clean_env, text=True, capture_output=True, check=False)
         assert result.returncode == 0, result.stderr
         assert expected in result.stdout

@@ -1,4 +1,4 @@
-"""Release metadata closure checks for the 1.1.0rc1 preparation."""
+"""Release metadata closure checks for the 1.1.0rc2 candidate."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,7 @@ import deep2fuzz_build_backend
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_NOTES = ROOT / "docs" / "releases" / "Deep2Fuzz-ES-1.1.0rc1.md"
+RELEASE_NOTES = ROOT / "docs" / "releases" / "Deep2Fuzz-ES-1.1.0rc2.md"
 REQUIRED_LIMITATIONS = (
     "18/20",
     "native Windows execution",
@@ -30,14 +30,14 @@ REQUIRED_LIMITATIONS = (
 )
 
 
-def test_version_and_product_documents_are_rc1_ready() -> None:
-    assert __version__ == "1.1.0rc1"
+def test_version_and_product_documents_are_rc2_ready() -> None:
+    assert __version__ == "1.1.0rc2"
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     notes = RELEASE_NOTES.read_text(encoding="utf-8")
     assert "# Deep2Fuzz-ES" in readme
     assert "## Known limitations" in readme
-    assert "1.1.0rc1" in changelog
+    assert "1.1.0rc2" in changelog
     assert "Release Candidate" in notes
     combined = readme + changelog + notes
     for limitation in REQUIRED_LIMITATIONS:
@@ -53,7 +53,7 @@ def test_pyproject_binds_existing_license_and_readme() -> None:
     assert (ROOT / "LICENSE").read_text(encoding="utf-8").startswith("                                 Apache License")
 
 
-def test_fresh_wheel_metadata_has_rc1_readme_and_license(tmp_path: Path) -> None:
+def test_fresh_wheel_metadata_has_rc2_readme_and_license(tmp_path: Path) -> None:
     output = tmp_path / "wheel"
     output.mkdir()
     subprocess.run(
@@ -67,7 +67,7 @@ def test_fresh_wheel_metadata_has_rc1_readme_and_license(tmp_path: Path) -> None
         metadata_name = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
         metadata = Parser().parsestr(archive.read(metadata_name).decode("utf-8"))
         names = set(archive.namelist())
-    assert metadata["Version"] == "1.1.0rc1"
+    assert metadata["Version"] == "1.1.0rc2"
     assert metadata["Description-Content-Type"] == "text/markdown"
     assert metadata.get_payload().startswith("# Deep2Fuzz-ES")
     assert metadata.get("License-File") == "LICENSE"
