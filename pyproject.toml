@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "deep2fuzz_build_backend"
 backend-path = ["."]
 
@@ -8,7 +8,8 @@ name = "deep2fuzz-es"
 dynamic = ["version"]
 description = "Deep2Fuzz-ES platform adapter system"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = []
 

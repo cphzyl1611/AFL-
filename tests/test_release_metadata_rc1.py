@@ -49,7 +49,8 @@ def test_version_and_product_documents_are_rc2_ready() -> None:
 def test_pyproject_binds_existing_license_and_readme() -> None:
     config = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'readme = "README.md"' in config
-    assert 'license = { file = "LICENSE" }' in config
+    assert 'license = "Apache-2.0"' in config
+    assert 'license-files = ["LICENSE"]' in config
     assert (ROOT / "LICENSE").read_text(encoding="utf-8").startswith("                                 Apache License")
 
 
