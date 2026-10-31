@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from deep2fuzz_portability import default_evidence_parent
 from .base import ExecutionIdentity
 from .mock_rest.adapter import MockRestAdapter
 from .mock_rest.service import MockRestService
@@ -18,7 +19,8 @@ def _json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def default_evidence_root(parent: Path = Path("/home/cphzy/task4-evidence")) -> Path:
+def default_evidence_root(parent: Path | None = None) -> Path:
+    parent = parent or default_evidence_parent()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     root = parent / f"DEEP2FUZZ_PLATFORM_ADAPTER_PHASE1-{stamp}"
     suffix = 1
